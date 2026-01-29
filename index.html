@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Routine Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-calendar-alt"></i>
+                <h1>Explore Routine</h1> 
+            </div>
+            <p class="tagline">Admin Controlled Exam Routine Management System</p>
+        </header>
+
+        <div class="app-container">
+            <div class="main-content">
+                <div class="controls">
+                    <div class="filter-controls">
+                        <div class="class-selector">
+                            <label for="deptSelect"><i class="fas fa-graduation-cap"></i> Select Department:</label>
+                            <select id="deptSelect">
+                                <option value="all">All Departments</option>
+                                <option value="Computer">Computer</option>
+                                <option value="Civil">Civil</option>
+                                <option value="Electrical">Electrical</option>
+                                <option value="Power">Power</option>
+                            </select>
+                        </div>
+                        <div class="class-selector">
+                            <label for="semesterSelect"><i class="fas fa-graduation-cap"></i> Select Semester:</label>
+                            <select id="semesterSelect">
+                                <option value="all">All Semesters</option>
+                                <option value="1st">1st</option>
+                                <option value="2nd">2nd</option>
+                                <option value="3rd">3rd</option>
+                                <option value="4th">4th</option>
+                                <option value="5th">5th</option>
+                                <option value="6th">6th</option>
+                                <option value="7th">7th</option>
+                            </select>
+                        </div>
+                        
+                        <div class="date-filter">
+                            <label for="dateFilter"><i class="fas fa-filter"></i> Show:</label>
+                            <select id="dateFilter">
+                                <option value="upcoming">Upcoming Exams Only</option>
+                                <option value="all">All Exams</option>
+                                <option value="past">Past Exams</option>
+                            </select>
+                        </div>
+                        
+                        <button id="refreshBtn" class="btn-refresh">
+                            <i class="fas fa-sync-alt"></i> Refresh Routine
+                        </button>
+                    </div>
+                    
+                    <div class="today-info">
+                        <h3><i class="fas fa-calendar-day"></i> Today: <span id="currentDate"></span></h3>
+                        <p id="nextExamInfo">Loading exam information...</p>
+                    </div>
+                </div>
+
+                <div class="routine-container">
+                    <h2><i class="fas fa-list-alt"></i> Exam Routine</h2>
+                    <div class="routine-header">
+                        <div class="header-item">Department</div>
+                        <div class="header-item">Semester</div>
+                        <div class="header-item">Subject</div>
+                        <div class="header-item">Exam Date</div>
+                        <div class="header-item">Time</div>
+                        <div class="header-item">Room No.</div>
+                        <div class="header-item">Status</div>
+                    </div>
+                    <div id="routineList" class="routine-list">
+                        <!-- Routine items will be loaded here by JavaScript -->
+                        <div class="loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Loading exams...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="instructions">
+                    <h3><i class="fas fa-info-circle"></i> How It Works</h3>
+                    <ul>
+                        <li>Select a department and semester to see specific routine</li>
+                        <li>Past exams are automatically hidden when "Upcoming Exams Only" is selected</li>
+                        <li>Use the chatbot (bottom right) to search for specific exams</li>
+                        <li>Click on any exam to see more details</li>
+                        <li>Admins can add/modify exams using the admin panel (bottom left)</li>
+                        <li>No pre-set data - all exams are added by admin through Firebase</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="stats-card">
+                    <h3><i class="fas fa-chart-bar"></i> Exam Statistics</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Exams:</span>
+                        <span id="totalExams" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Upcoming Exams:</span>
+                        <span id="upcomingExams" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Exams Today:</span>
+                        <span id="todayExams" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Completed Exams:</span>
+                        <span id="completedExams" class="stat-value">0</span>
+                    </div>
+                </div>
+
+                <div class="next-exam-card">
+                    <h3><i class="fas fa-clock"></i> Next Exam</h3>
+                    <div id="nextExamCard">
+                        <div class="loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Loading...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="upcoming-list">
+                    <h3><i class="fas fa-calendar-check"></i> Upcoming Exams</h3>
+                    <div id="upcomingList">
+                        <div class="loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Panel Modal -->
+        <div id="adminModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-user-shield"></i> Admin Panel</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Login Form -->
+                    <div id="loginForm" class="admin-form">
+                        <h4>Admin Login</h4>
+                        <div class="form-group">
+                            <label for="adminEmail">Email:</label>
+                            <input type="email" id="adminEmail" placeholder="admin@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="adminPassword">Password:</label>
+                            <input type="password" id="adminPassword" placeholder="Enter password">
+                        </div>
+                        <button id="loginBtn" class="btn-admin">Login</button>
+                        <p class="error-message" id="loginError"></p>
+                        <p class="info-message" style="margin-top: 15px; font-size: 0.9rem;">
+                            <i class="fas fa-info-circle"></i> Login required to add/edit exams
+                        </p>
+                    </div>
+
+                    <!-- Admin Dashboard (hidden by default) -->
+                    <div id="adminDashboard" class="admin-dashboard" style="display: none;">
+                        <div class="admin-header">
+                            <h4>Welcome, <span id="adminName">Admin</span></h4>
+                            <button id="logoutBtn" class="btn-logout">Logout</button>
+                        </div>
+
+                        <!-- Add New Exam Form -->
+                        <div class="add-exam-form">
+                            <h5><i class="fas fa-plus-circle"></i> Add New Exam</h5>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="newDept">Department:</label>
+                                    <select id="newDept">
+                                        <option value="Computer">Computer</option>
+                                        <option value="Civil">Civil</option>
+                                        <option value="Electrical">Electrical</option>
+                                        <option value="Power">Power</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newSemester">Semester:</label>
+                                    <select id="newSemester">
+                                        <option value="1st">1st</option>
+                                        <option value="2nd">2nd</option>
+                                        <option value="3rd">3rd</option>
+                                        <option value="4th">4th</option>
+                                        <option value="5th">5th</option>
+                                        <option value="6th">6th</option>
+                                        <option value="7th">7th</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newSubject">Subject:</label>
+                                    <input type="text" id="newSubject" placeholder="Enter subject name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newExamDate">Exam Date:</label>
+                                    <input type="date" id="newExamDate">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newExamTime">Time:</label>
+                                    <input type="time" id="newExamTime" value="10:00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newRoom">Room No:</label>
+                                    <input type="text" id="newRoom" placeholder="Room 101">
+                                </div>
+                            </div>
+                            <button id="addExamBtn" class="btn-add-exam">Add Exam</button>
+                            <p class="success-message" id="addExamMessage"></p>
+                        </div>
+
+                        <!-- Manage Existing Exams -->
+                        <div class="manage-exams">
+                            <h5><i class="fas fa-edit"></i> Manage Exams</h5>
+                            <div class="search-box">
+                                <input type="text" id="searchExam" placeholder="Search exams by subject or department...">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div id="examList" class="exam-list">
+                                <div class="loading">
+                                    <i class="fas fa-spinner"></i>
+                                    <p>Loading exams...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Access Button -->
+        <button id="adminAccessBtn" class="admin-access-btn">
+            <i class="fas fa-user-shield"></i>
+        </button>
+
+        <!-- Chatbot Interface -->
+        <div class="chatbot-container">
+            <div class="chatbot-header">
+                <h3><i class="fas fa-robot"></i> Exam Assistant</h3>
+                <button id="closeChatbot" class="btn-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="chatbotMessages" class="chatbot-messages">
+                <div class="message bot">
+                    <p>Hello! I'm your exam assistant. Ask me about exam dates, subjects, departments, or semesters.</p>
+                </div>
+            </div>
+            <div class="chatbot-input">
+                <input type="text" id="chatInput" placeholder="Ask about exams... (e.g., 'Physics exam date')">
+                <button id="sendMessage" class="btn-send">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chatbot Toggle Button -->
+        <button id="chatbotToggle" class="chatbot-toggle">
+            <i class="fas fa-robot"></i>
+        </button>
+
+        <footer>
+            <p>Explore Routine &copy; 2026 - Admin Controlled Exam Routine Management System</p>
+            <p class="footer-note">All exam data is managed by admin through Firebase. No pre-set data.</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCaM7TUs8rxFFDEMgmAx2DG7XllBthnoAA",
+            authDomain: "barisal-polytechnic-inst-54ce1.firebaseapp.com",
+            projectId: "barisal-polytechnic-inst-54ce1",
+            storageBucket: "barisal-polytechnic-inst-54ce1.firebasestorage.app",
+            messagingSenderId: "752245058284",
+            appId: "1:752245058284:web:2158243d737a83fc0953c9",
+            measurementId: "G-5TNPK05BED"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Export for use in other files
+        window.firebase = { 
+            db, auth, 
+            collection, addDoc, getDocs, updateDoc, deleteDoc, doc,
+            createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut 
+        };
+    </script>
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+    <script src="chatbot.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
