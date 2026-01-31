@@ -30,6 +30,10 @@
                                 <option value="Civil">Civil</option>
                                 <option value="Electrical">Electrical</option>
                                 <option value="Power">Power</option>
+                                <option value="Mechanical">Mechanical</option>
+                                <option value="Electronics">Electronics</option>
+                                <option value="Electro-Medical">Electro-Medical</option>
+                                <option value="Tourism & Hospitality Management">Tourism</option>
                             </select>
                         </div>
                         <div class="class-selector">
@@ -52,6 +56,8 @@
                                 <option value="upcoming">Upcoming Exams Only</option>
                                 <option value="all">All Exams</option>
                                 <option value="past">Past Exams</option>
+                                <option value="practical">Practical</option>
+                                <option value="Written">Written</option>
                             </select>
                         </div>
                         
@@ -186,6 +192,10 @@
                                         <option value="Civil">Civil</option>
                                         <option value="Electrical">Electrical</option>
                                         <option value="Power">Power</option>
+                                        <option value="Mechanical">Mechanical</option>
+                                        <option value="Electronics">Electronics</option>
+                                        <option value="Electro-Medical">Electro-Medical</option>
+                                        <option value="Tourism & Hospitality Management">Tourism & Hospitality</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -214,7 +224,11 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="newRoom">Room No:</label>
-                                    <input type="text" id="newRoom" placeholder="Room 101">
+                                    <div class="fixed-room-info">
+                                        <i class="fas fa-door-open"></i>
+                                        <span>Depends on sit plan</span>
+                                    </div>
+
                                 </div>
                             </div>
                             <button id="addExamBtn" class="btn-add-exam">Add Exam</button>
@@ -281,7 +295,7 @@
     <script type="module">
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
         // Firebase configuration
@@ -303,13 +317,14 @@
         // Export for use in other files
         window.firebase = { 
             db, auth, 
-            collection, addDoc, getDocs, updateDoc, deleteDoc, doc,
+            collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot,
             createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut 
         };
     </script>
     <script src="data.js"></script>
-    <script src="script.js"></script>
     <script src="chatbot.js"></script>
     <script src="admin.js"></script>
+    <script src="script.js"></script>
+    
 </body>
 </html>

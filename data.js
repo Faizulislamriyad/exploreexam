@@ -1,6 +1,3 @@
-// data.js - Firebase Data Management with Admin Control
-
-// NO PRE-DEFINED SUBJECTS - Admin will add everything
 
 // Get current date in YYYY-MM-DD format
 function getCurrentDate() {

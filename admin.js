@@ -232,11 +232,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             }, 500);
             
-            // Show success message in chatbot
-            if (typeof window.addBotMessage === 'function') {
-                window.addBotMessage("Admin logged in successfully. You can now manage exams.");
-            }
-            
         } catch (error) {
             console.error('Login error:', error);
             
@@ -314,11 +309,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 logoutBtn.innerHTML = 'Logout';
             }, 500);
             
-            // Show logout message in chatbot
-            if (typeof window.addBotMessage === 'function') {
-                window.addBotMessage("Admin logged out successfully.");
-            }
-            
             showAdminNotification('Logged out successfully', 'info');
             
         } catch (error) {
@@ -333,7 +323,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function addNewExam() {
         // First check if user is authenticated
-        if (!window.firebase || !window.firebase.auth || !window.firebase.auth.currentUser) {
+        const auth = window.firebase ? window.firebase.auth : null;
+        if (!auth || !auth.currentUser) {
             showAdminNotification('Please login first to add exams', 'error');
             return;
         }
@@ -343,10 +334,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const subject = document.getElementById('newSubject').value.trim();
         const examDate = document.getElementById('newExamDate').value;
         const examTime = document.getElementById('newExamTime').value;
-        const room = document.getElementById('newRoom').value.trim();
+        const roomInput = document.getElementById('newRoom');
+        const room = roomInput ? roomInput.value.trim() : 'Depends on sit plan';
 
         // Validation
-        const validation = validateExamForm(department, semester, subject, examDate, examTime, room);
+        const validation = validateExamForm(department, semester, subject, examDate, examTime);
         if (!validation.valid) {
             showAdminNotification(validation.message, 'error');
             highlightInvalidField(validation.field);
@@ -369,9 +361,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 time: timeFormatted,
                 room: room,
                 createdAt: new Date().toISOString(),
-                addedBy: window.firebase.auth.currentUser.email,
-                addedById: window.firebase.auth.currentUser.uid
+                addedBy: auth.currentUser.email,
+                addedById: auth.currentUser.uid
             };
+
+            console.log('Adding exam data:', examData);
 
             // Check if Firebase is available
             if (!window.firebase || !window.firebase.db) {
@@ -379,10 +373,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Add to Firebase
-            const docRef = await window.firebase.addDoc(
-                window.firebase.collection(window.firebase.db, "exams"), 
-                examData
-            );
+            const db = window.firebase.db;
+            const collection = window.firebase.collection;
+            const addDoc = window.firebase.addDoc;
+
+            const docRef = await addDoc(collection(db, "exams"), examData);
             
             console.log('Exam added with ID:', docRef.id);
             
@@ -417,11 +412,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 1000);
             }
             
-            // Show chatbot message
-            if (typeof window.addBotMessage === 'function') {
-                window.addBotMessage(`New exam added: ${subject} (${department} - ${semester}) on ${examDate} at ${timeFormatted}`);
-            }
-            
             // Play success sound if available
             playSuccessSound();
             
@@ -435,14 +425,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function validateExamForm(department, semester, subject, examDate, examTime, room) {
+    function validateExamForm(department, semester, subject, examDate, examTime) {
         if (!department) return { valid: false, message: 'Please select a department', field: 'newDept' };
         if (!semester) return { valid: false, message: 'Please select a semester', field: 'newSemester' };
         if (!subject) return { valid: false, message: 'Please enter a subject name', field: 'newSubject' };
         if (subject.length < 2) return { valid: false, message: 'Subject name is too short', field: 'newSubject' };
         if (!examDate) return { valid: false, message: 'Please select an exam date', field: 'newExamDate' };
         if (!examTime) return { valid: false, message: 'Please select an exam time', field: 'newExamTime' };
-        if (!room) return { valid: false, message: 'Please enter a room number', field: 'newRoom' };
         
         // Check if date is in the past
         const selectedDate = new Date(examDate);
@@ -483,7 +472,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('newSubject').value = '';
         document.getElementById('newExamDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('newExamTime').value = '10:00';
-        document.getElementById('newRoom').value = '';
+        const roomInput = document.getElementById('newRoom');
+        if (roomInput) roomInput.value = '';
         
         // Focus on subject field
         document.getElementById('newSubject').focus();
@@ -504,9 +494,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 examList.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><p>Loading exams...</p></div>';
             }
 
-            const querySnapshot = await window.firebase.getDocs(
-                window.firebase.collection(window.firebase.db, "exams")
-            );
+            const db = window.firebase.db;
+            const collection = window.firebase.collection;
+            const getDocs = window.firebase.getDocs;
+
+            const querySnapshot = await getDocs(collection(db, "exams"));
             allExams = [];
             
             querySnapshot.forEach((doc) => {
@@ -572,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Get status
-            const currentDate = window.dataFunctions.getCurrentDate();
+            const currentDate = window.dataFunctions ? window.dataFunctions.getCurrentDate() : new Date().toISOString().split('T')[0];
             let status = 'upcoming';
             if (exam.examDate < currentDate) {
                 status = 'completed';
@@ -659,12 +651,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const resultsDiv = document.createElement('div');
             resultsDiv.id = 'searchResultsCount';
             resultsDiv.className = 'search-results-count';
-            searchBox.parentNode.insertBefore(resultsDiv, searchBox.nextSibling);
+            if (searchBox && searchBox.parentNode) {
+                searchBox.parentNode.insertBefore(resultsDiv, searchBox.nextSibling);
+            }
         }
         
-        document.getElementById('searchResultsCount').textContent = 
-            filteredExams.length === 0 ? 'No results found' :
-            `Found ${filteredExams.length} exam${filteredExams.length !== 1 ? 's' : ''}`;
+        const resultsElement = document.getElementById('searchResultsCount');
+        if (resultsElement) {
+            resultsElement.textContent = 
+                filteredExams.length === 0 ? 'No results found' :
+                `Found ${filteredExams.length} exam${filteredExams.length !== 1 ? 's' : ''}`;
+        }
     }
 
     async function editExam(exam) {
@@ -686,6 +683,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <option value="Civil" ${exam.department === 'Civil' ? 'selected' : ''}>Civil</option>
                                 <option value="Electrical" ${exam.department === 'Electrical' ? 'selected' : ''}>Electrical</option>
                                 <option value="Power" ${exam.department === 'Power' ? 'selected' : ''}>Power</option>
+                                <option value="Mechanical" ${exam.department === 'Mechanical' ? 'selected' : ''}>Mechanical</option>
+                                <option value="Electronics" ${exam.department === 'Electronics' ? 'selected' : ''}>Electronics</option>
+                                <option value="Electro-Medical" ${exam.department === 'Electro-Medical' ? 'selected' : ''}>Electro-Medical</option>
+                                <option value="Tourism & Hospitality Management" ${exam.department === 'Tourism & Hospitality Management' ? 'selected' : ''}>Tourism & Hospitality Management</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -808,7 +809,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('newSubject').value = exam.subject + ' (Copy)';
             document.getElementById('newExamDate').value = exam.examDate;
             document.getElementById('newExamTime').value = convertTimeTo24Hour(exam.time);
-            document.getElementById('newRoom').value = exam.room;
+            const roomInput = document.getElementById('newRoom');
+            if (roomInput) roomInput.value = exam.room;
             
             showAdminNotification('Exam details copied to form. Adjust as needed and click Add Exam.', 'info');
             
@@ -864,11 +866,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 1000);
             }
             
-            // Show chatbot message
-            if (typeof window.addBotMessage === 'function') {
-                window.addBotMessage("An exam has been deleted from the schedule.");
-            }
-            
         } catch (error) {
             console.error('Error deleting exam:', error);
             showAdminNotification('Failed to delete exam: ' + error.message, 'error');
@@ -888,6 +885,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function initAutoSuggest() {
         const subjectInput = document.getElementById('newSubject');
+        
+        if (!subjectInput) return;
         
         // Create datalist for suggestions
         const datalist = document.createElement('datalist');
@@ -1052,8 +1051,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Ctrl/Cmd + F to focus search
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
                 e.preventDefault();
-                searchExam.focus();
-                searchExam.select();
+                if (searchExam) {
+                    searchExam.focus();
+                    searchExam.select();
+                }
             }
             
             // Escape to close modal
