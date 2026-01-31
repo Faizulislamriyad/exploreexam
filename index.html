@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exam Routine Manager</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="responsive.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 </head>
@@ -12,7 +13,6 @@
     <div class="container">
         <header>
             <div class="logo">
-                <i class="fas fa-calendar-alt"></i>
                 <h1>Explore Routine</h1> 
             </div>
             <p class="tagline">Admin Controlled Exam Routine Management System</p>
@@ -60,14 +60,10 @@
                                 <option value="Written">Written</option>
                             </select>
                         </div>
-                        
-                        <button id="refreshBtn" class="btn-refresh">
-                            <i class="fas fa-sync-alt"></i> Refresh Routine
-                        </button>
                     </div>
                     
                     <div class="today-info">
-                        <h3><i class="fas fa-calendar-day"></i> Today: <span id="currentDate"></span></h3>
+                        <h3></i> Today: <span id="currentDate"></span></h3>
                         <p id="nextExamInfo">Loading exam information...</p>
                     </div>
                 </div>
@@ -90,18 +86,6 @@
                             <p>Loading exams...</p>
                         </div>
                     </div>
-                </div>
-
-                <div class="instructions">
-                    <h3><i class="fas fa-info-circle"></i> How It Works</h3>
-                    <ul>
-                        <li>Select a department and semester to see specific routine</li>
-                        <li>Past exams are automatically hidden when "Upcoming Exams Only" is selected</li>
-                        <li>Use the chatbot (bottom right) to search for specific exams</li>
-                        <li>Click on any exam to see more details</li>
-                        <li>Admins can add/modify exams using the admin panel (bottom left)</li>
-                        <li>No pre-set data - all exams are added by admin through Firebase</li>
-                    </ul>
                 </div>
             </div>
 
@@ -286,9 +270,18 @@
         </button>
 
         <footer>
-            <p>Explore Routine &copy; 2026 - Admin Controlled Exam Routine Management System</p>
-            <p class="footer-note">All exam data is managed by admin through Firebase. No pre-set data.</p>
+            <p>Explore Routine &copy; 2026 - Exam Routine Management System</p>
         </footer>
+    </div>
+    <div class="instructions">
+        <h3><i class="fas fa-info-circle"></i> How It Works</h3>
+        <ul>
+            <li>Select a department and semester to see specific routine</li>
+            <li>Past exams are automatically hidden when "Upcoming Exams Only" is selected</li>
+            <li>Use the chatbot (bottom right) to search for specific exams</li>
+            <li>Click on any exam to see more details</li>
+            <li>You Can Donload, Share and Set Reminder for next Exam</li>
+        </ul>
     </div>
 
     <!-- JavaScript Files -->

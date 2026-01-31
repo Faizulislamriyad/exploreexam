@@ -1,0 +1,554 @@
+/* ===== TABLET STYLES (768px - 1200px) ===== */
+@media (max-width: 1200px) {
+    .app-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+    }
+    
+    .routine-header, .routine-item {
+        grid-template-columns: 1fr 0.8fr 1.2fr 1fr 0.8fr 0.8fr 1fr;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== MOBILE STYLES (768px and below) ===== */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+        border-radius: 15px;
+    }
+    
+    header {
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .logo {
+        justify-content: center;
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .logo h1 {
+        font-size: 2rem;
+    }
+    
+    .tagline {
+        font-size: 0.9rem;
+    }
+    
+    .app-container {
+        padding: 15px;
+        gap: 15px;
+    }
+    
+    /* Controls - Mobile */
+    .controls {
+        padding: 15px;
+    }
+    
+    .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .class-selector, .date-filter {
+        min-width: 100%;
+    }
+    
+    /* Make dropdown select boxes smaller on mobile */
+    .class-selector select, .date-filter select {
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        height: 45px;
+    }
+    
+    /* Routine Table - Mobile */
+    .routine-container {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .routine-container h2 {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+    
+    .routine-header, .routine-item {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        padding: 12px 15px;
+    }
+    
+    .routine-header div:nth-child(4),
+    .routine-header div:nth-child(5),
+    .routine-header div:nth-child(6),
+    .routine-item div:nth-child(4),
+    .routine-item div:nth-child(5),
+    .routine-item div:nth-child(6) {
+        display: none;
+    }
+    
+    /* Hide scrollbar on mobile */
+    .routine-list::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .routine-list {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    
+    /* Today Info - Mobile */
+    .today-info {
+        padding: 12px 15px;
+    }
+    
+    .today-info h3 {
+        font-size: 1rem;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    #nextExamInfo {
+        font-size: 0.85rem;
+    }
+    
+    /* Sidebar - Mobile */
+    .stats-card, .next-exam-card, .upcoming-list {
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .stats-card h3, .next-exam-card h3, .upcoming-list h3 {
+        font-size: 1.1rem;
+        margin-bottom: 15px;
+    }
+    
+    .stat-value {
+        font-size: 1.1rem;
+    }
+    
+    .next-exam-subject {
+        font-size: 1.3rem;
+    }
+    
+    /* Chatbot - Mobile */
+    .chatbot-container {
+        width: calc(100% - 40px);
+        right: 20px;
+        bottom: 80px;
+        max-height: 70vh;
+    }
+    
+    .chatbot-messages {
+        height: 250px;
+        padding: 15px;
+    }
+    
+    .chatbot-input {
+        padding: 15px;
+    }
+    
+    /* Admin Panel - Mobile */
+    .modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+    
+    .modal-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .admin-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .btn-logout {
+        align-self: stretch;
+        text-align: center;
+    }
+    
+    .exam-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .exam-actions {
+        align-self: stretch;
+        justify-content: space-between;
+    }
+    
+    .btn-edit, .btn-delete, .btn-copy {
+        flex: 1;
+        text-align: center;
+    }
+    
+    /* Buttons - Mobile */
+    .admin-access-btn {
+        bottom: 100px;
+        left: 20px;
+        width: 60px;
+        height: 60px;
+        font-size: 1.3rem;
+        margin-left: 10px;
+    }
+    
+    .chatbot-toggle {
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+        margin-right: 10px;
+    }
+    
+    /* Instructions - Mobile */
+    .instructions {
+        padding: 20px;
+        margin-top: 15px;
+    }
+    
+    .instructions h3 {
+        font-size: 1.1rem;
+    }
+    
+    .instructions li {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+    
+    /* Footer - Mobile */
+    footer {
+        padding: 15px 20px;
+    }
+    
+    footer p {
+        font-size: 0.9rem;
+    }
+    
+    /* Set Reminder Button - Mobile */
+    .btn-set-reminder {
+        padding: 10px 15px;
+        font-size: 0.95rem;
+    }
+    
+    /* Exam Details Modal - Mobile */
+    .exam-details-footer {
+        flex-wrap: wrap;
+        padding-bottom: 60px;
+        gap: 8px;
+    }
+    
+    .btn-remind-me, .btn-share, .btn-download-exam {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+        flex: 1;
+        min-width: calc(50% - 4px);
+    }
+    
+    .explore-routine-text {
+        font-size: 0.8rem;
+        padding-top: 10px;
+    }
+    
+    /* Edit Exam Modal - Mobile */
+    .edit-exam-footer {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .btn-save-edit, .btn-cancel-edit, .btn-duplicate-exam {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+        flex: 1;
+        min-width: calc(50% - 4px);
+    }
+    
+    /* Quick Filters - Mobile */
+    .quick-filter-buttons {
+        gap: 8px;
+    }
+    
+    .btn-quick-filter {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+    
+    /* Admin Stats - Mobile */
+    .admin-stats {
+        flex-direction: column;
+        gap: 5px;
+        margin-left: 0;
+        margin-top: 10px;
+    }
+    
+    .stat-badge {
+        font-size: 0.75rem;
+        padding: 3px 8px;
+    }
+    
+    .last-login-time {
+        margin-left: 0;
+        margin-top: 5px;
+    }
+    
+    /* Notifications - Mobile */
+    .notification, .admin-notification {
+        min-width: 250px;
+        max-width: calc(100% - 40px);
+        padding: 12px 15px;
+    }
+    
+    .notification-content span, .admin-notification-content span {
+        font-size: 0.9rem;
+    }
+}
+
+/* ===== SMALL MOBILE STYLES (480px and below) ===== */
+@media (max-width: 480px) {
+    .logo h1 {
+        font-size: 1.8rem;
+    }
+    
+    .tagline {
+        font-size: 0.8rem;
+    }
+    
+    .app-container {
+        padding: 10px;
+        gap: 10px;
+    }
+    
+    /* Routine Table - Extra Small */
+    .routine-header, .routine-item {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 5px;
+    }
+    
+    .routine-header div:nth-child(2),
+    .routine-header div:nth-child(3),
+    .routine-item div:nth-child(2),
+    .routine-item div:nth-child(3) {
+        display: none;
+    }
+    
+    .dept-badge, .status-badge {
+        display: inline-block;
+        margin: 2px;
+    }
+    
+    .routine-item {
+        padding: 10px 12px;
+    }
+    
+    /* Controls - Extra Small */
+    .class-selector select, .date-filter select {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+        height: 40px;
+    }
+    
+    .today-info h3 {
+        font-size: 0.9rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    #nextExamInfo {
+        font-size: 0.8rem;
+    }
+    
+    /* Sidebar - Extra Small */
+    .stats-card, .next-exam-card, .upcoming-list {
+        padding: 15px;
+    }
+    
+    .next-exam-subject {
+        font-size: 1.1rem;
+    }
+    
+    .countdown-value {
+        font-size: 1.5rem;
+    }
+    
+    /* Upcoming List - Extra Small */
+    .upcoming-item {
+        padding: 12px;
+    }
+    
+    .upcoming-subject {
+        font-size: 0.9rem;
+    }
+    
+    .upcoming-class, .upcoming-date, .upcoming-details {
+        font-size: 0.8rem;
+    }
+    
+    /* Buttons - Extra Small */
+    .admin-access-btn {
+        bottom: 90px;
+        left: 15px;
+        width: 50px;
+        height: 50px;
+        font-size: 1.1rem;
+    }
+    
+    .chatbot-toggle {
+        bottom: 15px;
+        right: 15px;
+        width: 50px;
+        height: 50px;
+        font-size: 1.3rem;
+    }
+    
+    .chatbot-container {
+        width: calc(100% - 30px);
+        right: 15px;
+        bottom: 70px;
+    }
+    
+    /* Footer - Extra Small */
+    footer {
+        padding: 12px 15px;
+    }
+    
+    footer p {
+        font-size: 0.8rem;
+    }
+    
+    /* Exam Details Modal - Extra Small */
+    .exam-details-content {
+        width: 95%;
+    }
+    
+    .exam-details-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+    
+    .detail-label {
+        font-size: 0.9rem;
+    }
+    
+    .detail-value {
+        text-align: left;
+        font-size: 0.9rem;
+    }
+    
+    .exam-details-footer {
+        padding: 15px;
+        padding-bottom: 50px;
+    }
+    
+    .btn-remind-me, .btn-share, .btn-download-exam {
+        min-width: 100%;
+        margin-bottom: 5px;
+    }
+    
+    .explore-routine-text {
+        font-size: 0.75rem;
+    }
+    
+    /* Form Grid - Extra Small */
+    .form-grid {
+        gap: 15px;
+    }
+    
+    .form-group label {
+        font-size: 0.9rem;
+    }
+    
+    .form-group input,
+    .form-group select {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+    
+    /* Quick Filters - Extra Small */
+    .quick-filter-buttons {
+        justify-content: center;
+    }
+    
+    .btn-quick-filter {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+}
+
+/* ===== SMALL HEIGHT DEVICES ===== */
+@media (max-height: 700px) {
+    .chatbot-container {
+        max-height: 60vh;
+    }
+    
+    .chatbot-messages {
+        height: 200px;
+    }
+    
+    .modal-content {
+        max-height: 80vh;
+    }
+    
+    .routine-list {
+        max-height: 350px;
+    }
+    
+    .upcoming-list {
+        max-height: 250px;
+    }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+    .admin-access-btn,
+    .chatbot-toggle,
+    .chatbot-container,
+    .notification,
+    .exam-details-modal,
+    .edit-exam-modal,
+    .exam-actions-hover,
+    .btn-refresh,
+    .quick-filters,
+    .routine-search {
+        display: none !important;
+    }
+    
+    .routine-item {
+        break-inside: avoid;
+    }
+    
+    body {
+        background-color: white !important;
+    }
+    
+    .container {
+        box-shadow: none !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    .routine-list {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+}
