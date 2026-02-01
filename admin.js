@@ -53,6 +53,37 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialize auto-suggest
         initAutoSuggest();
+        
+        // Fix Tourism department in select options
+        fixTourismDepartment();
+    }
+    
+    function fixTourismDepartment() {
+        // Fix in new exam form
+        const newDeptSelect = document.getElementById('newDept');
+        if (newDeptSelect) {
+            const options = newDeptSelect.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === 'Tourism & Hospitality Management' || 
+                    options[i].value === 'Tourism & Hospitality Management'.toLowerCase()) {
+                    options[i].value = 'Tourism';
+                    options[i].textContent = 'Tourism';
+                }
+            }
+        }
+        
+        // Fix in edit form if already exists
+        const editDeptSelect = document.getElementById('editDept');
+        if (editDeptSelect) {
+            const options = editDeptSelect.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === 'Tourism & Hospitality Management' || 
+                    options[i].value === 'Tourism & Hospitality Management'.toLowerCase()) {
+                    options[i].value = 'Tourism';
+                    options[i].textContent = 'Tourism';
+                }
+            }
+        }
     }
 
     function setupEventListeners() {
@@ -502,9 +533,17 @@ document.addEventListener('DOMContentLoaded', function() {
             allExams = [];
             
             querySnapshot.forEach((doc) => {
+                const examData = doc.data();
+                
+                // FIX: Convert old "Tourism & Hospitality Management" to "Tourism"
+                if (examData.department === 'Tourism & Hospitality Management' || 
+                    examData.department === 'Tourism & Hospitality Management'.toLowerCase()) {
+                    examData.department = 'Tourism';
+                }
+                
                 allExams.push({
                     id: doc.id,
-                    ...doc.data()
+                    ...examData
                 });
             });
 
@@ -572,6 +611,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 status = 'today';
             }
             
+            // FIX: Convert department name to valid CSS class
+            const deptClass = exam.department.toLowerCase()
+                .replace(/[&\s]+/g, '-')
+                .replace(/-hospitality-management/g, '');
+            
             examItem.innerHTML = `
                 <div class="exam-info">
                     <div class="exam-header">
@@ -579,7 +623,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="exam-status status-${status}">${status.toUpperCase()}</span>
                     </div>
                     <div class="exam-meta">
-                        <span class="dept-badge dept-${exam.department.toLowerCase()}">${exam.department}</span>
+                        <span class="dept-badge dept-${deptClass}">${exam.department}</span>
                         <span class="meta-item"><i class="fas fa-graduation-cap"></i> ${exam.semester}</span>
                         <span class="meta-item"><i class="fas fa-calendar"></i> ${formattedDate}</span>
                         <span class="meta-item"><i class="fas fa-clock"></i> ${exam.time}</span>
@@ -634,8 +678,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const filteredExams = allExams.filter(exam => {
+            // FIX: Include old department name in search
+            const departmentNames = [
+                exam.department.toLowerCase(),
+                exam.department === 'Tourism' ? 'tourism & hospitality management' : ''
+            ];
+            
             return exam.subject.toLowerCase().includes(searchTerm) ||
-                   exam.department.toLowerCase().includes(searchTerm) ||
+                   departmentNames.some(dept => dept.includes(searchTerm)) ||
                    exam.semester.toLowerCase().includes(searchTerm) ||
                    exam.room.toLowerCase().includes(searchTerm) ||
                    exam.time.toLowerCase().includes(searchTerm) ||
@@ -668,6 +718,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create edit modal
         const modal = document.createElement('div');
         modal.className = 'edit-exam-modal';
+        
+        // FIX: Check for both old and new department names
+        const isTourism = exam.department === 'Tourism' || 
+                          exam.department === 'Tourism & Hospitality Management' ||
+                          exam.department === 'Tourism & Hospitality Management'.toLowerCase();
+        
         modal.innerHTML = `
             <div class="edit-exam-content">
                 <div class="edit-exam-header">
@@ -686,7 +742,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <option value="Mechanical" ${exam.department === 'Mechanical' ? 'selected' : ''}>Mechanical</option>
                                 <option value="Electronics" ${exam.department === 'Electronics' ? 'selected' : ''}>Electronics</option>
                                 <option value="Electro-Medical" ${exam.department === 'Electro-Medical' ? 'selected' : ''}>Electro-Medical</option>
-                                <option value="Tourism & Hospitality Management" ${exam.department === 'Tourism & Hospitality Management' ? 'selected' : ''}>Tourism & Hospitality Management</option>
+                                <option value="Tourism" ${isTourism ? 'selected' : ''}>Tourism</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -804,7 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.remove();
             
             // Populate add form with exam data
-            document.getElementById('newDept').value = exam.department;
+            document.getElementById('newDept').value = exam.department === 'Tourism & Hospitality Management' ? 'Tourism' : exam.department;
             document.getElementById('newSemester').value = exam.semester;
             document.getElementById('newSubject').value = exam.subject + ' (Copy)';
             document.getElementById('newExamDate').value = exam.examDate;
@@ -873,7 +929,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function copyExamDetails(exam) {
-        const text = `Subject: ${exam.subject}\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nDate: ${exam.examDate}\nTime: ${exam.time}\nRoom: ${exam.room}`;
+        const deptName = exam.department === 'Tourism & Hospitality Management' ? 'Tourism' : exam.department;
+        const text = `Subject: ${exam.subject}\nDepartment: ${deptName}\nSemester: ${exam.semester}\nDate: ${exam.examDate}\nTime: ${exam.time}\nRoom: ${exam.room}`;
         
         navigator.clipboard.writeText(text).then(() => {
             showAdminNotification('Exam details copied to clipboard!', 'success');

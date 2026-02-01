@@ -1,5 +1,46 @@
 // script.js - Smart Exam Routine Manager with Enhanced UX
+// script.js - শুরুতে এই লাইনগুলো যোগ করুন
+if (!window.showNotification) {
+    window.showNotification = function(message, type = 'info') {
+        // Remove existing notification
+        const existingNotification = document.querySelector('.notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
 
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="btn-close-notification">&times;</button>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Show notification
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+
+        // Auto hide after 3 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+
+        // Close button
+        const closeBtn = notification.querySelector('.btn-close-notification');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            });
+        }
+    };
+}
 // DOM Elements
 const deptSelect = document.getElementById("deptSelect");
 const semesterSelect = document.getElementById("semesterSelect");
@@ -218,7 +259,7 @@ function setupEventListeners() {
   setupQuickFilters();
 }
 
-// Add clear filters button - FIXED VERSION
+// Add clear filters button
 function addClearFiltersButton() {
   // Create clear filters button if it doesn't exist
   if (!document.getElementById("clearFiltersBtn")) {
@@ -277,7 +318,6 @@ function setupQuickFilters() {
                 <button class="btn-quick-filter" data-filter="computer">Computer</button>
                 <button class="btn-quick-filter" data-filter="civil">Civil</button>
                 <button class="btn-quick-filter" data-filter="practical">Practical</button>
-                <button class="btn-quick-filter" data-filter="written">Written</button>
             </div>
         `;
 
@@ -348,13 +388,6 @@ function applyQuickFilter(filter) {
       applyFilters("all", "all", "practical");
       if (clearBtn) clearBtn.style.display = "flex";
       break;
-    case "written":
-      if (deptSelect) deptSelect.value = "all";
-      if (semesterSelect) semesterSelect.value = "all";
-      if (dateFilter) dateFilter.value = "written";
-      applyFilters("all", "all", "written");
-      if (clearBtn) clearBtn.style.display = "flex";
-      break;
     default:
       if (deptSelect) deptSelect.value = "all";
       if (semesterSelect) semesterSelect.value = "all";
@@ -400,15 +433,12 @@ function updateRoutineTitle(selectedDept, selectedSemester) {
   // Add date filter info
   const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
   if (dateFilterValue === "upcoming") {
-    titleText += " (Upcoming Only)";
+    titleText += " (Upcoming)";
   } else if (dateFilterValue === "past") {
-    titleText += " (Past Only)";
+    titleText += " (Past)";
   } else if (dateFilterValue === "practical") {
-    titleText += " (Practical Only)";
-  } else if (dateFilterValue === "written") {
-    titleText += " (Written Only)";
+    titleText += " (Practical)";
   }
-
   routineTitle.innerHTML = titleText;
 }
 
@@ -453,7 +483,7 @@ function addSearchFunctionality() {
     searchDiv.innerHTML = `
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search exams by subject, department, or room...">
+                <input type="text" id="searchInput" placeholder="Search exams by subject, department...">
                 <button id="clearSearch" class="btn-clear-search" style="display: none;">
                     <i class="fas fa-times"></i>
                 </button>
@@ -1065,13 +1095,6 @@ function showExamDetails(exam) {
       modal.remove();
     }
   });
-
-  // ✅ REMOVED: Chatbot notification for exam details
-  // if (typeof window.addBotMessage === "function") {
-  //     window.addBotMessage(
-  //       `Viewing details for ${exam.subject} exam (${exam.department} - ${exam.semester})`,
-  //     );
-  // }
 }
 
 // Add new function to download as JPG
@@ -1149,7 +1172,7 @@ async function downloadExamAsJPG(exam) {
                         
                         <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
                             <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Status</div>
-                            <div style="font-size: 24px; font-weight: bold; color: ${status === "Today" ? "#ffd700" : status === "Upcoming" ? "#4CAF50" : "#f44336"}">${status}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: ${status === "Today" ? "#ffd700" : status === "Upcoming" ? "rgb(0, 255, 132)" : "#f44336"}">${status}</div>
                         </div>
                     </div>
                     
@@ -1167,7 +1190,7 @@ async function downloadExamAsJPG(exam) {
                     <div style="text-align: center; margin-top: 30px; padding-top: 30px; border-top: 2px solid rgba(255,255,255,0.2);">
                         <div style="font-size: 22px; font-weight: bold; margin-bottom: 10px; color: #ffd700;">Explore Routine 2026</div>
                         <div style="font-size: 16px; color: rgba(255,255,255,0.8);">Generated on ${currentDate}</div>
-                        <div style="font-size: 14px; color: rgba(255,255,255,0.6); margin-top: 10px;">Admin Controlled Exam Routine Management System</div>
+                        <div style="font-size: 14px; color: rgba(255,255,255,0.6); margin-top: 10px;">Download from exploreex.vercel.app</div>
                     </div>
                 `;
 
@@ -1341,15 +1364,6 @@ function highlightTodaysExams() {
       badge.textContent = todayExams.length;
       badge.style.display = "block";
     }
-
-    // ✅ REMOVED: Auto-open chatbot with today's exams info
-    // setTimeout(() => {
-    //   if (typeof window.addBotMessage === "function") {
-    //     window.addBotMessage(
-    //       `You have ${todayExams.length} exam${todayExams.length !== 1 ? "s" : ""} scheduled for today!`,
-    //     );
-    //   }
-    // }, 2000);
   }
 }
 
