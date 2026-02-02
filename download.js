@@ -37,7 +37,7 @@ class RoutineDownloader {
         downloadContainer.className = 'routine-download-container';
         downloadContainer.innerHTML = `
             <button id="downloadRoutineBtn" class="btn-download-icon" title="Download Routine as JPG">
-                <i class="fas fa-download"></i> Download
+                <i class="fas fa-download"></i>
             </button>
         `;
 
@@ -136,7 +136,15 @@ class RoutineDownloader {
             // Show loading notification
             this.showNotification('Generating routine image...', 'info');
 
-            await this.generateAndDownloadJPG(examsToDownload, selectedDept, selectedSemester, dateFilter, searchTerm);
+            // Filter out completed exams before generating image
+            const filteredExams = this.filterOutCompletedExams(examsToDownload);
+            
+            if (filteredExams.length === 0) {
+                this.showNotification('No upcoming exams to download (Completed exams are excluded)', 'info');
+                return;
+            }
+
+            await this.generateAndDownloadJPG(filteredExams, selectedDept, selectedSemester, dateFilter, searchTerm);
             
         } catch (error) {
             console.error('Error in download routine:', error);
@@ -144,19 +152,91 @@ class RoutineDownloader {
         }
     }
 
+    // Filter out completed exams
+    filterOutCompletedExams(exams) {
+        const currentDate = new Date().toISOString().split('T')[0];
+        
+        return exams.filter(exam => {
+            try {
+                const examDate = new Date(exam.examDate).toISOString().split('T')[0];
+                // Keep only exams that are today or upcoming (not completed)
+                return examDate >= currentDate;
+            } catch (e) {
+                // If date parsing fails, include the exam
+                return true;
+            }
+        });
+    }
+
     getExamsFromDOM() {
         const exams = [];
         const examElements = document.querySelectorAll('.routine-item');
         
         examElements.forEach(element => {
+            // DOM থেকে examType সঠিকভাবে পড়ার জন্য
+            let examType = 'Written'; // ডিফল্ট
+            
+            // ১. exam-type-badge ক্লাস থেকে পড়ার চেষ্টা করুন
+            const typeBadge = element.querySelector('.exam-type-badge');
+            if (typeBadge) {
+                const badgeText = typeBadge.textContent.trim().toLowerCase();
+                if (badgeText.includes('practical')) {
+                    examType = 'Practical';
+                }
+            }
+            
+            // ২. data attribute থেকে পড়ার চেষ্টা করুন
+            const examId = element.getAttribute('data-exam-id');
+            if (examId && window.examData) {
+                const originalExam = window.examData.find(e => e.id === examId);
+                if (originalExam && originalExam.examType) {
+                    examType = originalExam.examType === 'practical' ? 'Practical' : 'Written';
+                }
+            }
+            
+            // ৩. ক্লাস থেকে পড়ার চেষ্টা করুন
+            if (element.classList.contains('type-practical') || 
+                element.querySelector('.type-practical')) {
+                examType = 'Practical';
+            }
+            
+            // Format date properly
+            let examDate = element.querySelector('.exam-date')?.textContent || '';
+            // Try to parse date from text if needed
+            if (examDate && window.dataFunctions) {
+                try {
+                    // Convert displayed date back to ISO format if possible
+                    examDate = window.dataFunctions.parseDate(examDate) || examDate;
+                } catch (e) {
+                    // Keep original date
+                }
+            }
+
+            // Check if exam is completed by looking at status-badge
+            let isCompleted = false;
+            const statusBadge = element.querySelector('.status-badge');
+            if (statusBadge) {
+                const statusText = statusBadge.textContent.trim().toLowerCase();
+                if (statusText.includes('completed') || element.classList.contains('past')) {
+                    isCompleted = true;
+                }
+            }
+
             const exam = {
                 department: element.querySelector('.dept-badge')?.textContent || '',
                 semester: element.querySelector('.semester-badge')?.textContent || '',
                 subject: element.querySelector('.subject-name')?.textContent || '',
-                examDate: element.querySelector('.exam-date')?.textContent || '',
+                examDate: examDate,
                 time: element.querySelector('.exam-time')?.textContent || '',
-                room: element.querySelector('.exam-room')?.textContent || ''
+                examType: examType,
+                isCompleted: isCompleted
             };
+            
+            // If we have examId, store it for reference
+            if (examId) {
+                exam.id = examId;
+            }
+            
             exams.push(exam);
         });
         
@@ -192,7 +272,9 @@ class RoutineDownloader {
             }
 
             if (!subtitle) {
-                subtitle = 'All Exams';
+                subtitle = 'All Exams (Completed exams excluded)';
+            } else {
+                subtitle += ' (Completed exams excluded)';
             }
 
             // Create the content for the image
@@ -224,17 +306,26 @@ class RoutineDownloader {
                 }
             }
             
-            // Determine status
+            // Get exam type from exam object - সরাসরি examType ব্যবহার করুন
+            const examType = exam.examType || 'Written';
+            const typeDisplay = examType === 'practical' || examType === 'Practical' ? 'Practical' : 'Written';
+            
+            // Determine status - শুধু Upcoming এবং Today থাকবে
             let status = 'Upcoming';
             let statusColor = '#4CAF50';
             
             if (exam.examDate) {
-                if (exam.examDate < currentDate) {
-                    status = 'Completed';
-                    statusColor = '#9E9E9E';
-                } else if (exam.examDate === currentDate) {
-                    status = 'Today';
-                    statusColor = '#FF9800';
+                try {
+                    const examDateObj = new Date(exam.examDate);
+                    const currentDateObj = new Date(currentDate);
+                    
+                    if (examDateObj.toDateString() === currentDateObj.toDateString()) {
+                        status = 'Today';
+                        statusColor = '#FF9800';
+                    }
+                    // Completed exams already filtered out, so no need to check for that
+                } catch (e) {
+                    // Date parsing error, keep default
                 }
             }
 
@@ -246,7 +337,11 @@ class RoutineDownloader {
                     <td style="padding: 12px; text-align: left; font-size: 14px; font-weight: 600; color: #2196F3;">${exam.subject}</td>
                     <td style="padding: 12px; text-align: center; font-size: 14px; color: #333;">${examDate}</td>
                     <td style="padding: 12px; text-align: center; font-size: 14px; color: #333;">${exam.time}</td>
-                    <td style="padding: 12px; text-align: center; font-size: 14px; color: #333;">${exam.room}</td>
+                    <td style="padding: 12px; text-align: center; font-size: 14px; color: #333; font-weight: 500;">
+                        <span style="display: inline-block; padding: 4px 10px; border-radius: 12px; background: ${typeDisplay === 'Practical' ? '#4CAF50' : '#2196F3'}; color: white; font-size: 12px;">
+                            ${typeDisplay}
+                        </span>
+                    </td>
                     <td style="padding: 12px; text-align: center; font-size: 14px; color: ${statusColor}; font-weight: 600;">
                         <span style="padding: 4px 8px; border-radius: 12px; background: ${statusColor}15;">${status}</span>
                     </td>
@@ -254,17 +349,10 @@ class RoutineDownloader {
             `;
         });
 
-        // Calculate stats
-        const total = exams.length;
-        const upcoming = exams.filter(e => e.examDate > currentDate).length;
-        const today = exams.filter(e => e.examDate === currentDate).length;
-        const completed = exams.filter(e => e.examDate < currentDate).length;
-
         return {
             title,
             subtitle,
             tableRows,
-            stats: { total, upcoming, today, completed },
             currentDate: new Date().toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
@@ -330,7 +418,7 @@ class RoutineDownloader {
                     document.body.removeChild(tempDiv);
                     document.head.removeChild(script);
 
-                    this.showNotification('Routine downloaded successfully as JPG!', 'success');
+                    this.showNotification('Routine downloaded successfully as JPG! (Completed exams excluded)', 'success');
                     resolve();
                     
                 } catch (error) {
@@ -369,7 +457,7 @@ class RoutineDownloader {
                                 <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Subject</th>
                                 <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Date</th>
                                 <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Time</th>
-                                <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Room</th>
+                                <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Type</th>
                                 <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600;">Status</th>
                             </tr>
                         </thead>
@@ -392,7 +480,7 @@ class RoutineDownloader {
     }
 
     generateFileName(selectedDept, selectedSemester, dateFilter) {
-        let fileName = 'Exam_Routine_';
+        let fileName = 'Exam_Routine_Upcoming_';
         
         if (selectedDept !== 'all') {
             fileName += selectedDept.replace(/\s+/g, '_') + '_';

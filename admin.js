@@ -1,3 +1,4 @@
+
 // admin.js - Enhanced Admin Panel with Smart Features
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -46,44 +47,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // Event Listeners
         setupEventListeners();
         
-        // Set default date to today
+        // Set default date to today and min date to today
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('newExamDate').value = today;
-        document.getElementById('newExamDate').min = today;
+        const examDateInput = document.getElementById('newExamDate');
+        if (examDateInput) {
+            examDateInput.value = today;
+            examDateInput.min = today;
+        }
+        
+        // Set min time based on current time if date is today
+        updateMinTime();
         
         // Initialize auto-suggest
         initAutoSuggest();
-        
-        // Fix Tourism department in select options
-        fixTourismDepartment();
-    }
-    
-    function fixTourismDepartment() {
-        // Fix in new exam form
-        const newDeptSelect = document.getElementById('newDept');
-        if (newDeptSelect) {
-            const options = newDeptSelect.options;
-            for (let i = 0; i < options.length; i++) {
-                if (options[i].value === 'Tourism & Hospitality Management' || 
-                    options[i].value === 'Tourism & Hospitality Management'.toLowerCase()) {
-                    options[i].value = 'Tourism';
-                    options[i].textContent = 'Tourism';
-                }
-            }
-        }
-        
-        // Fix in edit form if already exists
-        const editDeptSelect = document.getElementById('editDept');
-        if (editDeptSelect) {
-            const options = editDeptSelect.options;
-            for (let i = 0; i < options.length; i++) {
-                if (options[i].value === 'Tourism & Hospitality Management' || 
-                    options[i].value === 'Tourism & Hospitality Management'.toLowerCase()) {
-                    options[i].value = 'Tourism';
-                    options[i].textContent = 'Tourism';
-                }
-            }
-        }
     }
 
     function setupEventListeners() {
@@ -115,6 +91,12 @@ document.addEventListener('DOMContentLoaded', function() {
             searchExam.addEventListener('input', debounce(searchExams, 300));
         }
         
+        // Date change listener to update min time
+        const examDateInput = document.getElementById('newExamDate');
+        if (examDateInput) {
+            examDateInput.addEventListener('change', updateMinTime);
+        }
+        
         // Form auto-save
         setupFormAutoSave();
         
@@ -125,9 +107,40 @@ document.addEventListener('DOMContentLoaded', function() {
         setupFormValidation();
     }
 
+    function updateMinTime() {
+        const examDateInput = document.getElementById('newExamDate');
+        const examTimeInput = document.getElementById('newExamTime');
+        
+        if (!examDateInput || !examTimeInput) return;
+        
+        const today = new Date().toISOString().split('T')[0];
+        const selectedDate = examDateInput.value;
+        
+        if (selectedDate === today) {
+            // If date is today, set min time to current time + 30 minutes
+            const now = new Date();
+            const thirtyMinutesLater = new Date(now.getTime() + 30 * 60 * 1000);
+            const hours = String(thirtyMinutesLater.getHours()).padStart(2, '0');
+            const minutes = String(thirtyMinutesLater.getMinutes()).padStart(2, '0');
+            examTimeInput.min = `${hours}:${minutes}`;
+        } else {
+            // If date is in future, allow any time
+            examTimeInput.min = '00:00';
+        }
+    }
+
     function openAdminModal() {
         adminModal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
+        
+        // Update min date and time when modal opens
+        const today = new Date().toISOString().split('T')[0];
+        const examDateInput = document.getElementById('newExamDate');
+        if (examDateInput) {
+            examDateInput.value = today;
+            examDateInput.min = today;
+        }
+        updateMinTime();
         
         if (isAdminLoggedIn) {
             loadExams();
@@ -363,10 +376,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const department = document.getElementById('newDept').value;
         const semester = document.getElementById('newSemester').value;
         const subject = document.getElementById('newSubject').value.trim();
+        const examType = document.getElementById('newExamType').value;
         const examDate = document.getElementById('newExamDate').value;
         const examTime = document.getElementById('newExamTime').value;
-        const roomInput = document.getElementById('newRoom');
-        const room = roomInput ? roomInput.value.trim() : 'Depends on sit plan';
+        
+        // Fixed room number
+        const room = 'Depends on sit plan';
 
         // Validation
         const validation = validateExamForm(department, semester, subject, examDate, examTime);
@@ -388,6 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 department: department,
                 semester: semester,
                 subject: subject,
+                examType: examType,
                 examDate: examDate,
                 time: timeFormatted,
                 room: room,
@@ -473,6 +489,19 @@ document.addEventListener('DOMContentLoaded', function() {
             return { valid: false, message: 'Exam date cannot be in the past', field: 'newExamDate' };
         }
         
+        // Check if date is today and time is in the past
+        if (selectedDate.getTime() === today.getTime()) {
+            const selectedDateTime = new Date(`${examDate}T${examTime}`);
+            const now = new Date();
+            
+            // Allow at least 30 minutes from now
+            const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
+            
+            if (selectedDateTime < thirtyMinutesFromNow) {
+                return { valid: false, message: 'Exam time must be at least 30 minutes from now for today\'s exams', field: 'newExamTime' };
+            }
+        }
+        
         return { valid: true };
     }
 
@@ -501,10 +530,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('newDept').value = 'Computer';
         document.getElementById('newSemester').value = '1st';
         document.getElementById('newSubject').value = '';
-        document.getElementById('newExamDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('newExamType').value = 'written';
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('newExamDate').value = today;
         document.getElementById('newExamTime').value = '10:00';
-        const roomInput = document.getElementById('newRoom');
-        if (roomInput) roomInput.value = '';
+        
+        // Update min time
+        updateMinTime();
         
         // Focus on subject field
         document.getElementById('newSubject').focus();
@@ -534,12 +566,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             querySnapshot.forEach((doc) => {
                 const examData = doc.data();
-                
-                // FIX: Convert old "Tourism & Hospitality Management" to "Tourism"
-                if (examData.department === 'Tourism & Hospitality Management' || 
-                    examData.department === 'Tourism & Hospitality Management'.toLowerCase()) {
-                    examData.department = 'Tourism';
-                }
                 
                 allExams.push({
                     id: doc.id,
@@ -611,15 +637,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 status = 'today';
             }
             
-            // FIX: Convert department name to valid CSS class
-            const deptClass = exam.department.toLowerCase()
-                .replace(/[&\s]+/g, '-')
-                .replace(/-hospitality-management/g, '');
+            // Convert department name to valid CSS class
+            const deptClass = exam.department.toLowerCase().replace(/[&\s]+/g, '-');
             
             examItem.innerHTML = `
                 <div class="exam-info">
                     <div class="exam-header">
-                        <h6>${exam.subject}</h6>
+                        <h6>${exam.subject} <span class="exam-type-badge type-${exam.examType || 'written'}">${(exam.examType || 'written').toUpperCase()}</span></h6>
                         <span class="exam-status status-${status}">${status.toUpperCase()}</span>
                     </div>
                     <div class="exam-meta">
@@ -627,7 +651,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="meta-item"><i class="fas fa-graduation-cap"></i> ${exam.semester}</span>
                         <span class="meta-item"><i class="fas fa-calendar"></i> ${formattedDate}</span>
                         <span class="meta-item"><i class="fas fa-clock"></i> ${exam.time}</span>
-                        <span class="meta-item"><i class="fas fa-door-open"></i> ${exam.room}</span>
                     </div>
                     ${exam.addedBy ? `
                     <div class="exam-added-by">
@@ -643,6 +666,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button class="btn-delete" data-id="${exam.id}" title="Delete Exam">
                         <i class="fas fa-trash"></i>
                     </button>
+                    <button class="btn-notify" data-id="${exam.id}" title="Send Notification">
+                        <i class="fas fa-bell"></i>
+                    </button>
                     <button class="btn-copy" data-id="${exam.id}" title="Copy Exam Details">
                         <i class="fas fa-copy"></i>
                     </button>
@@ -652,10 +678,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add event listeners
             const editBtn = examItem.querySelector('.btn-edit');
             const deleteBtn = examItem.querySelector('.btn-delete');
+            const notifyBtn = examItem.querySelector('.btn-notify');
             const copyBtn = examItem.querySelector('.btn-copy');
             
             editBtn.addEventListener('click', () => editExam(exam));
             deleteBtn.addEventListener('click', () => deleteExam(exam.id));
+            notifyBtn.addEventListener('click', () => sendExactNotification(exam));
             copyBtn.addEventListener('click', () => copyExamDetails(exam));
 
             examList.appendChild(examItem);
@@ -678,15 +706,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const filteredExams = allExams.filter(exam => {
-            // FIX: Include old department name in search
-            const departmentNames = [
-                exam.department.toLowerCase(),
-                exam.department === 'Tourism' ? 'tourism & hospitality management' : ''
-            ];
-            
             return exam.subject.toLowerCase().includes(searchTerm) ||
-                   departmentNames.some(dept => dept.includes(searchTerm)) ||
+                   exam.department.toLowerCase().includes(searchTerm) ||
                    exam.semester.toLowerCase().includes(searchTerm) ||
+                   (exam.examType && exam.examType.toLowerCase().includes(searchTerm)) ||
                    exam.room.toLowerCase().includes(searchTerm) ||
                    exam.time.toLowerCase().includes(searchTerm) ||
                    (exam.addedBy && exam.addedBy.toLowerCase().includes(searchTerm));
@@ -719,11 +742,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const modal = document.createElement('div');
         modal.className = 'edit-exam-modal';
         
-        // FIX: Check for both old and new department names
-        const isTourism = exam.department === 'Tourism' || 
-                          exam.department === 'Tourism & Hospitality Management' ||
-                          exam.department === 'Tourism & Hospitality Management'.toLowerCase();
-        
         modal.innerHTML = `
             <div class="edit-exam-content">
                 <div class="edit-exam-header">
@@ -742,7 +760,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <option value="Mechanical" ${exam.department === 'Mechanical' ? 'selected' : ''}>Mechanical</option>
                                 <option value="Electronics" ${exam.department === 'Electronics' ? 'selected' : ''}>Electronics</option>
                                 <option value="Electro-Medical" ${exam.department === 'Electro-Medical' ? 'selected' : ''}>Electro-Medical</option>
-                                <option value="Tourism" ${isTourism ? 'selected' : ''}>Tourism</option>
+                                <option value="Tourism" ${exam.department === 'Tourism' ? 'selected' : ''}>Tourism</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -762,16 +780,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             <input type="text" id="editSubject" value="${exam.subject}">
                         </div>
                         <div class="form-group">
+                            <label for="editExamType">Exam Type:</label>
+                            <select id="editExamType">
+                                <option value="written" ${(exam.examType || 'written') === 'written' ? 'selected' : ''}>Written</option>
+                                <option value="practical" ${(exam.examType || 'written') === 'practical' ? 'selected' : ''}>Practical</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="editExamDate">Exam Date:</label>
                             <input type="date" id="editExamDate" value="${exam.examDate}">
                         </div>
                         <div class="form-group">
                             <label for="editExamTime">Time:</label>
                             <input type="time" id="editExamTime" value="${convertTimeTo24Hour(exam.time)}">
-                        </div>
-                        <div class="form-group">
-                            <label for="editRoom">Room No:</label>
-                            <input type="text" id="editRoom" value="${exam.room}">
                         </div>
                     </div>
                 </div>
@@ -809,12 +830,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const department = modal.querySelector('#editDept').value;
         const semester = modal.querySelector('#editSemester').value;
         const subject = modal.querySelector('#editSubject').value.trim();
+        const examType = modal.querySelector('#editExamType').value;
         const examDate = modal.querySelector('#editExamDate').value;
         const examTime = modal.querySelector('#editExamTime').value;
-        const room = modal.querySelector('#editRoom').value.trim();
         
         // Validation
-        if (!department || !semester || !subject || !examDate || !examTime || !room) {
+        if (!department || !semester || !subject || !examDate || !examTime) {
             showAdminNotification('Please fill all fields', 'error');
             return;
         }
@@ -826,9 +847,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 department,
                 semester,
                 subject,
+                examType,
                 examDate,
                 time: timeFormatted,
-                room,
+                room: 'Depends on sit plan',
                 updatedAt: new Date().toISOString(),
                 updatedBy: window.firebase.auth.currentUser.email
             };
@@ -860,13 +882,12 @@ document.addEventListener('DOMContentLoaded', function() {
             modal.remove();
             
             // Populate add form with exam data
-            document.getElementById('newDept').value = exam.department === 'Tourism & Hospitality Management' ? 'Tourism' : exam.department;
+            document.getElementById('newDept').value = exam.department;
             document.getElementById('newSemester').value = exam.semester;
             document.getElementById('newSubject').value = exam.subject + ' (Copy)';
+            document.getElementById('newExamType').value = exam.examType || 'written';
             document.getElementById('newExamDate').value = exam.examDate;
             document.getElementById('newExamTime').value = convertTimeTo24Hour(exam.time);
-            const roomInput = document.getElementById('newRoom');
-            if (roomInput) roomInput.value = exam.room;
             
             showAdminNotification('Exam details copied to form. Adjust as needed and click Add Exam.', 'info');
             
@@ -877,6 +898,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function convertTimeTo24Hour(time12) {
         if (!time12) return '10:00';
+        
+        // Check if already in 24-hour format
+        if (time12.includes(':')) {
+            const parts = time12.split(':');
+            if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                // If it's already 24-hour format, return as is
+                if (parseInt(parts[0]) >= 0 && parseInt(parts[0]) <= 23) {
+                    return time12;
+                }
+            }
+        }
         
         const [time, modifier] = time12.split(' ');
         if (!time || !modifier) return '10:00';
@@ -928,9 +960,281 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // NEW FUNCTION: Send exact notification with precise timing
+    async function sendExactNotification(exam) {
+        // Create notification modal
+        const modal = document.createElement('div');
+        modal.className = 'exact-notification-modal';
+        
+        const examDateTime = new Date(`${exam.examDate}T${convertTimeTo24Hour(exam.time)}`);
+        const now = new Date();
+        const timeDiff = examDateTime - now;
+        
+        // Calculate days and hours
+        const daysLeft = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hoursLeft = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        
+        modal.innerHTML = `
+            <div class="exact-notification-content">
+                <div class="exact-notification-header">
+                    <h3><i class="fas fa-bell"></i> Send Notification for ${exam.subject}</h3>
+                    <button class="btn-close-exact">&times;</button>
+                </div>
+                <div class="exact-notification-body">
+                    <div class="notification-info">
+                        <h4>${exam.subject} Exam</h4>
+                        <p><strong>${exam.department} - ${exam.semester}</strong></p>
+                        <p>Date: ${window.dataFunctions ? window.dataFunctions.formatDate(exam.examDate) : exam.examDate}</p>
+                        <p>Time: ${exam.time}</p>
+                        <p>Type: ${(exam.examType || 'written').toUpperCase()}</p>
+                        
+                        <div class="countdown-info">
+                            <p><strong>Exam in: ${daysLeft} days, ${hoursLeft} hours</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div class="notification-timing">
+                        <h5>Send Notification at Exact Time:</h5>
+                        <div class="timing-options">
+                            <div class="timing-option">
+                                <input type="radio" id="exactTime" name="notificationType" value="exact" checked>
+                                <label for="exactTime">
+                                    <i class="fas fa-clock"></i>
+                                    <span>At exact exam time: ${exam.time}</span>
+                                </label>
+                            </div>
+                            <div class="timing-option">
+                                <input type="radio" id="before15" name="notificationType" value="15min">
+                                <label for="before15">
+                                    <i class="fas fa-hourglass-start"></i>
+                                    <span>15 minutes before: ${calculateTimeBefore(exam.time, 15)}</span>
+                                </label>
+                            </div>
+                            <div class="timing-option">
+                                <input type="radio" id="before30" name="notificationType" value="30min">
+                                <label for="before30">
+                                    <i class="fas fa-hourglass-half"></i>
+                                    <span>30 minutes before: ${calculateTimeBefore(exam.time, 30)}</span>
+                                </label>
+                            </div>
+                            <div class="timing-option">
+                                <input type="radio" id="before1hour" name="notificationType" value="1hour">
+                                <label for="before1hour">
+                                    <i class="fas fa-hourglass-end"></i>
+                                    <span>1 hour before: ${calculateTimeBefore(exam.time, 60)}</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="notification-preview">
+                        <h5>Notification Preview:</h5>
+                        <div class="preview-card">
+                            <div class="preview-header">
+                                <i class="fas fa-bell"></i>
+                                <strong>📚 Exam Reminder</strong>
+                            </div>
+                            <div class="preview-body">
+                                <p><strong>${exam.subject}</strong></p>
+                                <p>${exam.department} - ${exam.semester}</p>
+                                <p>Date: ${window.dataFunctions ? window.dataFunctions.formatDate(exam.examDate) : exam.examDate}</p>
+                                <p>Time: ${exam.time}</p>
+                                <p>Type: ${(exam.examType || 'written').toUpperCase()}</p>
+                                <p id="notification-timing-preview">Will notify at exact exam time</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="exact-notification-footer">
+                    <button class="btn-test-notification">
+                        <i class="fas fa-bell"></i> Test Notification Now
+                    </button>
+                    <button class="btn-schedule-exact">
+                        <i class="fas fa-calendar-check"></i> Schedule Notification
+                    </button>
+                    <button class="btn-cancel-exact">Cancel</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Update preview based on timing selection
+        const updatePreview = () => {
+            const timing = modal.querySelector('input[name="notificationType"]:checked').value;
+            let timingText = '';
+            
+            switch(timing) {
+                case 'exact':
+                    timingText = `Will notify at exact exam time: ${exam.time}`;
+                    break;
+                case '15min':
+                    timingText = `Will notify 15 minutes before: ${calculateTimeBefore(exam.time, 15)}`;
+                    break;
+                case '30min':
+                    timingText = `Will notify 30 minutes before: ${calculateTimeBefore(exam.time, 30)}`;
+                    break;
+                case '1hour':
+                    timingText = `Will notify 1 hour before: ${calculateTimeBefore(exam.time, 60)}`;
+                    break;
+            }
+            
+            const previewElement = modal.querySelector('#notification-timing-preview');
+            if (previewElement) {
+                previewElement.textContent = timingText;
+            }
+        };
+        
+        // Add event listeners for timing options
+        modal.querySelectorAll('input[name="notificationType"]').forEach(radio => {
+            radio.addEventListener('change', updatePreview);
+        });
+        
+        // Initial preview update
+        updatePreview();
+        
+        // Add event listeners for buttons
+        modal.querySelector('.btn-close-exact').addEventListener('click', () => modal.remove());
+        modal.querySelector('.btn-cancel-exact').addEventListener('click', () => modal.remove());
+        
+        modal.querySelector('.btn-test-notification').addEventListener('click', async () => {
+            await sendTestNotificationNow(exam);
+            showAdminNotification('Test notification sent!', 'success');
+        });
+        
+        modal.querySelector('.btn-schedule-exact').addEventListener('click', async () => {
+            const timing = modal.querySelector('input[name="notificationType"]:checked').value;
+            await scheduleExactNotification(exam, timing);
+            modal.remove();
+        });
+        
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    function calculateTimeBefore(examTime, minutesBefore) {
+        const [time, modifier] = examTime.split(' ');
+        let [hours, minutes] = time.split(':');
+        
+        hours = parseInt(hours);
+        if (modifier === 'PM' && hours !== 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+        
+        const totalMinutes = hours * 60 + parseInt(minutes) - minutesBefore;
+        const newHours = Math.floor(totalMinutes / 60);
+        const newMinutes = totalMinutes % 60;
+        
+        const newModifier = newHours >= 12 ? 'PM' : 'AM';
+        const displayHours = newHours % 12 || 12;
+        
+        return `${displayHours}:${newMinutes.toString().padStart(2, '0')} ${newModifier}`;
+    }
+
+    async function sendTestNotificationNow(exam) {
+        if ("Notification" in window) {
+            if (Notification.permission === "granted") {
+                // Create and show notification
+                const notification = new Notification("📚 Exam Reminder - TEST", {
+                    body: `${exam.subject} exam for ${exam.department} - ${exam.semester} on ${window.dataFunctions.formatDate(exam.examDate)} at ${exam.time}`,
+                    icon: "/favicon.ico",
+                    tag: `exam-${exam.id}-test`,
+                    requireInteraction: true
+                });
+                
+                return true;
+            } else if (Notification.permission !== "denied") {
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                    const notification = new Notification("📚 Exam Reminder - TEST", {
+                        body: `${exam.subject} exam for ${exam.department} - ${exam.semester} on ${window.dataFunctions.formatDate(exam.examDate)} at ${exam.time}`,
+                        icon: "/favicon.ico",
+                        tag: `exam-${exam.id}-test`,
+                        requireInteraction: true
+                    });
+                    
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    async function scheduleExactNotification(exam, notificationType) {
+        const examDateTime = new Date(`${exam.examDate}T${convertTimeTo24Hour(exam.time)}`);
+        let notificationTime;
+        let timingText = '';
+        
+        switch(notificationType) {
+            case 'exact':
+                notificationTime = examDateTime;
+                timingText = 'at exact exam time';
+                break;
+            case '15min':
+                notificationTime = new Date(examDateTime.getTime() - 15 * 60 * 1000);
+                timingText = '15 minutes before';
+                break;
+            case '30min':
+                notificationTime = new Date(examDateTime.getTime() - 30 * 60 * 1000);
+                timingText = '30 minutes before';
+                break;
+            case '1hour':
+                notificationTime = new Date(examDateTime.getTime() - 60 * 60 * 1000);
+                timingText = '1 hour before';
+                break;
+        }
+        
+        const now = new Date();
+        const delay = notificationTime - now;
+        
+        if (delay > 0) {
+            // Store notification schedule in localStorage
+            const notifications = JSON.parse(localStorage.getItem('adminScheduledNotifications') || '[]');
+            notifications.push({
+                examId: exam.id,
+                examSubject: exam.subject,
+                department: exam.department,
+                semester: exam.semester,
+                examTime: exam.time,
+                examDate: exam.examDate,
+                notificationTime: notificationTime.toISOString(),
+                notificationType: notificationType,
+                scheduledAt: new Date().toISOString()
+            });
+            
+            localStorage.setItem('adminScheduledNotifications', JSON.stringify(notifications));
+            
+            // Schedule the notification
+            setTimeout(() => {
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("📚 Exam Reminder", {
+                        body: `${exam.subject} exam for ${exam.department} - ${exam.semester} is starting ${notificationType === 'exact' ? 'now' : notificationType}!\nTime: ${exam.time}`,
+                        icon: "/favicon.ico",
+                        tag: `exam-${exam.id}`,
+                        requireInteraction: true
+                    });
+                }
+                
+                // Remove from localStorage after sending
+                const updatedNotifications = JSON.parse(localStorage.getItem('adminScheduledNotifications') || '[]');
+                const filtered = updatedNotifications.filter(n => 
+                    !(n.examId === exam.id && n.notificationTime === notificationTime.toISOString())
+                );
+                localStorage.setItem('adminScheduledNotifications', JSON.stringify(filtered));
+                
+            }, delay);
+            
+            showAdminNotification(`Notification scheduled ${timingText} for ${exam.subject}`, 'success');
+        } else {
+            showAdminNotification('Cannot schedule notification in the past', 'error');
+        }
+    }
+
     function copyExamDetails(exam) {
-        const deptName = exam.department === 'Tourism & Hospitality Management' ? 'Tourism' : exam.department;
-        const text = `Subject: ${exam.subject}\nDepartment: ${deptName}\nSemester: ${exam.semester}\nDate: ${exam.examDate}\nTime: ${exam.time}\nRoom: ${exam.room}`;
+        const text = `Subject: ${exam.subject}\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nType: ${exam.examType || 'written'}\nDate: ${exam.examDate}\nTime: ${exam.time}\nRoom: ${exam.room}`;
         
         navigator.clipboard.writeText(text).then(() => {
             showAdminNotification('Exam details copied to clipboard!', 'success');
@@ -1000,6 +1304,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().split('T')[0];
         const todayExams = allExams.filter(exam => exam.examDate === today).length;
         const upcomingExams = allExams.filter(exam => exam.examDate >= today).length;
+        const practicalExams = allExams.filter(exam => exam.examType === 'practical').length;
+        const writtenExams = allExams.filter(exam => !exam.examType || exam.examType === 'written').length;
         
         // Update stats in admin header if elements exist
         const statsElement = document.getElementById('adminStats');
@@ -1013,6 +1319,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="stat-badge">Total: ${totalExams}</span>
                     <span class="stat-badge">Today: ${todayExams}</span>
                     <span class="stat-badge">Upcoming: ${upcomingExams}</span>
+                    <span class="stat-badge">Practical: ${practicalExams}</span>
+                    <span class="stat-badge">Written: ${writtenExams}</span>
                 `;
                 adminHeader.appendChild(statsDiv);
             }
@@ -1021,6 +1329,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span class="stat-badge">Total: ${totalExams}</span>
                 <span class="stat-badge">Today: ${todayExams}</span>
                 <span class="stat-badge">Upcoming: ${upcomingExams}</span>
+                <span class="stat-badge">Practical: ${practicalExams}</span>
+                <span class="stat-badge">Written: ${writtenExams}</span>
             `;
         }
     }
@@ -1047,7 +1357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function setupFormAutoSave() {
-        const formFields = ['newSubject', 'newRoom'];
+        const formFields = ['newSubject'];
         const storageKey = 'examFormDraft';
         
         // Load saved draft
@@ -1129,22 +1439,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function setupFormValidation() {
         const subjectInput = document.getElementById('newSubject');
-        const roomInput = document.getElementById('newRoom');
         
         if (subjectInput) {
             subjectInput.addEventListener('blur', () => {
                 if (subjectInput.value.length > 0 && subjectInput.value.length < 2) {
                     subjectInput.classList.add('invalid');
                     showAdminNotification('Subject name should be at least 2 characters', 'warning');
-                }
-            });
-        }
-        
-        if (roomInput) {
-            roomInput.addEventListener('input', () => {
-                // Auto-capitalize room numbers
-                if (roomInput.value.match(/^room\s*\d+$/i)) {
-                    roomInput.value = roomInput.value.replace(/room/i, 'Room');
                 }
             });
         }
@@ -1219,6 +1519,50 @@ document.addEventListener('DOMContentLoaded', function() {
             timeout = setTimeout(later, wait);
         };
     }
+
+    // Check for scheduled notifications on page load
+    function checkScheduledNotifications() {
+        const notifications = JSON.parse(localStorage.getItem('adminScheduledNotifications') || '[]');
+        const now = new Date();
+        
+        // Remove past notifications
+        const validNotifications = notifications.filter(notification => {
+            const notificationTime = new Date(notification.notificationTime);
+            return notificationTime > now;
+        });
+        
+        localStorage.setItem('adminScheduledNotifications', JSON.stringify(validNotifications));
+        
+        // Reschedule valid notifications
+        validNotifications.forEach(notification => {
+            const notificationTime = new Date(notification.notificationTime);
+            const delay = notificationTime - now;
+            
+            if (delay > 0) {
+                setTimeout(() => {
+                    if ("Notification" in window && Notification.permission === "granted") {
+                        new Notification("📚 Exam Reminder", {
+                            body: `${notification.examSubject} exam for ${notification.department} - ${notification.semester} is starting ${notification.notificationType}!\nTime: ${notification.examTime}`,
+                            icon: "/favicon.ico",
+                            tag: `exam-${notification.examId}`,
+                            requireInteraction: true
+                        });
+                    }
+                    
+                    // Remove from localStorage after sending
+                    const updatedNotifications = JSON.parse(localStorage.getItem('adminScheduledNotifications') || '[]');
+                    const filtered = updatedNotifications.filter(n => 
+                        !(n.examId === notification.examId && n.notificationTime === notification.notificationTime)
+                    );
+                    localStorage.setItem('adminScheduledNotifications', JSON.stringify(filtered));
+                    
+                }, delay);
+            }
+        });
+    }
+
+    // Run on page load
+    checkScheduledNotifications();
 
     // Export functions for global access
     window.loadExams = loadExams;

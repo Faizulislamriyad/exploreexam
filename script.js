@@ -1,51 +1,49 @@
-// script.js - Smart Exam Routine Manager with Enhanced UX
-// script.js - শুরুতে এই লাইনগুলো যোগ করুন
 if (!window.showNotification) {
-    window.showNotification = function(message, type = 'info') {
-        // Remove existing notification
-        const existingNotification = document.querySelector('.notification');
-        if (existingNotification) {
-            existingNotification.remove();
-        }
+  window.showNotification = function (message, type = "info") {
+    // Remove existing notification
+    const existingNotification = document.querySelector(".notification");
+    if (existingNotification) {
+      existingNotification.remove();
+    }
 
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.innerHTML = `
+    const notification = document.createElement("div");
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
             <div class="notification-content">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <i class="fas fa-${type === "success" ? "check-circle" : type === "error" ? "exclamation-circle" : type === "warning" ? "exclamation-triangle" : "info-circle"}"></i>
                 <span>${message}</span>
             </div>
             <button class="btn-close-notification">&times;</button>
         `;
 
-        document.body.appendChild(notification);
+    document.body.appendChild(notification);
 
-        // Show notification
-        setTimeout(() => {
-            notification.classList.add('show');
-        }, 10);
+    // Show notification
+    setTimeout(() => {
+      notification.classList.add("show");
+    }, 10);
 
-        // Auto hide after 3 seconds
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+      notification.classList.remove("show");
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
 
-        // Close button
-        const closeBtn = notification.querySelector('.btn-close-notification');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                notification.classList.remove('show');
-                setTimeout(() => notification.remove(), 300);
-            });
-        }
-    };
+    // Close button
+    const closeBtn = notification.querySelector(".btn-close-notification");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        notification.classList.remove("show");
+        setTimeout(() => notification.remove(), 300);
+      });
+    }
+  };
 }
+
 // DOM Elements
 const deptSelect = document.getElementById("deptSelect");
 const semesterSelect = document.getElementById("semesterSelect");
 const dateFilter = document.getElementById("dateFilter");
-const refreshBtn = document.getElementById("refreshBtn");
 const routineList = document.getElementById("routineList");
 const totalExamsEl = document.getElementById("totalExams");
 const upcomingExamsEl = document.getElementById("upcomingExams");
@@ -61,7 +59,7 @@ let filteredExamRoutine = [];
 let currentAppDate = "";
 let examData = [];
 let isLoading = false;
-let isFilterChanging = false; // Prevent infinite loops
+let isFilterChanging = false;
 
 // Initialize the application
 async function init() {
@@ -97,6 +95,9 @@ async function init() {
 
   // Setup Firebase realtime listener for auto-refresh
   setupFirebaseListener();
+
+  // Check for scheduled notifications
+  checkStudentScheduledNotifications();
 }
 
 // Setup Firebase realtime listener for auto-refresh
@@ -129,6 +130,62 @@ function setupFirebaseListener() {
   } catch (error) {
     console.error("Error setting up Firebase listener:", error);
   }
+}
+
+// Check for student scheduled notifications
+function checkStudentScheduledNotifications() {
+  const notifications = JSON.parse(
+    localStorage.getItem("studentNotifications") || "[]",
+  );
+  const now = new Date();
+
+  // Remove past notifications
+  const validNotifications = notifications.filter((notification) => {
+    const notificationTime = new Date(notification.notificationTime);
+    return notificationTime > now;
+  });
+
+  localStorage.setItem(
+    "studentNotifications",
+    JSON.stringify(validNotifications),
+  );
+
+  // Reschedule valid notifications
+  validNotifications.forEach((notification) => {
+    const notificationTime = new Date(notification.notificationTime);
+    const delay = notificationTime - now;
+
+    if (delay > 0) {
+      setTimeout(() => {
+        if ("Notification" in window && Notification.permission === "granted") {
+          const title =
+            notification.minutesBefore === 0
+              ? `📚 ${notification.examSubject} exam is starting now!`
+              : `📚 ${notification.examSubject} exam in ${notification.minutesBefore} minutes`;
+
+          new Notification(title, {
+            body: notification.examDetails,
+            icon: "/favicon.ico",
+            requireInteraction: true,
+            tag: `student-exam-${notification.examId}`,
+          });
+        }
+
+        // Remove from localStorage after sending
+        const updatedNotifications = JSON.parse(
+          localStorage.getItem("studentNotifications") || "[]",
+        );
+        const filtered = updatedNotifications.filter(
+          (n) =>
+            !(
+              n.examId === notification.examId &&
+              n.notificationTime === notification.notificationTime
+            ),
+        );
+        localStorage.setItem("studentNotifications", JSON.stringify(filtered));
+      }, delay);
+    }
+  });
 }
 
 // Animate date update
@@ -183,10 +240,6 @@ async function loadInitialData() {
 // Show loading states
 function showLoadingStates() {
   isLoading = true;
-  if (refreshBtn) {
-    refreshBtn.disabled = true;
-    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-  }
 
   // Add loading class to main elements
   if (routineList) {
@@ -211,10 +264,6 @@ function showLoadingStates() {
 // Hide loading states
 function hideLoadingStates() {
   isLoading = false;
-  if (refreshBtn) {
-    refreshBtn.disabled = false;
-    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Routine';
-  }
 }
 
 // Show error state
@@ -248,9 +297,6 @@ function setupEventListeners() {
   if (semesterSelect)
     semesterSelect.addEventListener("change", debouncedFilterChange);
   if (dateFilter) dateFilter.addEventListener("change", debouncedFilterChange);
-
-  // Refresh button with loading state
-  if (refreshBtn) refreshBtn.addEventListener("click", handleRefresh);
 
   // Add clear filters button
   addClearFiltersButton();
@@ -318,6 +364,7 @@ function setupQuickFilters() {
                 <button class="btn-quick-filter" data-filter="computer">Computer</button>
                 <button class="btn-quick-filter" data-filter="civil">Civil</button>
                 <button class="btn-quick-filter" data-filter="practical">Practical</button>
+                <button class="btn-quick-filter" data-filter="written">Written</button>
             </div>
         `;
 
@@ -388,6 +435,13 @@ function applyQuickFilter(filter) {
       applyFilters("all", "all", "practical");
       if (clearBtn) clearBtn.style.display = "flex";
       break;
+    case "written":
+      if (deptSelect) deptSelect.value = "all";
+      if (semesterSelect) semesterSelect.value = "all";
+      if (dateFilter) dateFilter.value = "written";
+      applyFilters("all", "all", "written");
+      if (clearBtn) clearBtn.style.display = "flex";
+      break;
     default:
       if (deptSelect) deptSelect.value = "all";
       if (semesterSelect) semesterSelect.value = "all";
@@ -438,6 +492,8 @@ function updateRoutineTitle(selectedDept, selectedSemester) {
     titleText += " (Past)";
   } else if (dateFilterValue === "practical") {
     titleText += " (Practical)";
+  } else if (dateFilterValue === "written") {
+    titleText += " (Written)";
   }
   routineTitle.innerHTML = titleText;
 }
@@ -534,7 +590,7 @@ function handleSearch() {
       exam.subject.toLowerCase().includes(searchTerm) ||
       exam.department.toLowerCase().includes(searchTerm) ||
       exam.semester.toLowerCase().includes(searchTerm) ||
-      exam.room.toLowerCase().includes(searchTerm) ||
+      (exam.examType && exam.examType.toLowerCase().includes(searchTerm)) ||
       exam.time.toLowerCase().includes(searchTerm)
     );
   });
@@ -654,7 +710,7 @@ function applyFilters(dept, semester, dateFilter, specialFilter = null) {
       (exam) => exam.examDate === currentAppDate,
     );
   }
-  // Filter by date
+  // Filter by date and type
   else if (dateFilter === "upcoming") {
     tempFiltered = tempFiltered.filter(
       (exam) => exam.examDate >= currentAppDate,
@@ -664,12 +720,10 @@ function applyFilters(dept, semester, dateFilter, specialFilter = null) {
       (exam) => exam.examDate < currentAppDate,
     );
   } else if (dateFilter === "practical") {
-    tempFiltered = tempFiltered.filter((exam) =>
-      exam.subject.toLowerCase().includes("practical")
-    );
+    tempFiltered = tempFiltered.filter((exam) => exam.examType === "practical");
   } else if (dateFilter === "written") {
-    tempFiltered = tempFiltered.filter((exam) =>
-      !exam.subject.toLowerCase().includes("practical")
+    tempFiltered = tempFiltered.filter(
+      (exam) => !exam.examType || exam.examType === "written",
     );
   }
   // If 'all' is selected for date filter, include all exams
@@ -699,9 +753,6 @@ function applyFilters(dept, semester, dateFilter, specialFilter = null) {
 async function handleRefresh() {
   if (isLoading) return;
 
-  // Add pulse animation to refresh button
-  if (refreshBtn) refreshBtn.classList.add("pulse");
-
   try {
     await refreshRoutine();
 
@@ -710,11 +761,6 @@ async function handleRefresh() {
   } catch (error) {
     console.error("Refresh error:", error);
     showNotification("Failed to refresh routine", "error");
-  } finally {
-    // Remove pulse animation
-    setTimeout(() => {
-      if (refreshBtn) refreshBtn.classList.remove("pulse");
-    }, 1000);
   }
 }
 
@@ -909,6 +955,12 @@ function createRoutineElement(exam) {
   // Check if it's today
   const isToday = exam.examDate === currentAppDate;
 
+  // Get exam type
+  const examType = exam.examType || "written";
+  const typeClass =
+    examType === "practical" ? "type-practical" : "type-written";
+  const typeText = examType === "practical" ? "Practical" : "Written";
+
   const div = document.createElement("div");
   div.className = `routine-item ${exam.examDate < currentAppDate ? "past" : ""} ${isToday ? "today" : ""}`;
   div.setAttribute("data-exam-id", exam.id);
@@ -932,7 +984,7 @@ function createRoutineElement(exam) {
             <div class="exam-time">${exam.time}</div>
         </div>
         <div class="exam-cell">
-            <div class="exam-room">${exam.room}</div>
+            <span class="exam-type-badge ${typeClass}">${typeText}</span>
         </div>
         <div class="exam-cell">
             <span class="status-badge ${statusClass}">${status}</span>
@@ -943,6 +995,9 @@ function createRoutineElement(exam) {
             </button>
             <button class="btn-share-exam" title="Share Exam Info">
                 <i class="fas fa-share-alt"></i>
+            </button>
+            <button class="btn-notify-exam" title="Set Notification">
+                <i class="fas fa-bell"></i>
             </button>
         </div>
     `;
@@ -957,6 +1012,7 @@ function createRoutineElement(exam) {
   // Add hover action buttons
   const viewDetailsBtn = div.querySelector(".btn-view-details");
   const shareBtn = div.querySelector(".btn-share-exam");
+  const notifyBtn = div.querySelector(".btn-notify-exam");
 
   if (viewDetailsBtn) {
     viewDetailsBtn.addEventListener("click", (e) => {
@@ -972,7 +1028,250 @@ function createRoutineElement(exam) {
     });
   }
 
+  if (notifyBtn) {
+    notifyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      showNotificationOptions(exam);
+    });
+  }
+
   return div;
+}
+
+// NEW FUNCTION: Show notification options for students
+function showNotificationOptions(exam) {
+  // First request notification permission if not already granted
+  if ("Notification" in window) {
+    if (Notification.permission === "default") {
+      Notification.requestPermission().then((permission) => {
+        if (permission === "granted") {
+          showNotificationModal(exam);
+        } else {
+          showNotification(
+            "Notifications are blocked. Please enable notifications in your browser settings.",
+            "error",
+          );
+        }
+      });
+    } else if (Notification.permission === "granted") {
+      showNotificationModal(exam);
+    } else {
+      showNotification(
+        "Notifications are blocked. Please enable notifications in your browser settings.",
+        "error",
+      );
+    }
+  } else {
+    showNotification(
+      "Notifications are not supported in this browser",
+      "error",
+    );
+  }
+}
+
+// NEW FUNCTION: Show notification modal
+function showNotificationModal(exam) {
+  const modal = document.createElement("div");
+  modal.className = "notification-options-modal";
+
+  modal.innerHTML = `
+    <div class="notification-options-content">
+      <div class="notification-header">
+        <h3><i class="fas fa-bell"></i> Set Notification for ${exam.subject}</h3>
+        <button class="btn-close-notify-options">&times;</button>
+      </div>
+      <div class="notification-body">
+        <p>Get reminded before your exam:</p>
+        <div class="notification-buttons">
+          <button class="btn-notify-option" data-minutes="0">
+            <i class="fas fa-clock"></i>
+            <span>At exam time</span>
+            <small>${exam.time}</small>
+          </button>
+          <button class="btn-notify-option" data-minutes="15">
+            <i class="fas fa-hourglass-start"></i>
+            <span>15 min before</span>
+            <small>${calculateTimeBefore(exam.time, 15)}</small>
+          </button>
+          <button class="btn-notify-option" data-minutes="30">
+            <i class="fas fa-hourglass-half"></i>
+            <span>30 min before</span>
+            <small>${calculateTimeBefore(exam.time, 30)}</small>
+          </button>
+          <button class="btn-notify-option" data-minutes="60">
+            <i class="fas fa-hourglass-end"></i>
+            <span>1 hour before</span>
+            <small>${calculateTimeBefore(exam.time, 60)}</small>
+          </button>
+        </div>
+        <div class="notification-info">
+          <p><i class="fas fa-info-circle"></i> Notifications will appear on your device at the selected time.</p>
+        </div>
+      </div>
+      <div class="notification-footer">
+        <button class="btn-test-notification-now">Test Notification Now</button>
+        <button class="btn-cancel-notify">Cancel</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Add event listeners
+  modal
+    .querySelector(".btn-close-notify-options")
+    .addEventListener("click", () => modal.remove());
+  modal
+    .querySelector(".btn-cancel-notify")
+    .addEventListener("click", () => modal.remove());
+
+  modal
+    .querySelector(".btn-test-notification-now")
+    .addEventListener("click", () => {
+      sendTestNotificationNow(exam);
+    });
+
+  modal.querySelectorAll(".btn-notify-option").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const minutesBefore = parseInt(this.dataset.minutes);
+      scheduleStudentNotification(exam, minutesBefore);
+      modal.remove();
+    });
+  });
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  });
+}
+
+// Helper function to calculate time before
+function calculateTimeBefore(examTime, minutesBefore) {
+  const [time, modifier] = examTime.split(" ");
+  let [hours, minutes] = time.split(":");
+
+  hours = parseInt(hours);
+  if (modifier === "PM" && hours !== 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  const totalMinutes = hours * 60 + parseInt(minutes) - minutesBefore;
+  const newHours = Math.floor(totalMinutes / 60);
+  const newMinutes = totalMinutes % 60;
+
+  const newModifier = newHours >= 12 ? "PM" : "AM";
+  const displayHours = newHours % 12 || 12;
+
+  return `${displayHours}:${newMinutes.toString().padStart(2, "0")} ${newModifier}`;
+}
+
+// Helper function to convert time to 24-hour format
+function convertTimeTo24Hour(time12) {
+  if (!time12) return "10:00";
+
+  // Check if already in 24-hour format
+  if (time12.includes(":")) {
+    const parts = time12.split(":");
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      if (parseInt(parts[0]) >= 0 && parseInt(parts[0]) <= 23) {
+        return time12;
+      }
+    }
+  }
+
+  const [time, modifier] = time12.split(" ");
+  if (!time || !modifier) return "10:00";
+
+  let [hours, minutes] = time.split(":");
+
+  if (hours === "12") {
+    hours = "00";
+  }
+
+  if (modifier === "PM") {
+    hours = parseInt(hours, 10) + 12;
+  }
+
+  return `${hours.toString().padStart(2, "0")}:${minutes || "00"}`;
+}
+
+// NEW FUNCTION: Schedule student notification
+function scheduleStudentNotification(exam, minutesBefore) {
+  const examDateTime = new Date(
+    `${exam.examDate}T${convertTimeTo24Hour(exam.time)}`,
+  );
+  const notificationTime = new Date(
+    examDateTime.getTime() - minutesBefore * 60 * 1000,
+  );
+  const now = new Date();
+  const delay = notificationTime - now;
+
+  if (delay > 0) {
+    // Store in localStorage for persistence
+    const notifications = JSON.parse(
+      localStorage.getItem("studentNotifications") || "[]",
+    );
+    notifications.push({
+      examId: exam.id,
+      examSubject: exam.subject,
+      examDetails: `${exam.department} - ${exam.semester}\nTime: ${exam.time}\nType: ${exam.examType || "Written"}`,
+      notificationTime: notificationTime.toISOString(),
+      minutesBefore: minutesBefore,
+      scheduledAt: now.toISOString(),
+    });
+
+    localStorage.setItem("studentNotifications", JSON.stringify(notifications));
+
+    // Schedule notification
+    setTimeout(() => {
+      if (Notification.permission === "granted") {
+        const title =
+          minutesBefore === 0
+            ? `📚 ${exam.subject} exam is starting now!`
+            : `📚 ${exam.subject} exam in ${minutesBefore} minutes`;
+
+        new Notification(title, {
+          body: `${exam.department} - ${exam.semester}\nTime: ${exam.time}\nType: ${exam.examType || "Written"}`,
+          icon: "/favicon.ico",
+          requireInteraction: true,
+          tag: `student-exam-${exam.id}`,
+        });
+      }
+
+      // Remove from localStorage after triggering
+      const updatedNotifications = JSON.parse(
+        localStorage.getItem("studentNotifications") || "[]",
+      );
+      const filtered = updatedNotifications.filter(
+        (n) =>
+          !(
+            n.examId === exam.id &&
+            n.notificationTime === notificationTime.toISOString()
+          ),
+      );
+      localStorage.setItem("studentNotifications", JSON.stringify(filtered));
+    }, delay);
+
+    const timingText =
+      minutesBefore === 0 ? "at exam time" : `${minutesBefore} minutes before`;
+    showNotification(`Notification set for ${timingText}`, "success");
+  } else {
+    showNotification("Cannot set notification in the past", "error");
+  }
+}
+
+// NEW FUNCTION: Send test notification
+function sendTestNotificationNow(exam) {
+  if (Notification.permission === "granted") {
+    new Notification("📚 Exam Reminder - TEST", {
+      body: `${exam.subject} exam for ${exam.department} - ${exam.semester}\nTime: ${exam.time}\nType: ${exam.examType || "Written"}`,
+      icon: "/favicon.ico",
+      requireInteraction: true,
+      tag: `test-exam-${exam.id}`,
+    });
+
+    showNotification("Test notification sent!", "success");
+  }
 }
 
 // Show exam details in enhanced modal
@@ -1012,6 +1311,10 @@ function showExamDetails(exam) {
                 <div class="detail-row">
                     <span class="detail-label">Semester:</span>
                     <span class="detail-value">${exam.semester}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Exam Type:</span>
+                    <span class="detail-value exam-type-badge type-${exam.examType || "written"}">${(exam.examType || "written").toUpperCase()}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Exam Date:</span>
@@ -1073,7 +1376,8 @@ function showExamDetails(exam) {
 
   if (remindBtn) {
     remindBtn.addEventListener("click", function () {
-      setExamReminder(exam, this);
+      showNotificationOptions(exam);
+      modal.remove();
     });
   }
 
@@ -1136,6 +1440,8 @@ async function downloadExamAsJPG(exam) {
               ? "Today"
               : "Upcoming";
 
+        const examType = exam.examType || "written";
+
         tempDiv.innerHTML = `
                     <div style="text-align: center; margin-bottom: 30px;">
                         <h1 style="font-size: 36px; margin-bottom: 10px; color: white;">Exam Details</h1>
@@ -1166,14 +1472,19 @@ async function downloadExamAsJPG(exam) {
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 40px;">
                         <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
-                            <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Room No.</div>
-                            <div style="font-size: 24px; font-weight: bold;">${exam.room}</div>
+                            <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Exam Type</div>
+                            <div style="font-size: 24px; font-weight: bold; color: ${examType === "practical" ? "#ffffff" : "#ffffff"}">${examType.toUpperCase()}</div>
                         </div>
                         
                         <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
                             <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Status</div>
-                            <div style="font-size: 24px; font-weight: bold; color: ${status === "Today" ? "#ffd700" : status === "Upcoming" ? "rgb(0, 255, 132)" : "#f44336"}">${status}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: ${status === "Today" ? "#ffd700" : status === "Upcoming" ? "#ffe600" : "#f44336"}">${status}</div>
                         </div>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 30px;">
+                        <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Room Allocation</div>
+                        <div style="font-size: 18px;">${exam.room}</div>
                     </div>
                     
                     ${
@@ -1235,96 +1546,10 @@ async function downloadExamAsJPG(exam) {
   }
 }
 
-// Add new download function
-function downloadExamDetails(exam) {
-  // Create the content for download
-  const content = `
-EXAM DETAILS - EXPLORE ROUTINE 2026
-===================================
-
-Subject: ${exam.subject}
-Department: ${exam.department}
-Semester: ${exam.semester}
-Exam Date: ${window.dataFunctions.formatDate(exam.examDate)}
-Time: ${exam.time}
-Room: ${exam.room}
-Status: ${exam.examDate < currentAppDate ? "Completed" : exam.examDate === currentAppDate ? "Today" : "Upcoming"}
-${exam.addedBy ? `Added by: ${exam.addedBy}` : ""}
-
------------------------------------
-Downloaded from Explore Routine 2026
-${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}
-    `;
-
-  // Create a blob and download link
-  const blob = new Blob([content], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `Exam_${exam.subject.replace(/\s+/g, "_")}_${exam.examDate}.txt`;
-  document.body.appendChild(a);
-  a.click();
-
-  // Clean up
-  setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 100);
-
-  // Show notification
-  showNotification("Exam details downloaded!", "success");
-}
-
-// Set exam reminder
-function setExamReminder(exam, button) {
-  if ("Notification" in window && Notification.permission === "granted") {
-    // Schedule notification
-    scheduleNotification(exam);
-    button.innerHTML = '<i class="fas fa-check"></i> Reminder Set';
-    button.disabled = true;
-    showNotification("Reminder set for this exam!", "success");
-  } else if ("Notification" in window && Notification.permission !== "denied") {
-    Notification.requestPermission().then((permission) => {
-      if (permission === "granted") {
-        scheduleNotification(exam);
-        button.innerHTML = '<i class="fas fa-check"></i> Reminder Set';
-        button.disabled = true;
-        showNotification("Reminder set for this exam!", "success");
-      }
-    });
-  } else {
-    showNotification("Please enable notifications to set reminders", "info");
-  }
-}
-
-// Schedule notification
-function scheduleNotification(exam) {
-  // This is a simplified version - in a real app, you'd use service workers
-  const examDateTime = new Date(`${exam.examDate}T${exam.time}`);
-  const now = new Date();
-  const timeDiff = examDateTime - now;
-
-  if (timeDiff > 0) {
-    // Simple alert for demo purposes
-    setTimeout(
-      () => {
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification("Exam Reminder", {
-            body: `${exam.subject} exam is tomorrow! (${exam.department} - ${exam.semester})`,
-            icon: "/favicon.ico",
-          });
-        } else {
-          alert(`Reminder: ${exam.subject} exam is tomorrow!`);
-        }
-      },
-      Math.min(timeDiff, 24 * 60 * 60 * 1000),
-    ); // Max 24 hours for demo
-  }
-}
-
 // Share exam information
 function shareExamInfo(exam) {
-  const shareText = `${exam.subject} Exam\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nDate: ${window.dataFunctions.formatDate(exam.examDate)}\nTime: ${exam.time}\nRoom: ${exam.room}`;
+  const examType = exam.examType || "written";
+  const shareText = `${exam.subject} Exam\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nType: ${examType.toUpperCase()}\nDate: ${window.dataFunctions.formatDate(exam.examDate)}\nTime: ${exam.time}\nRoom: ${exam.room}`;
 
   if (navigator.share) {
     navigator.share({
@@ -1455,8 +1680,8 @@ function updateNextExam() {
                                 <span>${nextExam.time}</span>
                             </div>
                             <div class="detail-item">
-                                <i class="fas fa-door-open"></i>
-                                <span>${nextExam.room}</span>
+                                <i class="fas fa-tag"></i>
+                                <span class="exam-type-badge type-${nextExam.examType || "written"}">${(nextExam.examType || "written").toUpperCase()}</span>
                             </div>
                         </div>
                         <div class="countdown-container">
@@ -1476,7 +1701,7 @@ function updateNextExam() {
         const reminderBtn = nextExamCard.querySelector(".btn-set-reminder");
         if (reminderBtn) {
           reminderBtn.addEventListener("click", function () {
-            setExamReminder(nextExam, this);
+            showNotificationOptions(nextExam);
           });
         }
       }, 200);
@@ -1553,7 +1778,7 @@ function updateUpcomingList() {
                         <div class="upcoming-date">${window.dataFunctions.formatDate(exam.examDate)}</div>
                         <div class="upcoming-details">
                             <span class="upcoming-time">${exam.time}</span>
-                            <span class="upcoming-room">${exam.room}</span>
+                            <span class="exam-type-badge type-${exam.examType || "written"}">${(exam.examType || "written").toUpperCase()}</span>
                         </div>
                     `;
 
@@ -1575,47 +1800,6 @@ function updateUpcomingList() {
       upcomingList.style.opacity = "1";
       upcomingList.style.transition = "opacity 0.3s ease";
     }, 200);
-  }
-}
-
-// Show notification
-function showNotification(message, type = "info") {
-  // Remove existing notification
-  const existingNotification = document.querySelector(".notification");
-  if (existingNotification) {
-    existingNotification.remove();
-  }
-
-  const notification = document.createElement("div");
-  notification.className = `notification notification-${type}`;
-  notification.innerHTML = `
-        <div class="notification-content">
-            <i class="fas fa-${type === "success" ? "check-circle" : type === "error" ? "exclamation-circle" : "info-circle"}"></i>
-            <span>${message}</span>
-        </div>
-        <button class="btn-close-notification">&times;</button>
-    `;
-
-  document.body.appendChild(notification);
-
-  // Show notification
-  setTimeout(() => {
-    notification.classList.add("show");
-  }, 10);
-
-  // Auto hide after 3 seconds
-  setTimeout(() => {
-    notification.classList.remove("show");
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
-
-  // Close button
-  const closeBtn = notification.querySelector(".btn-close-notification");
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      notification.classList.remove("show");
-      setTimeout(() => notification.remove(), 300);
-    });
   }
 }
 
@@ -1642,3 +1826,4 @@ window.updateNextExam = updateNextExam;
 window.updateUpcomingList = updateUpcomingList;
 window.examData = examData;
 window.showNotification = showNotification;
+window.refreshRoutine = refreshRoutine;
