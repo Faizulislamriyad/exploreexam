@@ -18,11 +18,11 @@ function updateHeadersForMobile() {
 window.addEventListener('load', updateHeadersForMobile);
 window.addEventListener('resize', updateHeadersForMobile);
 
-// নতুন: রিসাইজ শেষ হলে পেজ রিফ্রেশ (Debounce সহ)
+// ডেবাউন্সিং সহ রিসাইজ হ্যান্ডলিং
 let resizeTimer;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function() {
-        location.reload();
-    }, 200); // রিসাইজ শেষ হওয়ার ২০০ মিলিসেকেন্ড পর রিফ্রেশ
+        updateHeadersForMobile(); // শুধু হেডার আপডেট করুন, রিফ্রেশ নয়
+    }, 200);
 });
