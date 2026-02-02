@@ -23,7 +23,6 @@ let resizeTimer;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function() {
-        updateHeadersForMobile();
+        updateHeadersForMobile(); // শুধু হেডার আপডেট করুন, রিফ্রেশ নয়
     }, 200);
 });
-

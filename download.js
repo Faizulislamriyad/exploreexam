@@ -246,7 +246,7 @@ class RoutineDownloader {
     async generateAndDownloadJPG(exams, selectedDept, selectedSemester, dateFilter, searchTerm) {
         try {
             // Create title based on filters
-            let title = 'Exam Routine - Explore Routine 2026';
+            let title = 'Explore Routine 2026';
             let subtitle = '';
 
             if (selectedDept !== 'all' && selectedSemester !== 'all') {
@@ -258,24 +258,24 @@ class RoutineDownloader {
             }
 
             if (dateFilter === 'upcoming') {
-                subtitle += (subtitle ? ' - ' : '') + 'Upcoming Exams Only';
+                subtitle += (subtitle ? ' - ' : '') + 'Upcoming Exam Only';
             } else if (dateFilter === 'past') {
-                subtitle += (subtitle ? ' - ' : '') + 'Past Exams Only';
+                subtitle += (subtitle ? ' - ' : '') + 'Past Exam';
             } else if (dateFilter === 'practical') {
-                subtitle += (subtitle ? ' - ' : '') + 'Practical Exams Only';
+                subtitle += (subtitle ? ' - ' : '') + 'Practical Exams';
             } else if (dateFilter === 'written') {
-                subtitle += (subtitle ? ' - ' : '') + 'Written Exams Only';
+                subtitle += (subtitle ? ' - ' : '') + 'Written Exams';
             }
 
             if (searchTerm) {
                 subtitle += (subtitle ? ' - ' : '') + `Search: "${searchTerm}"`;
             }
 
-            if (!subtitle) {
-                subtitle = 'All Exams (Completed exams excluded)';
-            } else {
-                subtitle += ' (Completed exams excluded)';
-            }
+            // if (!subtitle) {
+            //     subtitle = 'All Exams';
+            // } else {
+            //     subtitle += ' (Completed exams excluded)';
+            // }
 
             // Create the content for the image
             const content = this.createRoutineContent(exams, title, subtitle);
@@ -469,7 +469,6 @@ class RoutineDownloader {
 
                 <!-- Footer -->
                 <div style="margin-top: 60px; padding-top: 25px; border-top: 2px solid #eee; text-align: center; color: #777; font-size: 14px;">
-                    <div style="font-size: 18px; font-weight: bold; color: #667eea; margin-bottom: 10px;">Explore Routine 2026</div>
                     <div>Download from exploreex.vercel.app</div>
                     <div style="margin-top: 10px; color: #999; font-size: 11px;">
                         Generated on ${content.currentDate}
