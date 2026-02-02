@@ -648,17 +648,17 @@
         position: fixed !important;
         right: 20px !important;
         bottom: 100px !important; /* একই level */
-        width: 50px !important;
-        height: 50px !important;
+        width: 40px !important;
+        height: 40px !important;
         border-radius: 50% !important;
         background: linear-gradient(145deg, #3498db, #2980b9) !important;
         color: white !important;
-        border: 3px solid white !important;
+        border: 2px solid white !important;
         box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4) !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 1.3rem !important;
+        font-size: 1.1rem !important;
         z-index: 1000 !important;
         opacity: 0.3 !important;
         transition: all 0.3s ease !important;
@@ -693,3 +693,4 @@
         padding-bottom: 120px !important;
     }
 }}
+
