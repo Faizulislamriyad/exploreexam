@@ -8,10 +8,12 @@
         width: 100%;
     }
     
-    .routine-header, .routine-item {
+    .routine-header {
+        display: flex;
+    }
+    .routine-item {
         grid-template-columns: 1fr 0.8fr 1.2fr 1fr 0.8fr 0.8fr 1fr;
     }
-    
     .form-grid {
         grid-template-columns: 1fr;
     }
@@ -81,22 +83,49 @@
         font-size: 1.3rem;
         margin-bottom: 15px;
     }
-    
-    .routine-header, .routine-item {
+    .routine-item {
+        display: flex;
+        flex-direction: column;
+        padding: 15px;
+        margin-bottom: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .routine-header {
         grid-template-columns: 1fr 1fr;
         gap: 8px;
         padding: 12px 15px;
     }
-    
+    /* .routine-header div:nth-child(2),
+    .routine-header div:nth-child(3), */
     .routine-header div:nth-child(4),
     .routine-header div:nth-child(5),
     .routine-header div:nth-child(6),
+    .routine-header div:nth-child(7),
+    .routine-header div:nth-child(8),
+    /* .routine-item div:nth-child(1), */
+    /* .routine-item div:nth-child(2), */
+    /* .routine-item div:nth-child(3), */
     .routine-item div:nth-child(4),
     .routine-item div:nth-child(5),
-    .routine-item div:nth-child(6) {
+    .routine-item div:nth-child(6),
+    .routine-item div:nth-child(7),
+    .routine-item div:nth-child(8) {
         display: None;
     }
-    
+    .routine-item div:nth-child(1),
+    .routine-item div:nth-child(2) {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        border-bottom: 1px dashed #f0f0f0;
+    }
+    .routine-item div:nth-child(2),
+    .routine-item div:nth-child(3) {
+        display: block !important;
+    }
     /* Hide scrollbar on mobile */
     .routine-list::-webkit-scrollbar {
         display: none;
@@ -591,3 +620,76 @@
         min-width: 100% !important;
     }
 }
+/* ===== SMART OPACITY BUTTONS ===== */
+@media (max-width: 768px) {
+    /* Admin Button */
+    .admin-access-btn {
+        position: fixed !important;
+        left: 20px !important;
+        bottom: 100px !important;
+        width: 50px !important;
+        height: 50px !important;
+        border-radius: 50% !important;
+        background: linear-gradient(145deg, #9b59b6, #8e44ad) !important;
+        color: white !important;
+        border: 3px solid white !important;
+        box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1.3rem !important;
+        z-index: 1000 !important;
+        opacity: 0.3 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    /* Chatbot Button */
+    .chatbot-toggle {
+        position: fixed !important;
+        right: 20px !important;
+        bottom: 100px !important; /* একই level */
+        width: 50px !important;
+        height: 50px !important;
+        border-radius: 50% !important;
+        background: linear-gradient(145deg, #3498db, #2980b9) !important;
+        color: white !important;
+        border: 3px solid white !important;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1.3rem !important;
+        z-index: 1000 !important;
+        opacity: 0.3 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    /* Hover Effects */
+    .admin-access-btn:hover,
+    .chatbot-toggle:hover {
+        opacity: 0.8 !important;
+        transform: translateY(-5px) !important;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+    }
+    
+    /* Active State */
+    .admin-access-btn.active,
+    .chatbot-toggle.active {
+        opacity: 1 !important;
+        transform: translateY(-5px) scale(1.1) !important;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.4) !important;
+    }
+    
+    /* Chatbot Container Position Adjust */
+    .chatbot-container {
+        bottom: 180px !important; /* Button থেকে উপরে */
+        right: 20px !important;
+        width: calc(100% - 40px) !important;
+        max-height: 60vh !important;
+    }
+    
+    /* Adjust Page Bottom Padding */
+    .container {
+        padding-bottom: 120px !important;
+    }
+}}
