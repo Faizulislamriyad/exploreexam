@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function isThanks(message) {
         // Clean the message
         const cleanMessage = message.toLowerCase().replace(/[^\w\s]/g, '');
-        return /(thank|thanks|thankyou|thnx|thx|appreciate|grateful|acha|accha|acca)/.test(cleanMessage);
+        return /(thank|thanks|thankyou|okay|ok|okk|okaey|okhe|oky|thik ache|tik ace|okkk|okkkk|thnx|thx|appreciate|grateful|acha|accha|acca)/.test(cleanMessage);
     }
 
     function handleThanks() {
@@ -1263,4 +1263,5 @@ document.addEventListener('DOMContentLoaded', function() {
         getContext: () => chatContext,
         resetChat: initChatbot
     };
+
 });
