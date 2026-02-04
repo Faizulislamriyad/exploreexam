@@ -551,3 +551,304 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Export for use in other files
 window.RoutineDownloader = RoutineDownloader;
+// Add this to your existing download.js file
+
+// PDF Download functionality
+class PDFDownloader {
+    constructor() {
+        this.jsPDFLoaded = false;
+    }
+
+    async ensureJSPDF() {
+        if (this.jsPDFLoaded) return true;
+        
+        return new Promise((resolve, reject) => {
+            if (typeof jspdf !== 'undefined') {
+                this.jsPDFLoaded = true;
+                resolve(true);
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+            script.onload = () => {
+                this.jsPDFLoaded = true;
+                resolve(true);
+            };
+            script.onerror = () => reject(new Error('Failed to load jsPDF'));
+            document.head.appendChild(script);
+        });
+    }
+
+    async downloadAsPDF(filename, exams, title = 'Exam Routine', subtitle = '') {
+        try {
+            await this.ensureJSPDF();
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            
+            let y = 20;
+            
+            // Header
+            doc.setFillColor(41, 128, 185);
+            doc.rect(0, 0, pageWidth, 40, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+            doc.text('EXAM ROUTINE', pageWidth / 2, 25, { align: 'center' });
+            
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'normal');
+            doc.text(title, pageWidth / 2, 35, { align: 'center' });
+            
+            y = 50;
+            
+            // Subtitle
+            if (subtitle) {
+                doc.setTextColor(100, 100, 100);
+                doc.setFontSize(12);
+                doc.text(subtitle, pageWidth / 2, y, { align: 'center' });
+                y += 10;
+            }
+            
+            // Date and filter info
+            doc.setFontSize(10);
+            doc.setTextColor(150, 150, 150);
+            const currentDate = new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            doc.text(`Generated on: ${currentDate}`, pageWidth - 10, y, { align: 'right' });
+            y += 15;
+            
+            // Table header
+            doc.setFillColor(240, 240, 240);
+            doc.rect(10, y, pageWidth - 20, 10, 'F');
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            
+            const columns = ['#', 'Department', 'Semester', 'Subject', 'Date', 'Time', 'Type', 'Status'];
+            const colWidths = [10, 30, 20, 50, 25, 20, 20, 20];
+            let x = 10;
+            
+            columns.forEach((col, index) => {
+                doc.text(col, x + colWidths[index] / 2, y + 6, { align: 'center' });
+                x += colWidths[index];
+            });
+            
+            y += 10;
+            
+            // Table content
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            
+            exams.forEach((exam, index) => {
+                // Check if we need new page
+                if (y > pageHeight - 20) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                // Determine status
+                const currentDate = new Date().toISOString().split('T')[0];
+                let status = 'Upcoming';
+                let statusColor = [76, 175, 80]; // Green
+                
+                if (exam.examDate) {
+                    try {
+                        if (exam.examDate === currentDate) {
+                            status = 'Today';
+                            statusColor = [255, 152, 0]; // Orange
+                        } else if (exam.examDate < currentDate) {
+                            status = 'Completed';
+                            statusColor = [244, 67, 54]; // Red
+                        }
+                    } catch (e) {
+                        // Keep default
+                    }
+                }
+                
+                // Get exam type
+                const examType = exam.examType || 'written';
+                const typeDisplay = examType === 'practical' || examType === 'Practical' ? 'Practical' : 'Written';
+                const typeColor = typeDisplay === 'Practical' ? [76, 175, 80] : [33, 150, 243];
+                
+                // Format date
+                let displayDate = exam.examDate;
+                if (window.dataFunctions && typeof window.dataFunctions.formatDate === 'function') {
+                    try {
+                        displayDate = window.dataFunctions.formatDate(exam.examDate);
+                    } catch (e) {
+                        // Keep original
+                    }
+                }
+                
+                // Row background
+                if (index % 2 === 0) {
+                    doc.setFillColor(250, 250, 250);
+                    doc.rect(10, y, pageWidth - 20, 8, 'F');
+                }
+                
+                // Draw row data
+                let colX = 10;
+                
+                // Serial number
+                doc.setTextColor(100, 100, 100);
+                doc.text((index + 1).toString(), colX + 5, y + 5, { align: 'center' });
+                colX += colWidths[0];
+                
+                // Department
+                doc.setTextColor(0, 0, 0);
+                doc.text(exam.department.substring(0, 12), colX + 15, y + 5);
+                colX += colWidths[1];
+                
+                // Semester
+                doc.text(exam.semester, colX + 10, y + 5, { align: 'center' });
+                colX += colWidths[2];
+                
+                // Subject
+                const subject = exam.subject.length > 20 ? exam.subject.substring(0, 20) + '...' : exam.subject;
+                doc.text(subject, colX + 25, y + 5);
+                colX += colWidths[3];
+                
+                // Date
+                doc.text(displayDate, colX + 12.5, y + 5, { align: 'center' });
+                colX += colWidths[4];
+                
+                // Time
+                doc.text(exam.time, colX + 10, y + 5, { align: 'center' });
+                colX += colWidths[5];
+                
+                // Type
+                doc.setTextColor(typeColor[0], typeColor[1], typeColor[2]);
+                doc.text(typeDisplay, colX + 10, y + 5, { align: 'center' });
+                colX += colWidths[6];
+                
+                // Status
+                doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+                doc.text(status, colX + 10, y + 5, { align: 'center' });
+                
+                // Draw row border
+                doc.setDrawColor(220, 220, 220);
+                doc.line(10, y + 8, pageWidth - 10, y + 8);
+                
+                y += 8;
+            });
+            
+            // Footer
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text('Download from exploreex.vercel.app', pageWidth / 2, pageHeight - 10, { align: 'center' });
+            doc.text('© 2026 Explore Routine', pageWidth / 2, pageHeight - 5, { align: 'center' });
+            
+            // Save PDF
+            doc.save(filename);
+            
+            return true;
+            
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            throw error;
+        }
+    }
+
+    generateFileName(prefix, exams, selectedDept, selectedSemester) {
+        let fileName = prefix;
+        
+        if (selectedDept && selectedDept !== 'all') {
+            fileName += '_' + selectedDept.replace(/\s+/g, '_');
+        }
+        
+        if (selectedSemester && selectedSemester !== 'all') {
+            fileName += '_' + selectedSemester.replace(/\s+/g, '_');
+        }
+        
+        const count = exams.length;
+        fileName += `_${count}_exams`;
+        
+        const timestamp = new Date().toISOString().split('T')[0];
+        fileName += '_' + timestamp + '.pdf';
+        
+        return fileName;
+    }
+}
+
+// Global PDF download functions
+window.downloadSubjectExams = async function(subject, exams) {
+    try {
+        const downloader = new PDFDownloader();
+        const subtitle = `Subject: ${subject}`;
+        const filename = `Exam_Routine_${subject.replace(/\s+/g, '_')}.pdf`;
+        
+        await downloader.downloadAsPDF(filename, exams, 'Subject Exam Schedule', subtitle);
+        window.showNotification(`Downloaded ${subject} exams as PDF`, 'success');
+    } catch (error) {
+        console.error('Error downloading subject exams:', error);
+        window.showNotification('Failed to download PDF', 'error');
+    }
+};
+
+window.downloadDepartmentRoutine = async function(department, semester, exams) {
+    try {
+        const downloader = new PDFDownloader();
+        const subtitle = `${department} Department, ${semester} Semester`;
+        const filename = downloader.generateFileName(`${department}_${semester}_Routine`, exams);
+        
+        await downloader.downloadAsPDF(filename, exams, 'Department Routine', subtitle);
+        window.showNotification(`Downloaded ${department} department routine as PDF`, 'success');
+    } catch (error) {
+        console.error('Error downloading department routine:', error);
+        window.showNotification('Failed to download PDF', 'error');
+    }
+};
+
+window.downloadDepartmentExams = async function(department, exams) {
+    try {
+        const downloader = new PDFDownloader();
+        const subtitle = `${department} Department`;
+        const filename = downloader.generateFileName(`${department}_Exams`, exams);
+        
+        await downloader.downloadAsPDF(filename, exams, 'Department Exam Schedule', subtitle);
+        window.showNotification(`Downloaded ${department} department exams as PDF`, 'success');
+    } catch (error) {
+        console.error('Error downloading department exams:', error);
+        window.showNotification('Failed to download PDF', 'error');
+    }
+};
+
+window.downloadAllExams = async function(exams) {
+    try {
+        const downloader = new PDFDownloader();
+        const filename = 'Complete_Exam_Routine.pdf';
+        
+        await downloader.downloadAsPDF(filename, exams, 'Complete Exam Routine', 'All Departments and Semesters');
+        window.showNotification('Downloaded complete exam routine as PDF', 'success');
+    } catch (error) {
+        console.error('Error downloading all exams:', error);
+        window.showNotification('Failed to download PDF', 'error');
+    }
+};
+
+// Initialize PDF downloader when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize PDF downloader
+    window.pdfDownloader = new PDFDownloader();
+    
+    // Test if PDF functions are available
+    console.log('PDF Download functions available:', {
+        downloadSubjectExams: typeof window.downloadSubjectExams,
+        downloadDepartmentRoutine: typeof window.downloadDepartmentRoutine,
+        downloadDepartmentExams: typeof window.downloadDepartmentExams,
+        downloadAllExams: typeof window.downloadAllExams
+    });
+});
+
+// Export for use in other files
+window.PDFDownloader = PDFDownloader;

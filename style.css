@@ -1019,7 +1019,7 @@ header {
     var(--secondary-color)
   );
   color: white;
-  padding: 20px;
+  padding: 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1099,8 +1099,8 @@ header {
   background-color: var(--primary-color);
   color: white;
   border: none;
-  border-radius: 10px;
-  width: 50px;
+  border-radius: 30px;
+  width: 50px !important;
   margin-left: 10px;
   cursor: pointer;
   transition: background-color 0.3s;
@@ -1138,23 +1138,6 @@ header {
   transform: scale(1.1);
   box-shadow: 0 8px 25px rgba(75, 108, 183, 0.7);
 }
-
-.notification-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background-color: #ff4757;
-  color: white;
-  border-radius: 50%;
-  width: 25px;
-  height: 25px;
-  font-size: 0.8rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-}
-
 /* ===== FOOTER ===== */
 footer {
   background-color: var(--light-color);
@@ -1972,4 +1955,61 @@ footer {
 
 .btn-clear-filters:hover i {
     transform: rotate(90deg) !important;
+}
+/* Typing Indicator */
+.typing-indicator {
+    opacity: 0.7;
+    padding: 10px 15px;
+}
+
+.typing-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #008cff;
+    margin: 0 2px;
+    animation: typing 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 80%, 100% { 
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    40% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Chatbot Message Animation */
+.message.bot {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Chat Input Focus */
+.chatbot-input input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
 }
