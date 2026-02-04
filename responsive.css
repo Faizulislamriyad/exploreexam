@@ -610,19 +610,19 @@
         position: fixed !important;
         left: 20px !important;
         bottom: 100px !important;
-        width: 50px !important;
-        height: 50px !important;
+        width: 20px !important;
+        height: 20px !important;
         border-radius: 50% !important;
         background: linear-gradient(145deg, #9b59b6, #8e44ad) !important;
         color: white !important;
-        border: 3px solid white !important;
+        border: 1px solid white !important;
         box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4) !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 1.3rem !important;
+        font-size: 1.0 rem !important;
         z-index: 1000 !important;
-        opacity: 0.3 !important;
+        opacity: 0.2 !important;
         transition: all 0.3s ease !important;
     }
     
@@ -631,19 +631,19 @@
         position: fixed !important;
         right: 20px !important;
         bottom: 100px !important; /* একই level */
-        width: 50px !important;
-        height: 50px !important;
+        width: 20px !important;
+        height: 20px !important;
         border-radius: 50% !important;
         background: linear-gradient(145deg, #3498db, #2980b9) !important;
         color: white !important;
-        border: 3px solid white !important;
+        border: 1px solid white !important;
         box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4) !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         font-size: 1.3rem !important;
         z-index: 1000 !important;
-        opacity: 0.3 !important;
+        opacity: 0.2 !important;
         transition: all 0.3s ease !important;
     }
     
