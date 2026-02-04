@@ -641,7 +641,7 @@
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 1.3rem !important;
+        font-size: 1.0rem !important;
         z-index: 1000 !important;
         opacity: 0.2 !important;
         transition: all 0.3s ease !important;
