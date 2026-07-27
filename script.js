@@ -57,6 +57,9 @@ let examData = [];
 let isLoading = false;
 let isFilterChanging = false;
 
+// ✅ EXPORT examData to window so download.js can access it
+window.examData = examData;
+
 // Initialize the application
 async function init() {
   if (!window.dataFunctions) {
@@ -176,7 +179,7 @@ function animateDateUpdate() {
   if (!currentDateEl) return;
 
   currentDateEl.style.opacity = "0";
-  currentDateEl.textContent = window.dataFunctions.formatDate(currentAppDate);
+  currentDateEl.textContent = window.dataFunctions.formatDateShort(currentAppDate);
 
   setTimeout(() => {
     currentDateEl.style.transition = "opacity 0.5s ease";
@@ -190,6 +193,8 @@ async function loadInitialData() {
 
   try {
     examData = await window.dataFunctions.loadExamsFromFirebase();
+    // ✅ Update window.examData
+    window.examData = examData;
 
     filteredExamRoutine = [...examData];
 
@@ -416,7 +421,7 @@ function applyQuickFilter(filter) {
 // Initialize UI elements
 function initializeUI() {
   if (currentDateEl) {
-    currentDateEl.textContent = window.dataFunctions.formatDate(currentAppDate);
+    currentDateEl.textContent = window.dataFunctions.formatDateShort(currentAppDate);
   }
 
   updateDepartmentOptions();
@@ -618,7 +623,7 @@ function handleFilterChange() {
   isFilterChanging = false;
 }
 
-// ✅ Apply filters function - UPDATED LOGIC
+// Apply filters function
 function applyFilters(dept, semester, dateFilter, specialFilter = null) {
   const clearBtn = document.getElementById("clearFiltersBtn");
   if (clearBtn) {
@@ -636,43 +641,36 @@ function applyFilters(dept, semester, dateFilter, specialFilter = null) {
 
   let tempFiltered = [...examData];
 
-  // Filter by department
   if (dept !== "all") {
     tempFiltered = tempFiltered.filter((exam) => exam.department === dept);
   }
 
-  // Filter by semester
   if (semester !== "all") {
     tempFiltered = tempFiltered.filter((exam) => exam.semester === semester);
   }
 
-  // Special filter for today
   if (specialFilter === "today") {
     tempFiltered = tempFiltered.filter(
       (exam) => exam.examDate === currentAppDate,
     );
   } else {
-    // Date and type filtering
     switch (dateFilter) {
       case "upcoming":
         tempFiltered = tempFiltered.filter(
           (exam) => exam.examDate >= currentAppDate,
         );
         break;
-
       case "past":
         tempFiltered = tempFiltered.filter(
           (exam) => exam.examDate < currentAppDate,
         );
         break;
-
       case "practical":
         tempFiltered = tempFiltered.filter(
           (exam) =>
             exam.examType === "practical" && exam.examDate >= currentAppDate,
         );
         break;
-
       case "written":
         tempFiltered = tempFiltered.filter(
           (exam) =>
@@ -680,10 +678,8 @@ function applyFilters(dept, semester, dateFilter, specialFilter = null) {
             exam.examDate >= currentAppDate,
         );
         break;
-
       case "all":
       default:
-        // ✅ All filter: show ONLY upcoming exams
         tempFiltered = tempFiltered.filter(
           (exam) => exam.examDate >= currentAppDate,
         );
@@ -697,15 +693,12 @@ function applyFilters(dept, semester, dateFilter, specialFilter = null) {
     `Filtered ${examData.length} exams down to ${filteredExamRoutine.length} exams (dateFilter: ${dateFilter})`,
   );
 
-  // Sort by date (ascending)
   filteredExamRoutine.sort(
     (a, b) => new Date(a.examDate) - new Date(b.examDate),
   );
 
-  // Update title based on selection
   updateRoutineTitle(dept, semester);
 
-  // Update displays with animation
   updateRoutineDisplay();
   updateStatistics();
   updateNextExam();
@@ -732,6 +725,8 @@ async function refreshRoutine() {
   try {
     const newExamData = await window.dataFunctions.loadExamsFromFirebase();
     examData = newExamData;
+    // ✅ Update window.examData
+    window.examData = examData;
 
     const selectedDept = deptSelect ? deptSelect.value : "all";
     const selectedSemester = semesterSelect ? semesterSelect.value : "all";
@@ -906,6 +901,9 @@ function createRoutineElement(exam) {
     examType === "practical" ? "type-practical" : "type-written";
   const typeText = examType === "practical" ? "Practical" : "Written";
 
+  // ✅ Date format: dd/mm/yyyy
+  const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
+
   const div = document.createElement("div");
   div.className = `routine-item ${exam.examDate < currentAppDate ? "past" : ""} ${isToday ? "today" : ""}`;
   div.setAttribute("data-exam-id", exam.id);
@@ -922,7 +920,7 @@ function createRoutineElement(exam) {
             ${exam.addedBy ? `<div class="exam-added-by"><small>Added by: ${exam.addedBy.split("@")[0]}</small></div>` : ""}
         </div>
         <div class="exam-cell">
-            <div class="exam-date">${window.dataFunctions.formatDate(exam.examDate)}</div>
+            <div class="exam-date">${dateDisplay}</div>
             ${isToday ? '<div class="today-badge">TODAY</div>' : ""}
         </div>
         <div class="exam-cell">
@@ -1231,6 +1229,9 @@ function showExamDetails(exam) {
     statusClass = "upcoming";
   }
 
+  // ✅ Date format: dd/mm/yyyy
+  const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
+
   const modal = document.createElement("div");
   modal.className = "exam-details-modal";
   modal.innerHTML = `
@@ -1254,7 +1255,7 @@ function showExamDetails(exam) {
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Exam Date:</span>
-                    <span class="detail-value">${window.dataFunctions.formatDate(exam.examDate)}</span>
+                    <span class="detail-value">${dateDisplay}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Time:</span>
@@ -1361,7 +1362,7 @@ async function downloadExamAsJPG(exam) {
                     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
                 `;
 
-        const currentDate = window.dataFunctions.formatDate(
+        const currentDate = window.dataFunctions.formatDateShort(
           window.dataFunctions.getCurrentDate(),
         );
         const status =
@@ -1392,7 +1393,7 @@ async function downloadExamAsJPG(exam) {
                         
                         <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
                             <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Exam Date</div>
-                            <div style="font-size: 24px; font-weight: bold;">${window.dataFunctions.formatDate(exam.examDate)}</div>
+                            <div style="font-size: 24px; font-weight: bold;">${window.dataFunctions.formatDateShort(exam.examDate)}</div>
                         </div>
                         
                         <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
@@ -1475,7 +1476,8 @@ async function downloadExamAsJPG(exam) {
 // Share exam information
 function shareExamInfo(exam) {
   const examType = exam.examType || "written";
-  const shareText = `${exam.subject} Exam\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nType: ${examType.toUpperCase()}\nDate: ${window.dataFunctions.formatDate(exam.examDate)}\nTime: ${exam.time}\nRoom: ${exam.room}`;
+  const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
+  const shareText = `${exam.subject} Exam\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nType: ${examType.toUpperCase()}\nDate: ${dateDisplay}\nTime: ${exam.time}\nRoom: ${exam.room}`;
 
   if (navigator.share) {
     navigator.share({
@@ -1566,7 +1568,6 @@ function updateNextExam() {
 
   let filteredExams = filteredExamRoutine;
 
-  // For next exam, always show upcoming (if not past filter)
   if (dateFilterValue !== "past") {
     filteredExams = filteredExams.filter(
       (exam) => exam.examDate >= currentAppDate,
@@ -1581,6 +1582,8 @@ function updateNextExam() {
         nextExam.examDate,
       );
 
+      const dateDisplay = window.dataFunctions.formatDateShort(nextExam.examDate);
+
       nextExamCard.style.opacity = "0";
 
       setTimeout(() => {
@@ -1588,7 +1591,7 @@ function updateNextExam() {
                     <div class="next-exam-content">
                         <div class="next-exam-subject">${nextExam.subject}</div>
                         <div class="next-exam-class">${nextExam.department} - ${nextExam.semester}</div>
-                        <div class="next-exam-date">${window.dataFunctions.formatDate(nextExam.examDate)}</div>
+                        <div class="next-exam-date">${dateDisplay}</div>
                         <div class="next-exam-details">
                             <div class="detail-item">
                                 <i class="fas fa-clock"></i>
@@ -1621,7 +1624,7 @@ function updateNextExam() {
       }, 200);
 
       if (nextExamInfo) {
-        nextExamInfo.innerHTML = `Next exam: <strong>${nextExam.subject}</strong> for ${nextExam.department} - ${nextExam.semester} on ${window.dataFunctions.formatDate(nextExam.examDate)}`;
+        nextExamInfo.innerHTML = `Next exam: <strong>${nextExam.subject}</strong> for ${nextExam.department} - ${nextExam.semester} on ${dateDisplay}`;
       }
     } else {
       nextExamCard.innerHTML = `
@@ -1679,6 +1682,7 @@ function updateUpcomingList() {
             currentAppDate,
             exam.examDate,
           );
+          const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
 
           div.innerHTML = `
                         <div class="upcoming-item-header">
@@ -1686,7 +1690,7 @@ function updateUpcomingList() {
                             <div class="upcoming-days">${daysLeft}d</div>
                         </div>
                         <div class="upcoming-class">${exam.department} - ${exam.semester}</div>
-                        <div class="upcoming-date">${window.dataFunctions.formatDate(exam.examDate)}</div>
+                        <div class="upcoming-date">${dateDisplay}</div>
                         <div class="upcoming-details">
                             <span class="upcoming-time">${exam.time}</span>
                             <span class="exam-type-badge type-${exam.examType || "written"}">${(exam.examType || "written").toUpperCase()}</span>
@@ -1729,11 +1733,11 @@ function debounce(func, wait) {
 // Initialize the app when DOM is loaded
 document.addEventListener("DOMContentLoaded", init);
 
-// Export functions for use in admin.js and chatbot.js
+// Export functions
 window.updateRoutineDisplay = updateRoutineDisplay;
 window.updateStatistics = updateStatistics;
 window.updateNextExam = updateNextExam;
 window.updateUpcomingList = updateUpcomingList;
-window.examData = examData;
+window.examData = examData;  // ✅ This is important for download.js
 window.showNotification = showNotification;
 window.refreshRoutine = refreshRoutine;
