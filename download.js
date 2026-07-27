@@ -480,7 +480,6 @@ class PDFDownloader {
         });
     }
 
-    // Helper: filter only upcoming exams
     filterUpcoming(exams) {
         const today = new Date().toISOString().split('T')[0];
         return exams.filter(exam => exam.examDate && exam.examDate >= today);
@@ -488,7 +487,6 @@ class PDFDownloader {
 
     async downloadAsPDF(filename, exams, title = 'Exam Routine', subtitle = '') {
         try {
-            // Only keep upcoming exams
             const upcomingExams = this.filterUpcoming(exams);
             if (upcomingExams.length === 0) {
                 if (window.showNotification) window.showNotification('No upcoming exams to download', 'error');
@@ -501,17 +499,15 @@ class PDFDownloader {
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
 
-            // Helper to format date as dd/mm/yyyy
             const formatDate = (dateStr) => {
                 if (!dateStr) return '';
-                const parts = dateStr.split('-'); // assuming yyyy-mm-dd
+                const parts = dateStr.split('-');
                 if (parts.length === 3) {
                     return `${parts[2]}/${parts[1]}/${parts[0]}`;
                 }
                 return dateStr;
             };
 
-            // ----- HEADER -----
             let y = 20;
             doc.setFillColor(41, 128, 185);
             doc.rect(0, 0, pageWidth, 40, 'F');
@@ -526,7 +522,6 @@ class PDFDownloader {
 
             y = 50;
 
-            // Subtitle (if any)
             if (subtitle) {
                 doc.setTextColor(100, 100, 100);
                 doc.setFontSize(12);
@@ -534,7 +529,6 @@ class PDFDownloader {
                 y += 10;
             }
 
-            // Generation info with date in dd/mm/yyyy format
             const now = new Date();
             const day = String(now.getDate()).padStart(2, '0');
             const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -548,7 +542,7 @@ class PDFDownloader {
             doc.text(genText, pageWidth - 10, y, { align: 'right' });
             y += 15;
 
-            // ----- TABLE HEADER -----
+            // Table header
             doc.setFillColor(240, 240, 240);
             doc.rect(10, y, pageWidth - 20, 10, 'F');
             doc.setTextColor(0, 0, 0);
@@ -564,18 +558,15 @@ class PDFDownloader {
             });
             y += 10;
 
-            // ----- TABLE ROWS -----
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(9);
 
             const currentDate = new Date().toISOString().split('T')[0];
 
             upcomingExams.forEach((exam, index) => {
-                // New page if needed
                 if (y > pageHeight - 20) {
                     doc.addPage();
                     y = 20;
-                    // Re-draw header
                     doc.setFillColor(240, 240, 240);
                     doc.rect(10, y, pageWidth - 20, 10, 'F');
                     doc.setTextColor(0, 0, 0);
@@ -589,7 +580,6 @@ class PDFDownloader {
                     y += 10;
                 }
 
-                // Row background
                 if (index % 2 === 0) {
                     doc.setFillColor(250, 250, 250);
                     doc.rect(10, y, pageWidth - 20, 8, 'F');
@@ -597,62 +587,58 @@ class PDFDownloader {
 
                 let colX = 10;
 
-                // # (Serial)
                 doc.setTextColor(100, 100, 100);
                 doc.text((index + 1).toString(), colX + colWidths[0] / 2, y + 5, { align: 'center' });
                 colX += colWidths[0];
 
-                // Department
                 doc.setTextColor(0, 0, 0);
                 const deptText = exam.department.length > 12 ? exam.department.substring(0, 10) + '..' : exam.department;
                 doc.text(deptText, colX + 2, y + 5);
                 colX += colWidths[1];
 
-                // Semester
                 doc.text(exam.semester, colX + colWidths[2] / 2, y + 5, { align: 'center' });
                 colX += colWidths[2];
 
-                // Subject
                 const subjText = exam.subject.length > 20 ? exam.subject.substring(0, 18) + '..' : exam.subject;
                 doc.text(subjText, colX + 2, y + 5);
                 colX += colWidths[3];
 
-                // Date (dd/mm/yyyy)
                 const formattedDate = formatDate(exam.examDate);
                 doc.text(formattedDate, colX + colWidths[4] / 2, y + 5, { align: 'center' });
                 colX += colWidths[4];
 
-                // Time
                 doc.text(exam.time, colX + colWidths[5] / 2, y + 5, { align: 'center' });
                 colX += colWidths[5];
 
-                // Type (just text, no border/padding)
                 const typeDisplay = (exam.examType === 'practical' || exam.examType === 'Practical') ? 'Practical' : 'Written';
-                doc.setTextColor(typeDisplay === 'Practical' ? [76, 175, 80] : [33, 150, 243]);
+                // ✅ FIX: আলাদা ভ্যালু পাঠানো হলো, অ্যারে নয়
+                if (typeDisplay === 'Practical') {
+                    doc.setTextColor(76, 175, 80);
+                } else {
+                    doc.setTextColor(33, 150, 243);
+                }
                 doc.text(typeDisplay, colX + colWidths[6] / 2, y + 5, { align: 'center' });
                 colX += colWidths[6];
 
-                // Status (just text, no border/padding)
                 let status = 'Upcoming';
-                let color = [76, 175, 80];
+                let r = 76, g = 175, b = 80;
                 if (exam.examDate === currentDate) {
                     status = 'Today';
-                    color = [255, 152, 0];
+                    r = 255; g = 152; b = 0;
                 } else if (exam.examDate < currentDate) {
-                    status = 'Completed'; // Should not happen because we filtered, but keep for safety
-                    color = [244, 67, 54];
+                    status = 'Completed';
+                    r = 244; g = 67; b = 54;
                 }
-                doc.setTextColor(color[0], color[1], color[2]);
+                // ✅ FIX: আলাদা ভ্যালু পাঠানো হলো
+                doc.setTextColor(r, g, b);
                 doc.text(status, colX + colWidths[7] / 2, y + 5, { align: 'center' });
 
-                // Row border
                 doc.setDrawColor(220, 220, 220);
                 doc.line(10, y + 8, pageWidth - 10, y + 8);
 
                 y += 8;
             });
 
-            // ----- FOOTER -----
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
             doc.text('Download from exploreex.vercel.app', pageWidth / 2, pageHeight - 10, { align: 'center' });
