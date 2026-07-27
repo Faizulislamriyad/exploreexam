@@ -1,6 +1,5 @@
 if (!window.showNotification) {
   window.showNotification = function (message, type = "info") {
-    // Remove existing notification
     const existingNotification = document.querySelector(".notification");
     if (existingNotification) {
       existingNotification.remove();
@@ -18,18 +17,15 @@ if (!window.showNotification) {
 
     document.body.appendChild(notification);
 
-    // Show notification
     setTimeout(() => {
       notification.classList.add("show");
     }, 10);
 
-    // Auto hide after 3 seconds
     setTimeout(() => {
       notification.classList.remove("show");
       setTimeout(() => notification.remove(), 300);
     }, 3000);
 
-    // Close button
     const closeBtn = notification.querySelector(".btn-close-notification");
     if (closeBtn) {
       closeBtn.addEventListener("click", () => {
@@ -63,7 +59,6 @@ let isFilterChanging = false;
 
 // Initialize the application
 async function init() {
-  // Wait for dataFunctions to be available
   if (!window.dataFunctions) {
     console.log("Waiting for dataFunctions...");
     await new Promise((resolve) => {
@@ -78,25 +73,18 @@ async function init() {
 
   currentAppDate = window.dataFunctions.getCurrentDate();
 
-  // Set current date with animation
   animateDateUpdate();
 
-  // Load exams from Firebase
   await loadInitialData();
 
-  // Set up event listeners
   setupEventListeners();
 
-  // Initialize UI
   initializeUI();
 
-  // Update title initially
   updateRoutineTitle("all", "all");
 
-  // Setup Firebase realtime listener for auto-refresh
   setupFirebaseListener();
 
-  // Check for scheduled notifications
   checkStudentScheduledNotifications();
 }
 
@@ -108,7 +96,6 @@ function setupFirebaseListener() {
   }
 
   try {
-    // Listen for changes in exams collection
     const examsCollection = window.firebase.collection(
       window.firebase.db,
       "exams",
@@ -117,7 +104,6 @@ function setupFirebaseListener() {
     window.firebase.onSnapshot(examsCollection, (snapshot) => {
       if (!isLoading && !isFilterChanging) {
         console.log("Firebase data changed, auto-refreshing...");
-        // Debounced refresh to prevent multiple rapid updates
         clearTimeout(window.autoRefreshTimeout);
         window.autoRefreshTimeout = setTimeout(() => {
           refreshRoutine();
@@ -139,7 +125,6 @@ function checkStudentScheduledNotifications() {
   );
   const now = new Date();
 
-  // Remove past notifications
   const validNotifications = notifications.filter((notification) => {
     const notificationTime = new Date(notification.notificationTime);
     return notificationTime > now;
@@ -150,7 +135,6 @@ function checkStudentScheduledNotifications() {
     JSON.stringify(validNotifications),
   );
 
-  // Reschedule valid notifications
   validNotifications.forEach((notification) => {
     const notificationTime = new Date(notification.notificationTime);
     const delay = notificationTime - now;
@@ -171,7 +155,6 @@ function checkStudentScheduledNotifications() {
           });
         }
 
-        // Remove from localStorage after sending
         const updatedNotifications = JSON.parse(
           localStorage.getItem("studentNotifications") || "[]",
         );
@@ -208,25 +191,20 @@ async function loadInitialData() {
   try {
     examData = await window.dataFunctions.loadExamsFromFirebase();
 
-    // Initially show all exams
     filteredExamRoutine = [...examData];
 
-    // Sort by date
     filteredExamRoutine.sort(
       (a, b) => new Date(a.examDate) - new Date(b.examDate),
     );
 
-    // Update all displays with animation
     updateRoutineDisplay();
     updateStatistics();
     updateNextExam();
     updateUpcomingList();
 
-    // Show appropriate message based on data
     if (examData.length === 0) {
       showNoExamsMessage();
     } else {
-      // Highlight today's exams if any
       highlightTodaysExams();
     }
   } catch (error) {
@@ -241,7 +219,6 @@ async function loadInitialData() {
 function showLoadingStates() {
   isLoading = true;
 
-  // Add loading class to main elements
   if (routineList) {
     routineList.innerHTML = `
             <div class="loading-state">
@@ -286,7 +263,6 @@ function showErrorState() {
 
 // Setup event listeners with debouncing
 function setupEventListeners() {
-  // Debounced filter change handler
   const debouncedFilterChange = debounce(() => {
     if (!isFilterChanging) {
       handleFilterChange();
@@ -298,16 +274,13 @@ function setupEventListeners() {
     semesterSelect.addEventListener("change", debouncedFilterChange);
   if (dateFilter) dateFilter.addEventListener("change", debouncedFilterChange);
 
-  // Add clear filters button
   addClearFiltersButton();
 
-  // Quick filter buttons (add to your HTML if needed)
   setupQuickFilters();
 }
 
 // Add clear filters button
 function addClearFiltersButton() {
-  // Create clear filters button if it doesn't exist
   if (!document.getElementById("clearFiltersBtn")) {
     const filterControls = document.querySelector(".filter-controls");
     if (!filterControls) return;
@@ -320,19 +293,15 @@ function addClearFiltersButton() {
 
     filterControls.appendChild(clearBtn);
 
-    // FIXED: Use direct function call instead of handleFilterChange to avoid infinite loop
     clearBtn.addEventListener("click", () => {
       console.log("Clear filters clicked");
 
-      // Set filter values
       if (deptSelect) deptSelect.value = "all";
       if (semesterSelect) semesterSelect.value = "all";
       if (dateFilter) dateFilter.value = "upcoming";
 
-      // Hide clear button
       clearBtn.style.display = "none";
 
-      // Reset quick filter buttons
       document.querySelectorAll(".btn-quick-filter").forEach((btn) => {
         btn.classList.remove("active");
       });
@@ -341,7 +310,6 @@ function addClearFiltersButton() {
       );
       if (allBtn) allBtn.classList.add("active");
 
-      // Manually apply filters
       applyFilters("all", "all", "upcoming");
     });
   }
@@ -349,7 +317,6 @@ function addClearFiltersButton() {
 
 // Setup quick filter buttons
 function setupQuickFilters() {
-  // Create quick filter container if it doesn't exist
   if (!document.querySelector(".quick-filters")) {
     const controls = document.querySelector(".controls");
     if (!controls) return;
@@ -368,7 +335,6 @@ function setupQuickFilters() {
             </div>
         `;
 
-    // Insert after filter controls
     const filterControls = document.querySelector(".filter-controls");
     if (filterControls && filterControls.parentNode) {
       filterControls.parentNode.insertBefore(
@@ -376,18 +342,14 @@ function setupQuickFilters() {
         filterControls.nextSibling,
       );
 
-      // Add event listeners to quick filter buttons
       document.querySelectorAll(".btn-quick-filter").forEach((btn) => {
         btn.addEventListener("click", function () {
-          // Remove active class from all buttons
           document.querySelectorAll(".btn-quick-filter").forEach((b) => {
             b.classList.remove("active");
           });
 
-          // Add active class to clicked button
           this.classList.add("active");
 
-          // Apply filter
           applyQuickFilter(this.dataset.filter);
         });
       });
@@ -453,15 +415,12 @@ function applyQuickFilter(filter) {
 
 // Initialize UI elements
 function initializeUI() {
-  // Set current date with animation
   if (currentDateEl) {
     currentDateEl.textContent = window.dataFunctions.formatDate(currentAppDate);
   }
 
-  // Update department options based on available data
   updateDepartmentOptions();
 
-  // Add search functionality
   addSearchFunctionality();
 }
 
@@ -484,16 +443,17 @@ function updateRoutineTitle(selectedDept, selectedSemester) {
     }
   }
 
-  // Add date filter info
   const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
   if (dateFilterValue === "upcoming") {
     titleText += " (Upcoming)";
   } else if (dateFilterValue === "past") {
     titleText += " (Past)";
   } else if (dateFilterValue === "practical") {
-    titleText += " (Practical)";
+    titleText += " (Upcoming Practical)";
   } else if (dateFilterValue === "written") {
-    titleText += " (Written)";
+    titleText += " (Upcoming Written)";
+  } else if (dateFilterValue === "all") {
+    titleText += " (All Upcoming)";
   }
   routineTitle.innerHTML = titleText;
 }
@@ -505,15 +465,12 @@ function updateDepartmentOptions() {
   const departments = window.dataFunctions.getAllDepartmentsFromExams(examData);
 
   if (departments.length > 0) {
-    // Store current selection
     const currentDept = deptSelect.value;
 
-    // Clear existing options except "All"
     while (deptSelect.options.length > 1) {
       deptSelect.remove(1);
     }
 
-    // Add departments from data
     departments.forEach((dept) => {
       const option = document.createElement("option");
       option.value = dept;
@@ -521,7 +478,6 @@ function updateDepartmentOptions() {
       deptSelect.appendChild(option);
     });
 
-    // Restore selection if it still exists
     if (departments.includes(currentDept) || currentDept === "all") {
       deptSelect.value = currentDept;
     }
@@ -547,12 +503,10 @@ function addSearchFunctionality() {
             <div class="search-results-info" id="searchResultsInfo"></div>
         `;
 
-    // Insert after the title
     const title = routineContainer.querySelector("h2");
     if (title && title.parentNode) {
       title.parentNode.insertBefore(searchDiv, title.nextSibling);
 
-      // Add search event listeners
       const searchInput = document.getElementById("searchInput");
       const clearSearchBtn = document.getElementById("clearSearch");
 
@@ -573,7 +527,6 @@ function handleSearch() {
 
   const searchTerm = searchInput.value.toLowerCase().trim();
 
-  // Show/hide clear button
   if (clearSearchBtn) {
     clearSearchBtn.style.display = searchTerm ? "block" : "none";
   }
@@ -584,7 +537,6 @@ function handleSearch() {
     return;
   }
 
-  // Filter exams based on search term
   const searchResults = examData.filter((exam) => {
     return (
       exam.subject.toLowerCase().includes(searchTerm) ||
@@ -595,30 +547,24 @@ function handleSearch() {
     );
   });
 
-  // Update display with search results
   filteredExamRoutine = searchResults;
 
-  // Sort by date
   filteredExamRoutine.sort(
     (a, b) => new Date(a.examDate) - new Date(b.examDate),
   );
 
-  // Display search results
   displayExams(filteredExamRoutine);
 
-  // Show search results info
   if (searchResultsInfo) {
     searchResultsInfo.textContent = `Found ${searchResults.length} exam${searchResults.length !== 1 ? "s" : ""} matching "${searchTerm}"`;
     searchResultsInfo.style.display = "block";
   }
 
-  // Update title for search
   const routineTitle = document.querySelector(".routine-container h2");
   if (routineTitle) {
     routineTitle.innerHTML = `<i class="fas fa-search"></i> Search Results for "${searchTerm}"`;
   }
 
-  // Update statistics for search results
   const currentDate = window.dataFunctions.getCurrentDate();
   const total = searchResults.length;
   const upcoming = searchResults.filter(
@@ -649,13 +595,12 @@ function clearSearch() {
   handleFilterChange();
 }
 
-// Main filter handler - FIXED VERSION (no infinite loop)
+// Main filter handler
 function handleFilterChange() {
   if (isLoading || isFilterChanging) return;
 
   isFilterChanging = true;
 
-  // Clear search if active
   clearSearch();
 
   const selectedDept = deptSelect ? deptSelect.value : "all";
@@ -668,15 +613,13 @@ function handleFilterChange() {
     dateFilterValue,
   });
 
-  // Apply filters
   applyFilters(selectedDept, selectedSemester, dateFilterValue);
 
   isFilterChanging = false;
 }
 
-// Apply filters function (separated to avoid recursion)
+// ✅ Apply filters function - UPDATED LOGIC
 function applyFilters(dept, semester, dateFilter, specialFilter = null) {
-  // Show/hide clear filters button
   const clearBtn = document.getElementById("clearFiltersBtn");
   if (clearBtn) {
     if (
@@ -691,7 +634,6 @@ function applyFilters(dept, semester, dateFilter, specialFilter = null) {
     }
   }
 
-  // Filter routine based on selections
   let tempFiltered = [...examData];
 
   // Filter by department
@@ -709,29 +651,50 @@ function applyFilters(dept, semester, dateFilter, specialFilter = null) {
     tempFiltered = tempFiltered.filter(
       (exam) => exam.examDate === currentAppDate,
     );
+  } else {
+    // Date and type filtering
+    switch (dateFilter) {
+      case "upcoming":
+        tempFiltered = tempFiltered.filter(
+          (exam) => exam.examDate >= currentAppDate,
+        );
+        break;
+
+      case "past":
+        tempFiltered = tempFiltered.filter(
+          (exam) => exam.examDate < currentAppDate,
+        );
+        break;
+
+      case "practical":
+        tempFiltered = tempFiltered.filter(
+          (exam) =>
+            exam.examType === "practical" && exam.examDate >= currentAppDate,
+        );
+        break;
+
+      case "written":
+        tempFiltered = tempFiltered.filter(
+          (exam) =>
+            (exam.examType === "written" || !exam.examType) &&
+            exam.examDate >= currentAppDate,
+        );
+        break;
+
+      case "all":
+      default:
+        // ✅ All filter: show ONLY upcoming exams
+        tempFiltered = tempFiltered.filter(
+          (exam) => exam.examDate >= currentAppDate,
+        );
+        break;
+    }
   }
-  // Filter by date and type
-  else if (dateFilter === "upcoming") {
-    tempFiltered = tempFiltered.filter(
-      (exam) => exam.examDate >= currentAppDate,
-    );
-  } else if (dateFilter === "past") {
-    tempFiltered = tempFiltered.filter(
-      (exam) => exam.examDate < currentAppDate,
-    );
-  } else if (dateFilter === "practical") {
-    tempFiltered = tempFiltered.filter((exam) => exam.examType === "practical");
-  } else if (dateFilter === "written") {
-    tempFiltered = tempFiltered.filter(
-      (exam) => !exam.examType || exam.examType === "written",
-    );
-  }
-  // If 'all' is selected for date filter, include all exams
 
   filteredExamRoutine = tempFiltered;
 
   console.log(
-    `Filtered ${examData.length} exams down to ${filteredExamRoutine.length} exams`,
+    `Filtered ${examData.length} exams down to ${filteredExamRoutine.length} exams (dateFilter: ${dateFilter})`,
   );
 
   // Sort by date (ascending)
@@ -755,8 +718,6 @@ async function handleRefresh() {
 
   try {
     await refreshRoutine();
-
-    // Show success message
     showNotification("Routine refreshed successfully!", "success");
   } catch (error) {
     console.error("Refresh error:", error);
@@ -772,18 +733,14 @@ async function refreshRoutine() {
     const newExamData = await window.dataFunctions.loadExamsFromFirebase();
     examData = newExamData;
 
-    // Get current filter values
     const selectedDept = deptSelect ? deptSelect.value : "all";
     const selectedSemester = semesterSelect ? semesterSelect.value : "all";
     const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
 
-    // Apply current filters to refreshed data
     applyFilters(selectedDept, selectedSemester, dateFilterValue);
 
-    // Update department options
     updateDepartmentOptions();
 
-    // Show message if no exams
     if (examData.length === 0) {
       showNoExamsMessage();
     } else {
@@ -822,7 +779,6 @@ function showNoExamsMessage() {
 function updateRoutineDisplay() {
   if (!routineList) return;
 
-  // Add filtered class if any filter is active
   const routineContainer = document.querySelector(".routine-container");
   const selectedDept = deptSelect ? deptSelect.value : "all";
   const selectedSemester = semesterSelect ? semesterSelect.value : "all";
@@ -835,7 +791,6 @@ function updateRoutineDisplay() {
     }
   }
 
-  // Clear current list with fade out
   routineList.style.opacity = "0";
 
   setTimeout(() => {
@@ -855,7 +810,6 @@ function updateRoutineDisplay() {
                 </div>
             `;
 
-      // Add event listener to clear filters button
       document
         .getElementById("clearFiltersFromEmpty")
         ?.addEventListener("click", () => {
@@ -863,24 +817,20 @@ function updateRoutineDisplay() {
           if (semesterSelect) semesterSelect.value = "all";
           if (dateFilter) dateFilter.value = "upcoming";
 
-          // Direct filter application
           applyFilters("all", "all", "upcoming");
 
-          // Hide clear button
           const clearBtn = document.getElementById("clearFiltersBtn");
           if (clearBtn) clearBtn.style.display = "none";
         });
     } else if (filteredExamRoutine.length === 0 && examData.length === 0) {
       showNoExamsMessage();
     } else {
-      // Display each exam with staggered animation
       filteredExamRoutine.forEach((exam, index) => {
         const examElement = createRoutineElement(exam);
         examElement.style.opacity = "0";
         examElement.style.transform = "translateY(20px)";
         routineList.appendChild(examElement);
 
-        // Stagger animation
         setTimeout(() => {
           examElement.style.transition = "all 0.3s ease";
           examElement.style.opacity = "1";
@@ -889,7 +839,6 @@ function updateRoutineDisplay() {
       });
     }
 
-    // Fade in
     routineList.style.opacity = "1";
     routineList.style.transition = "opacity 0.3s ease";
   }, 200);
@@ -920,7 +869,6 @@ function displayExams(exams) {
     examElement.style.transform = "translateY(20px)";
     routineList.appendChild(examElement);
 
-    // Stagger animation
     setTimeout(() => {
       examElement.style.transition = "all 0.3s ease";
       examElement.style.opacity = "1";
@@ -933,7 +881,6 @@ function displayExams(exams) {
 function createRoutineElement(exam) {
   const examDate = new Date(exam.examDate);
 
-  // Determine status
   let status = "Upcoming";
   let statusClass = "status-upcoming";
   let daysLeft = 0;
@@ -952,10 +899,8 @@ function createRoutineElement(exam) {
     status = `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`;
   }
 
-  // Check if it's today
   const isToday = exam.examDate === currentAppDate;
 
-  // Get exam type
   const examType = exam.examType || "written";
   const typeClass =
     examType === "practical" ? "type-practical" : "type-written";
@@ -1002,14 +947,12 @@ function createRoutineElement(exam) {
         </div>
     `;
 
-  // Add click event to show details
   div.addEventListener("click", (e) => {
     if (!e.target.closest(".exam-actions-hover")) {
       showExamDetails(exam);
     }
   });
 
-  // Add hover action buttons
   const viewDetailsBtn = div.querySelector(".btn-view-details");
   const shareBtn = div.querySelector(".btn-share-exam");
   const notifyBtn = div.querySelector(".btn-notify-exam");
@@ -1040,7 +983,6 @@ function createRoutineElement(exam) {
 
 // NEW FUNCTION: Show notification options for students
 function showNotificationOptions(exam) {
-  // First request notification permission if not already granted
   if ("Notification" in window) {
     if (Notification.permission === "default") {
       Notification.requestPermission().then((permission) => {
@@ -1117,7 +1059,6 @@ function showNotificationModal(exam) {
 
   document.body.appendChild(modal);
 
-  // Add event listeners
   modal
     .querySelector(".btn-close-notify-options")
     .addEventListener("click", () => modal.remove());
@@ -1169,7 +1110,6 @@ function calculateTimeBefore(examTime, minutesBefore) {
 function convertTimeTo24Hour(time12) {
   if (!time12) return "10:00";
 
-  // Check if already in 24-hour format
   if (time12.includes(":")) {
     const parts = time12.split(":");
     if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
@@ -1207,7 +1147,6 @@ function scheduleStudentNotification(exam, minutesBefore) {
   const delay = notificationTime - now;
 
   if (delay > 0) {
-    // Store in localStorage for persistence
     const notifications = JSON.parse(
       localStorage.getItem("studentNotifications") || "[]",
     );
@@ -1222,7 +1161,6 @@ function scheduleStudentNotification(exam, minutesBefore) {
 
     localStorage.setItem("studentNotifications", JSON.stringify(notifications));
 
-    // Schedule notification
     setTimeout(() => {
       if (Notification.permission === "granted") {
         const title =
@@ -1238,7 +1176,6 @@ function scheduleStudentNotification(exam, minutesBefore) {
         });
       }
 
-      // Remove from localStorage after triggering
       const updatedNotifications = JSON.parse(
         localStorage.getItem("studentNotifications") || "[]",
       );
@@ -1294,7 +1231,6 @@ function showExamDetails(exam) {
     statusClass = "upcoming";
   }
 
-  // Create modal
   const modal = document.createElement("div");
   modal.className = "exam-details-modal";
   modal.innerHTML = `
@@ -1362,7 +1298,6 @@ function showExamDetails(exam) {
 
   document.body.appendChild(modal);
 
-  // Add event listeners
   const closeModalBtn = modal.querySelector(".btn-close-modal");
   const shareBtn = modal.querySelector(".btn-share");
   const remindBtn = modal.querySelector(".btn-remind-me");
@@ -1393,7 +1328,6 @@ function showExamDetails(exam) {
     });
   }
 
-  // Close on background click
   modal.addEventListener("click", (e) => {
     if (e.target === modal) {
       modal.remove();
@@ -1404,10 +1338,8 @@ function showExamDetails(exam) {
 // Add new function to download as JPG
 async function downloadExamAsJPG(exam) {
   try {
-    // Show loading notification
     showNotification("Generating JPG image...", "info");
 
-    // Create a temporary canvas for HTML2Canvas
     const html2canvasScript = document.createElement("script");
     html2canvasScript.src =
       "https://html2canvas.hertzen.com/dist/html2canvas.min.js";
@@ -1415,7 +1347,6 @@ async function downloadExamAsJPG(exam) {
 
     html2canvasScript.onload = async () => {
       try {
-        // Create a temporary div with the content to capture
         const tempDiv = document.createElement("div");
         tempDiv.style.cssText = `
                     position: fixed;
@@ -1507,28 +1438,23 @@ async function downloadExamAsJPG(exam) {
 
         document.body.appendChild(tempDiv);
 
-        // Use html2canvas to capture the div as image
         const canvas = await html2canvas(tempDiv, {
-          scale: 2, // Higher quality
+          scale: 2,
           backgroundColor: null,
           logging: false,
           useCORS: true,
         });
 
-        // Convert canvas to JPG
         const imageData = canvas.toDataURL("image/jpeg", 0.95);
 
-        // Create download link
         const link = document.createElement("a");
         link.download = `Exam_${exam.subject.replace(/\s+/g, "_")}_${exam.examDate}.jpg`;
         link.href = imageData;
         link.click();
 
-        // Clean up
         document.body.removeChild(tempDiv);
         document.head.removeChild(html2canvasScript);
 
-        // Show success notification
         showNotification("JPG image downloaded successfully!", "success");
       } catch (error) {
         console.error("Error generating JPG:", error);
@@ -1558,7 +1484,6 @@ function shareExamInfo(exam) {
       url: window.location.href,
     });
   } else {
-    // Fallback to clipboard
     navigator.clipboard
       .writeText(shareText)
       .then(() => {
@@ -1577,7 +1502,6 @@ function highlightTodaysExams() {
   );
 
   if (todayExams.length > 0) {
-    // Show notification badge
     const chatbotToggle = document.getElementById("chatbotToggle");
     if (chatbotToggle) {
       let badge = chatbotToggle.querySelector(".notification-badge");
@@ -1601,7 +1525,6 @@ function updateStatistics() {
   const selectedSemester = semesterSelect ? semesterSelect.value : "all";
   const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
 
-  // Filter exams for statistics
   let examsForStats = examData;
 
   if (selectedDept !== "all") {
@@ -1627,7 +1550,6 @@ function updateStatistics() {
     (exam) => exam.examDate < currentAppDate,
   ).length;
 
-  // Update without animation for better performance
   if (totalExamsEl) totalExamsEl.textContent = total;
   if (upcomingExamsEl) upcomingExamsEl.textContent = upcoming;
   if (todayExamsEl) todayExamsEl.textContent = today;
@@ -1642,20 +1564,14 @@ function updateNextExam() {
   const selectedSemester = semesterSelect ? semesterSelect.value : "all";
   const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
 
-  // Filter exams based on current filters
   let filteredExams = filteredExamRoutine;
 
-  // Filter by date for next exam (only upcoming)
-  if (dateFilterValue === "all") {
+  // For next exam, always show upcoming (if not past filter)
+  if (dateFilterValue !== "past") {
     filteredExams = filteredExams.filter(
       (exam) => exam.examDate >= currentAppDate,
     );
-  } else if (dateFilterValue === "past") {
-    filteredExams = filteredExams.filter(
-      (exam) => exam.examDate < currentAppDate,
-    );
   }
-  // If 'upcoming', already filtered
 
   if (nextExamCard) {
     if (filteredExams.length > 0 && dateFilterValue !== "past") {
@@ -1665,7 +1581,6 @@ function updateNextExam() {
         nextExam.examDate,
       );
 
-      // Animate card update
       nextExamCard.style.opacity = "0";
 
       setTimeout(() => {
@@ -1697,7 +1612,6 @@ function updateNextExam() {
         nextExamCard.style.opacity = "1";
         nextExamCard.style.transition = "opacity 0.3s ease";
 
-        // Add event listener to reminder button
         const reminderBtn = nextExamCard.querySelector(".btn-set-reminder");
         if (reminderBtn) {
           reminderBtn.addEventListener("click", function () {
@@ -1734,17 +1648,14 @@ function updateUpcomingList() {
   const selectedDept = deptSelect ? deptSelect.value : "all";
   const selectedSemester = semesterSelect ? semesterSelect.value : "all";
 
-  // Filter exams based on current filters (only upcoming for this list)
   let filteredExams = filteredExamRoutine.filter(
     (exam) => exam.examDate >= currentAppDate,
   );
 
-  // Sort by date and take only first 5
   filteredExams.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
   const displayExams = filteredExams.slice(0, 5);
 
   if (upcomingList) {
-    // Animate update
     upcomingList.style.opacity = "0";
 
     setTimeout(() => {
@@ -1788,7 +1699,6 @@ function updateUpcomingList() {
 
           upcomingList.appendChild(div);
 
-          // Stagger animation
           setTimeout(() => {
             div.style.transition = "all 0.3s ease";
             div.style.opacity = "1";
