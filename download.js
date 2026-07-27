@@ -5,34 +5,25 @@ class RoutineDownloader {
     }
 
     init() {
-        // Try to create button immediately
         this.tryCreateButton();
-        
-        // Also set up a retry mechanism
         setTimeout(() => this.tryCreateButton(), 1000);
-        
-        // Add event listeners for dynamic content
         this.setupEventListeners();
     }
 
     tryCreateButton() {
         if (this.isInitialized) return;
         
-        // Check if required elements exist
         const routineHeader = document.querySelector('.routine-container h2');
         if (!routineHeader) {
-            console.log('Routine header not found, retrying...');
             setTimeout(() => this.tryCreateButton(), 500);
             return;
         }
 
-        // Check if button already exists
         if (document.getElementById('downloadRoutineBtn')) {
             this.isInitialized = true;
             return;
         }
 
-        // Create download button container
         const downloadContainer = document.createElement('div');
         downloadContainer.className = 'routine-download-container';
         downloadContainer.innerHTML = `
@@ -41,18 +32,12 @@ class RoutineDownloader {
             </button>
         `;
 
-        // Insert after the title
         routineHeader.parentNode.insertBefore(downloadContainer, routineHeader.nextSibling);
         this.isInitialized = true;
-        
-        console.log('Download button created successfully');
-        
-        // Add CSS styles if not already present
         this.addStyles();
     }
 
     addStyles() {
-        // Check if styles already added
         if (document.querySelector('#downloadButtonStyles')) return;
 
         const style = document.createElement('style');
@@ -97,7 +82,6 @@ class RoutineDownloader {
     }
 
     setupEventListeners() {
-        // Handle download button click
         document.addEventListener('click', (e) => {
             if (e.target.closest('#downloadRoutineBtn')) {
                 e.preventDefault();
@@ -109,16 +93,13 @@ class RoutineDownloader {
 
     async downloadRoutine() {
         try {
-            // Get current filtered exams
             let examsToDownload = [];
             
-            // Try to get from window object
             if (window.filteredExamRoutine && window.filteredExamRoutine.length > 0) {
                 examsToDownload = window.filteredExamRoutine;
             } else if (window.examData && window.examData.length > 0) {
                 examsToDownload = window.examData;
             } else {
-                // If no window data, try to get from DOM
                 examsToDownload = this.getExamsFromDOM();
             }
             
@@ -127,20 +108,17 @@ class RoutineDownloader {
                 return;
             }
 
-            // Get filter information
             const selectedDept = document.getElementById('deptSelect')?.value || 'all';
             const selectedSemester = document.getElementById('semesterSelect')?.value || 'all';
             const dateFilter = document.getElementById('dateFilter')?.value || 'upcoming';
             const searchTerm = document.getElementById('searchInput')?.value || '';
 
-            // Show loading notification
             this.showNotification('Generating routine image...', 'info');
 
-            // Filter out completed exams before generating image
             const filteredExams = this.filterOutCompletedExams(examsToDownload);
             
             if (filteredExams.length === 0) {
-                this.showNotification('No upcoming exams to download (Completed exams are excluded)', 'info');
+                this.showNotification('No upcoming exams to download', 'info');
                 return;
             }
 
@@ -152,17 +130,13 @@ class RoutineDownloader {
         }
     }
 
-    // Filter out completed exams
     filterOutCompletedExams(exams) {
         const currentDate = new Date().toISOString().split('T')[0];
-        
         return exams.filter(exam => {
             try {
                 const examDate = new Date(exam.examDate).toISOString().split('T')[0];
-                // Keep only exams that are today or upcoming (not completed)
                 return examDate >= currentDate;
             } catch (e) {
-                // If date parsing fails, include the exam
                 return true;
             }
         });
@@ -173,10 +147,8 @@ class RoutineDownloader {
         const examElements = document.querySelectorAll('.routine-item');
         
         examElements.forEach(element => {
-            // DOM থেকে examType সঠিকভাবে পড়ার জন্য
-            let examType = 'Written'; // ডিফল্ট
+            let examType = 'Written';
             
-            // ১. exam-type-badge ক্লাস থেকে পড়ার চেষ্টা করুন
             const typeBadge = element.querySelector('.exam-type-badge');
             if (typeBadge) {
                 const badgeText = typeBadge.textContent.trim().toLowerCase();
@@ -185,7 +157,6 @@ class RoutineDownloader {
                 }
             }
             
-            // ২. data attribute থেকে পড়ার চেষ্টা করুন
             const examId = element.getAttribute('data-exam-id');
             if (examId && window.examData) {
                 const originalExam = window.examData.find(e => e.id === examId);
@@ -194,25 +165,18 @@ class RoutineDownloader {
                 }
             }
             
-            // ৩. ক্লাস থেকে পড়ার চেষ্টা করুন
             if (element.classList.contains('type-practical') || 
                 element.querySelector('.type-practical')) {
                 examType = 'Practical';
             }
             
-            // Format date properly
             let examDate = element.querySelector('.exam-date')?.textContent || '';
-            // Try to parse date from text if needed
             if (examDate && window.dataFunctions) {
                 try {
-                    // Convert displayed date back to ISO format if possible
                     examDate = window.dataFunctions.parseDate(examDate) || examDate;
-                } catch (e) {
-                    // Keep original date
-                }
+                } catch (e) {}
             }
 
-            // Check if exam is completed by looking at status-badge
             let isCompleted = false;
             const statusBadge = element.querySelector('.status-badge');
             if (statusBadge) {
@@ -232,7 +196,6 @@ class RoutineDownloader {
                 isCompleted: isCompleted
             };
             
-            // If we have examId, store it for reference
             if (examId) {
                 exam.id = examId;
             }
@@ -245,7 +208,6 @@ class RoutineDownloader {
 
     async generateAndDownloadJPG(exams, selectedDept, selectedSemester, dateFilter, searchTerm) {
         try {
-            // Create title based on filters
             let title = 'Explore Routine 2026';
             let subtitle = '';
 
@@ -271,16 +233,7 @@ class RoutineDownloader {
                 subtitle += (subtitle ? ' - ' : '') + `Search: "${searchTerm}"`;
             }
 
-            // if (!subtitle) {
-            //     subtitle = 'All Exams';
-            // } else {
-            //     subtitle += ' (Completed exams excluded)';
-            // }
-
-            // Create the content for the image
             const content = this.createRoutineContent(exams, title, subtitle);
-            
-            // Generate and download JPG
             await this.downloadAsJPG(content, selectedDept, selectedSemester, dateFilter);
 
         } catch (error) {
@@ -290,27 +243,20 @@ class RoutineDownloader {
     }
 
     createRoutineContent(exams, title, subtitle) {
-        // Create table rows for exams
         let tableRows = '';
-        
         const currentDate = new Date().toISOString().split('T')[0];
         
         exams.forEach((exam, index) => {
             let examDate = exam.examDate;
-            // Try to format date if dataFunctions is available
             if (window.dataFunctions && typeof window.dataFunctions.formatDate === 'function') {
                 try {
                     examDate = window.dataFunctions.formatDate(exam.examDate);
-                } catch (e) {
-                    // Use original date if formatting fails
-                }
+                } catch (e) {}
             }
             
-            // Get exam type from exam object - সরাসরি examType ব্যবহার করুন
             const examType = exam.examType || 'Written';
             const typeDisplay = examType === 'practical' || examType === 'Practical' ? 'Practical' : 'Written';
             
-            // Determine status - শুধু Upcoming এবং Today থাকবে
             let status = 'Upcoming';
             let statusColor = '#4CAF50';
             
@@ -323,10 +269,7 @@ class RoutineDownloader {
                         status = 'Today';
                         statusColor = '#FF9800';
                     }
-                    // Completed exams already filtered out, so no need to check for that
-                } catch (e) {
-                    // Date parsing error, keep default
-                }
+                } catch (e) {}
             }
 
             tableRows += `
@@ -366,12 +309,10 @@ class RoutineDownloader {
 
     async downloadAsJPG(content, selectedDept, selectedSemester, dateFilter) {
         return new Promise((resolve, reject) => {
-            // Load html2canvas
             const script = document.createElement('script');
             script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
             script.onload = async () => {
                 try {
-                    // Create temporary div for rendering
                     const tempDiv = document.createElement('div');
                     tempDiv.id = 'downloadTempDiv';
                     tempDiv.style.cssText = `
@@ -389,10 +330,8 @@ class RoutineDownloader {
                     `;
 
                     tempDiv.innerHTML = this.generateHTMLForCanvas(content);
-
                     document.body.appendChild(tempDiv);
 
-                    // Use html2canvas to capture the div
                     const canvas = await html2canvas(tempDiv, {
                         scale: 2,
                         backgroundColor: '#ffffff',
@@ -401,24 +340,19 @@ class RoutineDownloader {
                         allowTaint: true,
                     });
 
-                    // Convert to JPG
                     const imageData = canvas.toDataURL('image/jpeg', 0.95);
-
-                    // Create download link
                     const link = document.createElement('a');
                     link.download = this.generateFileName(selectedDept, selectedSemester, dateFilter);
                     link.href = imageData;
                     
-                    // Trigger download
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
 
-                    // Clean up
                     document.body.removeChild(tempDiv);
                     document.head.removeChild(script);
 
-                    this.showNotification('Routine downloaded successfully as JPG! (Completed exams excluded)', 'success');
+                    this.showNotification('Routine downloaded successfully as JPG!', 'success');
                     resolve();
                     
                 } catch (error) {
@@ -439,14 +373,12 @@ class RoutineDownloader {
     generateHTMLForCanvas(content) {
         return `
             <div style="width: 100%; max-width: 1000px; margin: 0 auto; box-sizing: border-box;">
-                <!-- Header -->
                 <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #667eea;">
                     <h1 style="font-size: 32px; margin: 0 0 10px 0; color: #333; font-weight: 700;">
                         ${content.title}
                     </h1>
                     <h2 style="font-size: 20px; margin: 0; color: #666; font-weight: 500;">${content.subtitle}</h2>
                 </div>
-                <!-- Table -->
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; border: 2px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
                         <thead>
@@ -466,8 +398,6 @@ class RoutineDownloader {
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Footer -->
                 <div style="margin-top: 60px; padding-top: 25px; border-top: 2px solid #eee; text-align: center; color: #777; font-size: 14px;">
                     <div>Download from exploreex.vercel.app</div>
                     <div style="margin-top: 10px; color: #999; font-size: 11px;">
@@ -503,7 +433,6 @@ class RoutineDownloader {
         if (window.showNotification) {
             window.showNotification(message, type);
         } else {
-            // Fallback notification
             const notification = document.createElement('div');
             notification.style.cssText = `
                 position: fixed;
@@ -534,12 +463,8 @@ class RoutineDownloader {
 
 // Initialize downloader when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing RoutineDownloader...');
-    
-    // Initialize immediately
     window.routineDownloader = new RoutineDownloader();
     
-    // Also try again after a delay when everything is loaded
     window.addEventListener('load', () => {
         setTimeout(() => {
             if (window.routineDownloader && !window.routineDownloader.isInitialized) {
@@ -549,11 +474,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Export for use in other files
 window.RoutineDownloader = RoutineDownloader;
-// Add this to your existing download.js file
 
-// PDF Download functionality
+// =====================================================
+// ✅ FIXED PDF Download functionality (No text overlapping)
+// =====================================================
+
 class PDFDownloader {
     constructor() {
         this.jsPDFLoaded = false;
@@ -589,9 +515,8 @@ class PDFDownloader {
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
             
+            // --- Header ---
             let y = 20;
-            
-            // Header
             doc.setFillColor(41, 128, 185);
             doc.rect(0, 0, pageWidth, 40, 'F');
             
@@ -614,7 +539,7 @@ class PDFDownloader {
                 y += 10;
             }
             
-            // Date and filter info
+            // Date
             doc.setFontSize(10);
             doc.setTextColor(150, 150, 150);
             const currentDate = new Date().toLocaleDateString('en-US', {
@@ -626,7 +551,7 @@ class PDFDownloader {
             doc.text(`Generated on: ${currentDate}`, pageWidth - 10, y, { align: 'right' });
             y += 15;
             
-            // Table header
+            // --- Table Header ---
             doc.setFillColor(240, 240, 240);
             doc.rect(10, y, pageWidth - 20, 10, 'F');
             
@@ -645,34 +570,51 @@ class PDFDownloader {
             
             y += 10;
             
-            // Table content
+            // --- Table Content ---
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(9);
+            
+            // Store current page number
+            let currentPage = 1;
             
             exams.forEach((exam, index) => {
                 // Check if we need new page
                 if (y > pageHeight - 20) {
                     doc.addPage();
+                    currentPage++;
                     y = 20;
+                    
+                    // Re-draw header on new page
+                    doc.setFillColor(240, 240, 240);
+                    doc.rect(10, y, pageWidth - 20, 10, 'F');
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'bold');
+                    
+                    let hx = 10;
+                    columns.forEach((col, idx) => {
+                        doc.text(col, hx + colWidths[idx] / 2, y + 6, { align: 'center' });
+                        hx += colWidths[idx];
+                    });
+                    
+                    y += 10;
                 }
                 
                 // Determine status
-                const currentDate = new Date().toISOString().split('T')[0];
+                const currentDateStr = new Date().toISOString().split('T')[0];
                 let status = 'Upcoming';
-                let statusColor = [76, 175, 80]; // Green
+                let statusColor = [76, 175, 80];
                 
                 if (exam.examDate) {
                     try {
-                        if (exam.examDate === currentDate) {
+                        if (exam.examDate === currentDateStr) {
                             status = 'Today';
-                            statusColor = [255, 152, 0]; // Orange
-                        } else if (exam.examDate < currentDate) {
+                            statusColor = [255, 152, 0];
+                        } else if (exam.examDate < currentDateStr) {
                             status = 'Completed';
-                            statusColor = [244, 67, 54]; // Red
+                            statusColor = [244, 67, 54];
                         }
-                    } catch (e) {
-                        // Keep default
-                    }
+                    } catch (e) {}
                 }
                 
                 // Get exam type
@@ -685,9 +627,7 @@ class PDFDownloader {
                 if (window.dataFunctions && typeof window.dataFunctions.formatDate === 'function') {
                     try {
                         displayDate = window.dataFunctions.formatDate(exam.examDate);
-                    } catch (e) {
-                        // Keep original
-                    }
+                    } catch (e) {}
                 }
                 
                 // Row background
@@ -696,44 +636,45 @@ class PDFDownloader {
                     doc.rect(10, y, pageWidth - 20, 8, 'F');
                 }
                 
-                // Draw row data
+                // Draw row data - with correct positioning
                 let colX = 10;
                 
                 // Serial number
                 doc.setTextColor(100, 100, 100);
-                doc.text((index + 1).toString(), colX + 5, y + 5, { align: 'center' });
+                doc.text((index + 1).toString(), colX + colWidths[0] / 2, y + 5, { align: 'center' });
                 colX += colWidths[0];
                 
                 // Department
                 doc.setTextColor(0, 0, 0);
-                doc.text(exam.department.substring(0, 12), colX + 15, y + 5);
+                const deptText = exam.department.length > 12 ? exam.department.substring(0, 10) + '..' : exam.department;
+                doc.text(deptText, colX + 2, y + 5);
                 colX += colWidths[1];
                 
                 // Semester
-                doc.text(exam.semester, colX + 10, y + 5, { align: 'center' });
+                doc.text(exam.semester, colX + colWidths[2] / 2, y + 5, { align: 'center' });
                 colX += colWidths[2];
                 
                 // Subject
-                const subject = exam.subject.length > 20 ? exam.subject.substring(0, 20) + '...' : exam.subject;
-                doc.text(subject, colX + 25, y + 5);
+                const subjectText = exam.subject.length > 20 ? exam.subject.substring(0, 18) + '..' : exam.subject;
+                doc.text(subjectText, colX + 2, y + 5);
                 colX += colWidths[3];
                 
                 // Date
-                doc.text(displayDate, colX + 12.5, y + 5, { align: 'center' });
+                doc.text(displayDate, colX + colWidths[4] / 2, y + 5, { align: 'center' });
                 colX += colWidths[4];
                 
                 // Time
-                doc.text(exam.time, colX + 10, y + 5, { align: 'center' });
+                doc.text(exam.time, colX + colWidths[5] / 2, y + 5, { align: 'center' });
                 colX += colWidths[5];
                 
                 // Type
                 doc.setTextColor(typeColor[0], typeColor[1], typeColor[2]);
-                doc.text(typeDisplay, colX + 10, y + 5, { align: 'center' });
+                doc.text(typeDisplay, colX + colWidths[6] / 2, y + 5, { align: 'center' });
                 colX += colWidths[6];
                 
                 // Status
                 doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-                doc.text(status, colX + 10, y + 5, { align: 'center' });
+                doc.text(status, colX + colWidths[7] / 2, y + 5, { align: 'center' });
                 
                 // Draw row border
                 doc.setDrawColor(220, 220, 220);
@@ -742,15 +683,13 @@ class PDFDownloader {
                 y += 8;
             });
             
-            // Footer
+            // --- Footer ---
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
             doc.text('Download from exploreex.vercel.app', pageWidth / 2, pageHeight - 10, { align: 'center' });
             doc.text('© 2026 Explore Routine', pageWidth / 2, pageHeight - 5, { align: 'center' });
             
-            // Save PDF
             doc.save(filename);
-            
             return true;
             
         } catch (error) {
@@ -838,17 +777,8 @@ window.downloadAllExams = async function(exams) {
 
 // Initialize PDF downloader when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize PDF downloader
     window.pdfDownloader = new PDFDownloader();
-    
-    // Test if PDF functions are available
-    console.log('PDF Download functions available:', {
-        downloadSubjectExams: typeof window.downloadSubjectExams,
-        downloadDepartmentRoutine: typeof window.downloadDepartmentRoutine,
-        downloadDepartmentExams: typeof window.downloadDepartmentExams,
-        downloadAllExams: typeof window.downloadAllExams
-    });
+    console.log('PDF Download functions available');
 });
 
-// Export for use in other files
 window.PDFDownloader = PDFDownloader;
