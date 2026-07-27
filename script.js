@@ -1,3 +1,7 @@
+// ============================================================
+// script.js - সম্পূর্ণ আপডেটেড (Written ফিল্টার ঠিক করা হয়েছে)
+// ============================================================
+
 if (!window.showNotification) {
   window.showNotification = function (message, type = "info") {
     const existingNotification = document.querySelector(".notification");
@@ -57,7 +61,10 @@ let examData = [];
 let isLoading = false;
 let isFilterChanging = false;
 
-// ✅ EXPORT examData to window so download.js can access it
+// ✅ Global reference for filtered exams (used by download.js)
+window.filteredExamRoutine = filteredExamRoutine;
+
+// ✅ Global reference for all exams (used by download.js)
 window.examData = examData;
 
 // Initialize the application
@@ -193,10 +200,11 @@ async function loadInitialData() {
 
   try {
     examData = await window.dataFunctions.loadExamsFromFirebase();
-    // ✅ Update window.examData
+    // ✅ Update global references
     window.examData = examData;
 
     filteredExamRoutine = [...examData];
+    window.filteredExamRoutine = filteredExamRoutine;
 
     filteredExamRoutine.sort(
       (a, b) => new Date(a.examDate) - new Date(b.examDate),
@@ -337,6 +345,7 @@ function setupQuickFilters() {
                 <button class="btn-quick-filter" data-filter="civil">Civil</button>
                 <button class="btn-quick-filter" data-filter="practical">Practical</button>
                 <button class="btn-quick-filter" data-filter="written">Written</button>
+                <button class="btn-quick-filter" data-filter="referred">Referred</button>
             </div>
         `;
 
@@ -409,6 +418,13 @@ function applyQuickFilter(filter) {
       applyFilters("all", "all", "written");
       if (clearBtn) clearBtn.style.display = "flex";
       break;
+    case "referred":
+      if (deptSelect) deptSelect.value = "all";
+      if (semesterSelect) semesterSelect.value = "all";
+      if (dateFilter) dateFilter.value = "referred";
+      applyFilters("all", "all", "referred");
+      if (clearBtn) clearBtn.style.display = "flex";
+      break;
     default:
       if (deptSelect) deptSelect.value = "all";
       if (semesterSelect) semesterSelect.value = "all";
@@ -457,6 +473,8 @@ function updateRoutineTitle(selectedDept, selectedSemester) {
     titleText += " (Upcoming Practical)";
   } else if (dateFilterValue === "written") {
     titleText += " (Upcoming Written)";
+  } else if (dateFilterValue === "referred") {
+    titleText += " (Upcoming Referred)";
   } else if (dateFilterValue === "all") {
     titleText += " (All Upcoming)";
   }
@@ -553,6 +571,7 @@ function handleSearch() {
   });
 
   filteredExamRoutine = searchResults;
+  window.filteredExamRoutine = filteredExamRoutine;
 
   filteredExamRoutine.sort(
     (a, b) => new Date(a.examDate) - new Date(b.examDate),
@@ -623,7 +642,9 @@ function handleFilterChange() {
   isFilterChanging = false;
 }
 
-// Apply filters function
+// ============================================================
+// ✅ Apply filters function - Written filter fixed
+// ============================================================
 function applyFilters(dept, semester, dateFilter, specialFilter = null) {
   const clearBtn = document.getElementById("clearFiltersBtn");
   if (clearBtn) {
@@ -672,10 +693,16 @@ function applyFilters(dept, semester, dateFilter, specialFilter = null) {
         );
         break;
       case "written":
+        // ✅ শুধুমাত্র written টাইপের exams দেখাবে (undefined/null বাদ)
         tempFiltered = tempFiltered.filter(
           (exam) =>
-            (exam.examType === "written" || !exam.examType) &&
-            exam.examDate >= currentAppDate,
+            exam.examType === "written" && exam.examDate >= currentAppDate,
+        );
+        break;
+      case "referred":
+        tempFiltered = tempFiltered.filter(
+          (exam) =>
+            exam.examType === "referred" && exam.examDate >= currentAppDate,
         );
         break;
       case "all":
@@ -688,6 +715,7 @@ function applyFilters(dept, semester, dateFilter, specialFilter = null) {
   }
 
   filteredExamRoutine = tempFiltered;
+  window.filteredExamRoutine = filteredExamRoutine;
 
   console.log(
     `Filtered ${examData.length} exams down to ${filteredExamRoutine.length} exams (dateFilter: ${dateFilter})`,
@@ -725,7 +753,6 @@ async function refreshRoutine() {
   try {
     const newExamData = await window.dataFunctions.loadExamsFromFirebase();
     examData = newExamData;
-    // ✅ Update window.examData
     window.examData = examData;
 
     const selectedDept = deptSelect ? deptSelect.value : "all";
@@ -898,8 +925,8 @@ function createRoutineElement(exam) {
 
   const examType = exam.examType || "written";
   const typeClass =
-    examType === "practical" ? "type-practical" : "type-written";
-  const typeText = examType === "practical" ? "Practical" : "Written";
+    examType === "practical" ? "type-practical" : examType === "referred" ? "type-referred" : "type-written";
+  const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
 
   // ✅ Date format: dd/mm/yyyy
   const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
@@ -1232,6 +1259,9 @@ function showExamDetails(exam) {
   // ✅ Date format: dd/mm/yyyy
   const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
 
+  const examType = exam.examType || "written";
+  const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
+
   const modal = document.createElement("div");
   modal.className = "exam-details-modal";
   modal.innerHTML = `
@@ -1251,7 +1281,7 @@ function showExamDetails(exam) {
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Exam Type:</span>
-                    <span class="detail-value exam-type-badge type-${exam.examType || "written"}">${(exam.examType || "written").toUpperCase()}</span>
+                    <span class="detail-value exam-type-badge type-${examType}">${typeText}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Exam Date:</span>
@@ -1373,6 +1403,7 @@ async function downloadExamAsJPG(exam) {
               : "Upcoming";
 
         const examType = exam.examType || "written";
+        const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
 
         tempDiv.innerHTML = `
                     <div style="text-align: center; margin-bottom: 30px;">
@@ -1405,7 +1436,7 @@ async function downloadExamAsJPG(exam) {
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 40px;">
                         <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
                             <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Exam Type</div>
-                            <div style="font-size: 24px; font-weight: bold; color: ${examType === "practical" ? "#ffffff" : "#ffffff"}">${examType.toUpperCase()}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: ${examType === "practical" ? "#ffffff" : "#ffffff"}">${typeText}</div>
                         </div>
                         
                         <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
@@ -1476,8 +1507,9 @@ async function downloadExamAsJPG(exam) {
 // Share exam information
 function shareExamInfo(exam) {
   const examType = exam.examType || "written";
+  const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
   const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
-  const shareText = `${exam.subject} Exam\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nType: ${examType.toUpperCase()}\nDate: ${dateDisplay}\nTime: ${exam.time}\nRoom: ${exam.room}`;
+  const shareText = `${exam.subject} Exam\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nType: ${typeText}\nDate: ${dateDisplay}\nTime: ${exam.time}\nRoom: ${exam.room}`;
 
   if (navigator.share) {
     navigator.share({
@@ -1599,7 +1631,7 @@ function updateNextExam() {
                             </div>
                             <div class="detail-item">
                                 <i class="fas fa-tag"></i>
-                                <span class="exam-type-badge type-${nextExam.examType || "written"}">${(nextExam.examType || "written").toUpperCase()}</span>
+                                <span class="exam-type-badge type-${nextExam.examType || "written"}">${(nextExam.examType === "practical" ? "Practical" : nextExam.examType === "referred" ? "Referred" : "Written").toUpperCase()}</span>
                             </div>
                         </div>
                         <div class="countdown-container">
@@ -1693,7 +1725,7 @@ function updateUpcomingList() {
                         <div class="upcoming-date">${dateDisplay}</div>
                         <div class="upcoming-details">
                             <span class="upcoming-time">${exam.time}</span>
-                            <span class="exam-type-badge type-${exam.examType || "written"}">${(exam.examType || "written").toUpperCase()}</span>
+                            <span class="exam-type-badge type-${exam.examType || "written"}">${(exam.examType === "practical" ? "Practical" : exam.examType === "referred" ? "Referred" : "Written").toUpperCase()}</span>
                         </div>
                     `;
 
@@ -1738,6 +1770,7 @@ window.updateRoutineDisplay = updateRoutineDisplay;
 window.updateStatistics = updateStatistics;
 window.updateNextExam = updateNextExam;
 window.updateUpcomingList = updateUpcomingList;
-window.examData = examData;  // ✅ This is important for download.js
+window.examData = examData;
+window.filteredExamRoutine = filteredExamRoutine;
 window.showNotification = showNotification;
 window.refreshRoutine = refreshRoutine;

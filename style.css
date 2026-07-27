@@ -293,6 +293,7 @@ header {
 .type-referred {
     background-color: #e74c3c;
     color: white;
+    border-radius: 5px;
 }
 .semester-badge {
   padding: 4px 10px;

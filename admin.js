@@ -1,4 +1,3 @@
-
 // admin.js - Enhanced Admin Panel with Smart Features
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -784,6 +783,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             <select id="editExamType">
                                 <option value="written" ${(exam.examType || 'written') === 'written' ? 'selected' : ''}>Written</option>
                                 <option value="practical" ${(exam.examType || 'written') === 'practical' ? 'selected' : ''}>Practical</option>
+                                <!-- ✅ NEW: Referred option added -->
+                                <option value="referred" ${(exam.examType || 'written') === 'referred' ? 'selected' : ''}>Referred</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1306,6 +1307,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const upcomingExams = allExams.filter(exam => exam.examDate >= today).length;
         const practicalExams = allExams.filter(exam => exam.examType === 'practical').length;
         const writtenExams = allExams.filter(exam => !exam.examType || exam.examType === 'written').length;
+        const referredExams = allExams.filter(exam => exam.examType === 'referred').length;
         
         // Update stats in admin header if elements exist
         const statsElement = document.getElementById('adminStats');
@@ -1321,6 +1323,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="stat-badge">Upcoming: ${upcomingExams}</span>
                     <span class="stat-badge">Practical: ${practicalExams}</span>
                     <span class="stat-badge">Written: ${writtenExams}</span>
+                    <span class="stat-badge">Referred: ${referredExams}</span>
                 `;
                 adminHeader.appendChild(statsDiv);
             }
@@ -1331,6 +1334,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span class="stat-badge">Upcoming: ${upcomingExams}</span>
                 <span class="stat-badge">Practical: ${practicalExams}</span>
                 <span class="stat-badge">Written: ${writtenExams}</span>
+                <span class="stat-badge">Referred: ${referredExams}</span>
             `;
         }
     }
