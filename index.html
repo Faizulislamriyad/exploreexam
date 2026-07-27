@@ -80,7 +80,6 @@
                         <div class="header-item">Status</div>
                     </div>
                     <div id="routineList" class="routine-list">
-                        <!-- Routine items will be loaded here by JavaScript -->
                         <div class="loading">
                             <i class="fas fa-spinner"></i>
                             <p>Loading exams...</p>
@@ -233,6 +232,29 @@
             <i class="fas fa-user-shield"></i>
         </button>
 
+        <!-- My Notifications Button & Modal (Student) -->
+        <button id="myNotificationsBtn" class="notifications-panel-btn">
+            <i class="fas fa-bell"></i>
+            <span id="notifBadge" class="notif-badge">0</span>
+        </button>
+
+        <div id="notificationsModal" class="modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3><i class="fas fa-bell"></i> My Scheduled Notifications</h3>
+                    <button class="close-modal close-notif-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="scheduledNotificationsList">
+                        <p class="loading">Loading notifications...</p>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 15px; text-align: center;">
+                    <button id="clearAllNotifBtn" class="btn-danger">Clear All Notifications</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Chatbot Interface -->
         <div class="chatbot-container">
             <div class="chatbot-header">
@@ -272,18 +294,16 @@
             <li>Past exams are automatically hidden when "Upcoming Exams Only" is selected</li>
             <li>Use the chatbot (bottom right) to search for specific exams</li>
             <li>Click on any exam to see more details</li>
-            <li>You Can Donload, Share and Set Reminder for next Exam</li>
+            <li>You Can Download, Share and Set Reminder for next Exam</li>
         </ul>     
     </div>
 
     <!-- JavaScript Files -->
     <script type="module">
-        // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCaM7TUs8rxFFDEMgmAx2DG7XllBthnoAA",
             authDomain: "barisal-polytechnic-inst-54ce1.firebaseapp.com",
@@ -294,12 +314,10 @@
             measurementId: "G-5TNPK05BED"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Export for use in other files
         window.firebase = { 
             db, auth, 
             collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot,
@@ -307,11 +325,11 @@
         };
     </script>
     <script src="data.js"></script>
+    <script src="notification.js"></script>
     <script src="chatbot.js"></script>
     <script src="admin.js"></script>
     <script src="script.js"></script>
     <script src="download.js"></script>
     <script src="Extra.js"></script>
-    
 </body>
 </html>

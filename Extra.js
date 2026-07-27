@@ -1,4 +1,4 @@
-// Mobile ডিভাইসে শুধু হেডার পরিবর্তন
+
 function updateHeadersForMobile() {
     if (window.innerWidth <= 768) {
         const headerItems = document.querySelectorAll('.routine-header .header-item');
@@ -14,11 +14,9 @@ function updateHeadersForMobile() {
     }
 }
 
-// পেজ লোড এবং রিসাইজে কল করুন
 window.addEventListener('load', updateHeadersForMobile);
 window.addEventListener('resize', updateHeadersForMobile);
 
-// ডেবাউন্সিং সহ রিসাইজ হ্যান্ডলিং
 let resizeTimer;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);

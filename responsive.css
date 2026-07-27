@@ -610,8 +610,8 @@
         position: fixed !important;
         left: 20px !important;
         bottom: 100px !important;
-        width: 20px !important;
-        height: 20px !important;
+        width: 10px !important;
+        height: 10px !important;
         border-radius: 50% !important;
         background: linear-gradient(145deg, #9b59b6, #8e44ad) !important;
         color: white !important;
@@ -620,9 +620,9 @@
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 1.0 rem !important;
+        font-size: 1.1rem !important;
         z-index: 1000 !important;
-        opacity: 0.2 !important;
+        opacity: 0.3 !important;
         transition: all 0.3s ease !important;
     }
     
@@ -631,8 +631,8 @@
         position: fixed !important;
         right: 20px !important;
         bottom: 100px !important; /* একই level */
-        width: 20px !important;
-        height: 20px !important;
+        width: 10px !important;
+        height: 10px !important;
         border-radius: 50% !important;
         background: linear-gradient(145deg, #3498db, #2980b9) !important;
         color: white !important;
@@ -641,9 +641,9 @@
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 1.0rem !important;
+        font-size: 1.1rem !important;
         z-index: 1000 !important;
-        opacity: 0.2 !important;
+        opacity: 0.3 !important;
         transition: all 0.3s ease !important;
     }
     
@@ -661,14 +661,6 @@
         opacity: 1 !important;
         transform: translateY(-5px) scale(1.1) !important;
         box-shadow: 0 12px 30px rgba(0,0,0,0.4) !important;
-    }
-    
-    /* Chatbot Container Position Adjust */
-    .chatbot-container {
-        bottom: 180px !important; /* Button থেকে উপরে */
-        right: 20px !important;
-        width: calc(100% - 40px) !important;
-        max-height: 60vh !important;
     }
     
     /* Adjust Page Bottom Padding */
@@ -789,14 +781,6 @@
 /* ===== SMALL MOBILE STYLES (480px and below) ===== */
 @media (max-width: 480px) {
     /* Chatbot - Extra Small - PROPER SIZE */
-    .chatbot-container {
-        width: 95% !important;
-        right: 2.5% !important;
-        left: 2.5% !important;
-        bottom: 110px !important;
-        max-height: 70vh !important;
-        min-height: 400px !important;
-    }
     
     .chatbot-messages {
         height: 300px !important;
@@ -805,11 +789,11 @@
     }
     
     .chatbot-header {
-        padding: 15px 20px !important;
+        padding: 10px 20px !important;
     }
     
     .chatbot-header h3 {
-        font-size: 1.3rem !important;
+        font-size: 1.1rem !important;
     }
     
     .chatbot-input {
