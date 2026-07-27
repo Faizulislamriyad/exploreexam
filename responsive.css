@@ -98,16 +98,11 @@
         gap: 8px;
         padding: 12px 15px;
     }
-    /* .routine-header div:nth-child(2),
-    .routine-header div:nth-child(3), */
     .routine-header div:nth-child(4),
     .routine-header div:nth-child(5),
     .routine-header div:nth-child(6),
     .routine-header div:nth-child(7),
     .routine-header div:nth-child(8),
-    /* .routine-item div:nth-child(1), */
-    /* .routine-item div:nth-child(2), */
-    /* .routine-item div:nth-child(3), */
     .routine-item div:nth-child(4),
     .routine-item div:nth-child(5),
     .routine-item div:nth-child(6),
@@ -208,23 +203,108 @@
         text-align: center;
     }
     
-    /* Buttons - Mobile */
+    /* ===== FLOATING BUTTONS - MOBILE ===== */
+    /* Admin Button - Left Side */
     .admin-access-btn {
-        bottom: 100px;
-        left: 20px;
-        width: 60px;
-        height: 60px;
-        font-size: 1.3rem;
-        margin-left: 10px;
+        position: fixed !important;
+        left: 20px !important;
+        bottom: 100px !important;
+        width: 50px !important;
+        height: 50px !important;
+        border-radius: 50% !important;
+        background: linear-gradient(145deg, #9b59b6, #8e44ad) !important;
+        color: white !important;
+        border: 2px solid rgba(255,255,255,0.5) !important;
+        box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1.4rem !important;
+        z-index: 999 !important;
+        opacity: 0.4 !important;
+        transition: all 0.3s ease !important;
     }
     
+    /* Chatbot Button - Right Side Bottom */
     .chatbot-toggle {
-        bottom: 20px;
-        right: 20px;
-        width: 60px;
-        height: 60px;
-        font-size: 1.5rem;
-        margin-right: 10px;
+        position: fixed !important;
+        right: 20px !important;
+        bottom: 20px !important;
+        width: 50px !important;
+        height: 50px !important;
+        border-radius: 50% !important;
+        background: linear-gradient(145deg, #3498db, #2980b9) !important;
+        color: white !important;
+        border: 2px solid rgba(255,255,255,0.5) !important;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1.4rem !important;
+        z-index: 999 !important;
+        opacity: 0.4 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    /* Notification Button - Right Side Above Chatbot */
+    .notifications-panel-btn {
+        position: fixed !important;
+        right: 20px !important;
+        bottom: 90px !important;
+        width: 50px !important;
+        height: 50px !important;
+        border-radius: 50% !important;
+        background: #f39c12 !important;
+        color: white !important;
+        border: 2px solid rgba(255,255,255,0.5) !important;
+        box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 1.4rem !important;
+        z-index: 999 !important;
+        opacity: 0.4 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    /* Notification Badge */
+    .notif-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #e74c3c;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        min-width: 20px;
+        line-height: 1.4;
+        text-align: center;
+        border: 2px solid white;
+    }
+    
+    /* Hover Effects */
+    .admin-access-btn:hover,
+    .chatbot-toggle:hover,
+    .notifications-panel-btn:hover {
+        opacity: 0.9 !important;
+        transform: translateY(-3px) scale(1.05) !important;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+    }
+    
+    /* Active State */
+    .admin-access-btn.active,
+    .chatbot-toggle.active,
+    .notifications-panel-btn.active {
+        opacity: 1 !important;
+        transform: translateY(-3px) scale(1.1) !important;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.4) !important;
+    }
+    
+    /* Adjust Page Bottom Padding for floating buttons */
+    .container {
+        padding-bottom: 130px !important;
     }
     
     /* Instructions - Mobile */
@@ -411,27 +491,41 @@
         font-size: 0.8rem;
     }
     
-    /* Buttons - Extra Small */
+    /* ===== FLOATING BUTTONS - EXTRA SMALL ===== */
     .admin-access-btn {
-        bottom: 90px;
-        left: 15px;
-        width: 50px;
-        height: 50px;
-        font-size: 1.1rem;
+        left: 15px !important;
+        bottom: 85px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.2rem !important;
     }
     
     .chatbot-toggle {
-        bottom: 15px;
-        right: 15px;
-        width: 50px;
-        height: 50px;
-        font-size: 1.3rem;
+        right: 15px !important;
+        bottom: 15px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.2rem !important;
     }
     
+    .notifications-panel-btn {
+        right: 15px !important;
+        bottom: 75px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.2rem !important;
+    }
+    
+    .container {
+        padding-bottom: 110px !important;
+    }
+    
+    /* Chatbot Container - Extra Small */
     .chatbot-container {
-        width: calc(100% - 30px);
-        right: 15px;
-        bottom: 70px;
+        width: calc(100% - 30px) !important;
+        right: 15px !important;
+        left: 15px !important;
+        bottom: 100px !important;
     }
     
     /* Footer - Extra Small */
@@ -534,6 +628,7 @@
 @media print {
     .admin-access-btn,
     .chatbot-toggle,
+    .notifications-panel-btn,
     .chatbot-container,
     .notification,
     .exam-details-modal,
@@ -564,6 +659,7 @@
         overflow: visible !important;
     }
 }
+
 /* Hide star badges on mobile devices */
 @media screen and (max-width: 768px) {
     .star-badge,
@@ -576,16 +672,9 @@
         justify-content: center;
         gap: 5px;
     }
-    
-    /* .admin-stats .stat-badge:nth-child(1),
-    .admin-stats .stat-badge:nth-child(2),
-    .admin-stats .stat-badge:nth-child(3) {
-        display: inline-flex !important;
-        font-size: 0.8rem;
-        padding: 3px 8px;
-    } */
 }
-/* Clear Button */
+
+/* Clear Button - Mobile */
 @media (max-width: 768px) {
     .btn-clear-filters {
         width: 100% !important;
@@ -603,82 +692,15 @@
         min-width: 100% !important;
     }
 }
-/* ===== SMART OPACITY BUTTONS ===== */
+
+/* ===== CHATBOT MOBILE ===== */
 @media (max-width: 768px) {
-    /* Admin Button */
-    .admin-access-btn {
-        position: fixed !important;
-        left: 20px !important;
-        bottom: 100px !important;
-        width: 10px !important;
-        height: 10px !important;
-        border-radius: 50% !important;
-        background: linear-gradient(145deg, #9b59b6, #8e44ad) !important;
-        color: white !important;
-        border: 1px solid white !important;
-        box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 1.1rem !important;
-        z-index: 1000 !important;
-        opacity: 0.3 !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    /* Chatbot Button */
-    .chatbot-toggle {
-        position: fixed !important;
-        right: 20px !important;
-        bottom: 100px !important; /* একই level */
-        width: 10px !important;
-        height: 10px !important;
-        border-radius: 50% !important;
-        background: linear-gradient(145deg, #3498db, #2980b9) !important;
-        color: white !important;
-        border: 1px solid white !important;
-        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 1.1rem !important;
-        z-index: 1000 !important;
-        opacity: 0.3 !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    /* Hover Effects */
-    .admin-access-btn:hover,
-    .chatbot-toggle:hover {
-        opacity: 0.8 !important;
-        transform: translateY(-5px) !important;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
-    }
-    
-    /* Active State */
-    .admin-access-btn.active,
-    .chatbot-toggle.active {
-        opacity: 1 !important;
-        transform: translateY(-5px) scale(1.1) !important;
-        box-shadow: 0 12px 30px rgba(0,0,0,0.4) !important;
-    }
-    
-    /* Adjust Page Bottom Padding */
-    .container {
-        padding-bottom: 120px !important;
-    }
-}
-/* ===== MOBILE STYLES (768px and below) ===== */
-@media (max-width: 768px) {
-    /* ... existing code ... */
-    
-    /* Chatbot - Mobile - PROPER SIZE */
     .chatbot-container {
         width: 90% !important;
         right: 5% !important;
         left: 5% !important;
         bottom: 120px !important;
-        max-height: 65vh !important; /* সঠিক সাইজ */
+        max-height: 65vh !important;
         min-height: 350px !important;
         height: auto !important;
         border-radius: 20px !important;
@@ -701,7 +723,7 @@
     }
     
     .chatbot-messages {
-        height: 250px !important; /* Messages area সঠিক সাইজ */
+        height: 250px !important;
         min-height: 200px !important;
         padding: 15px 20px !important;
         font-size: 1rem !important;
@@ -717,7 +739,7 @@
     }
     
     .chatbot-input {
-        padding: 15px 20px !important; /* Input area সঠিক সাইজ */
+        padding: 15px 20px !important;
         border-top: 1px solid #e0e0e0 !important;
         display: flex !important;
         align-items: center !important;
@@ -757,31 +779,10 @@
     .btn-send:hover {
         background-color: #3a5ca9 !important;
     }
-    
-    /* Chatbot toggle button adjust */
-    .chatbot-toggle {
-        bottom: 20px !important;
-        right: 20px !important;
-        width: 60px !important;
-        height: 60px !important;
-        font-size: 1.5rem !important;
-    }
-    
-    .admin-access-btn {
-        bottom: 20px !important;
-        left: 20px !important;
-        width: 60px !important;
-        height: 60px !important;
-        font-size: 1.5rem !important;
-    }
-    
-    /* ... existing code ... */
 }
 
-/* ===== SMALL MOBILE STYLES (480px and below) ===== */
+/* ===== SMALL MOBILE CHATBOT (480px) ===== */
 @media (max-width: 480px) {
-    /* Chatbot - Extra Small - PROPER SIZE */
-    
     .chatbot-messages {
         height: 300px !important;
         min-height: 250px !important;
@@ -812,19 +813,15 @@
         font-size: 1rem !important;
     }
     
-    /* Message সঠিক সাইজ */
     .message {
         padding: 10px 14px !important;
         font-size: 0.95rem !important;
         margin-bottom: 10px !important;
     }
-    
-    /* ... existing code ... */
 }
 
-/* ===== SMART OPACITY BUTTONS ===== */
+/* ===== CHATBOT CONTAINER POSITION ADJUST ===== */
 @media (max-width: 768px) {
-    /* Chatbot Container Position Adjust */
     .chatbot-container {
         bottom: 130px !important;
         right: 5% !important;
@@ -835,7 +832,6 @@
         border-radius: 20px !important;
     }
     
-    /* Adjust Page Bottom Padding */
     .container {
         padding-bottom: 100px !important;
     }
