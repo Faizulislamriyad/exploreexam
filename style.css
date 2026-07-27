@@ -68,18 +68,23 @@ header {
 
 /* ===== MAIN LAYOUT ===== */
 .app-container {
-  display: flex;
-  padding: 25px;
-  gap: 25px;
+    display: flex;
+    padding: 25px;
+    gap: 25px;
+    align-items: stretch; /* দুই কলাম সমান উচ্চতা */
 }
 
 .main-content {
-  flex: 3;
+    flex: 3;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar {
-  flex: 1;
-  min-width: 300px;
+    flex: 1;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
 }
 
 /* ===== CONTROLS ===== */
@@ -154,11 +159,14 @@ header {
 
 /* ===== ROUTINE CONTAINER ===== */
 .routine-container {
-  background-color: white;
-  border-radius: 15px;
-  padding: 25px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-  margin-bottom: 25px;
+    background-color: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
 }
 
 .routine-container h2 {
@@ -182,10 +190,11 @@ header {
 }
 
 .routine-list {
-  max-height: 500px;
-  overflow-y: auto;
-  border-radius: 10px;
-  border: 1px solid #eee;
+    flex: 1;
+    overflow-y: auto;
+    border-radius: 10px;
+    border: 1px solid #eee;
+    max-height: 500px; 
 }
 
 /* Routine list scrollbar styling */
@@ -261,7 +270,6 @@ header {
 .dept-tourism {
   background-color: rgb(29, 189, 198);
 }
-
 .status-badge {
   padding: 6px 12px;
   border-radius: 20px;
@@ -282,7 +290,10 @@ header {
   background-color: #ffebee;
   color: #c62828;
 }
-
+.type-referred {
+    background-color: #e74c3c;
+    color: white;
+}
 .semester-badge {
   padding: 4px 10px;
   background-color: #f0f7ff;
@@ -292,7 +303,14 @@ header {
 }
 
 /* ===== SIDEBAR CARDS ===== */
-.stats-card,
+.stats-card {
+    background-color: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 25px;
+    flex-shrink: 0; 
+}
 .next-exam-card,
 .upcoming-list {
   background-color: white;
@@ -428,8 +446,16 @@ header {
 
 /* ===== UPCOMING LIST ===== */
 .upcoming-list {
-  max-height: 400px;
-  overflow-y: auto;
+    background-color: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* প্রয়োজনে বাড়বে */
+    max-height: 1000px; /* একই উচ্চতা */
+    overflow-y: auto;
 }
 
 .upcoming-list::-webkit-scrollbar {
