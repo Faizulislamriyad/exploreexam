@@ -115,6 +115,7 @@ class RoutineDownloader {
 
             this.showNotification('Generating routine image...', 'info');
 
+            // Filter out completed exams
             const filteredExams = this.filterOutCompletedExams(examsToDownload);
             
             if (filteredExams.length === 0) {
@@ -220,9 +221,9 @@ class RoutineDownloader {
             }
 
             if (dateFilter === 'upcoming') {
-                subtitle += (subtitle ? ' - ' : '') + 'Upcoming Exam Only';
+                subtitle += (subtitle ? ' - ' : '') + 'Upcoming Exams';
             } else if (dateFilter === 'past') {
-                subtitle += (subtitle ? ' - ' : '') + 'Past Exam';
+                subtitle += (subtitle ? ' - ' : '') + 'Past Exams';
             } else if (dateFilter === 'practical') {
                 subtitle += (subtitle ? ' - ' : '') + 'Practical Exams';
             } else if (dateFilter === 'written') {
@@ -477,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.RoutineDownloader = RoutineDownloader;
 
 // =====================================================
-// ✅ FIXED PDF Download functionality (No text overlapping)
+// ✅ FIXED PDF Download - Only Upcoming, No Overlap
 // =====================================================
 
 class PDFDownloader {
@@ -506,8 +507,28 @@ class PDFDownloader {
         });
     }
 
+    // Filter only upcoming exams
+    filterUpcomingExams(exams) {
+        const currentDate = new Date().toISOString().split('T')[0];
+        return exams.filter(exam => {
+            try {
+                return exam.examDate >= currentDate;
+            } catch (e) {
+                return true;
+            }
+        });
+    }
+
     async downloadAsPDF(filename, exams, title = 'Exam Routine', subtitle = '') {
         try {
+            // 🔥 Only keep upcoming exams
+            const upcomingExams = this.filterUpcomingExams(exams);
+            
+            if (upcomingExams.length === 0) {
+                window.showNotification('No upcoming exams to download', 'info');
+                return false;
+            }
+
             await this.ensureJSPDF();
             
             const { jsPDF } = window.jspdf;
@@ -515,104 +536,117 @@ class PDFDownloader {
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
             
-            // --- Header ---
+            // --- Enhanced Header ---
             let y = 20;
+            
+            // Gradient-like header with solid color
             doc.setFillColor(41, 128, 185);
-            doc.rect(0, 0, pageWidth, 40, 'F');
+            doc.rect(0, 0, pageWidth, 45, 'F');
+            
+            // Secondary accent line
+            doc.setFillColor(52, 152, 219);
+            doc.rect(0, 45, pageWidth, 3, 'F');
             
             doc.setTextColor(255, 255, 255);
-            doc.setFontSize(24);
+            doc.setFontSize(26);
             doc.setFont('helvetica', 'bold');
-            doc.text('EXAM ROUTINE', pageWidth / 2, 25, { align: 'center' });
+            doc.text('📚 EXAM ROUTINE', pageWidth / 2, 28, { align: 'center' });
             
             doc.setFontSize(14);
             doc.setFont('helvetica', 'normal');
-            doc.text(title, pageWidth / 2, 35, { align: 'center' });
+            doc.text(title, pageWidth / 2, 40, { align: 'center' });
             
-            y = 50;
+            y = 55;
             
-            // Subtitle
+            // Subtitle with icon
             if (subtitle) {
-                doc.setTextColor(100, 100, 100);
+                doc.setTextColor(80, 80, 80);
                 doc.setFontSize(12);
-                doc.text(subtitle, pageWidth / 2, y, { align: 'center' });
+                doc.setFont('helvetica', 'bold');
+                doc.text(`📋 ${subtitle}`, pageWidth / 2, y, { align: 'center' });
                 y += 10;
             }
             
-            // Date
-            doc.setFontSize(10);
-            doc.setTextColor(150, 150, 150);
-            const currentDate = new Date().toLocaleDateString('en-US', {
+            // Date and filter info in a nice box
+            const currentDateStr = new Date().toLocaleDateString('en-US', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
-                day: 'numeric'
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             });
-            doc.text(`Generated on: ${currentDate}`, pageWidth - 10, y, { align: 'right' });
-            y += 15;
             
-            // --- Table Header ---
-            doc.setFillColor(240, 240, 240);
-            doc.rect(10, y, pageWidth - 20, 10, 'F');
+            doc.setFillColor(245, 247, 250);
+            doc.roundedRect(10, y, pageWidth - 20, 12, 3, 3, 'F');
+            doc.setTextColor(100, 100, 100);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`📅 Generated: ${currentDateStr}  |  📊 Total: ${upcomingExams.length} upcoming exams`, pageWidth / 2, y + 8, { align: 'center' });
+            y += 18;
             
-            doc.setTextColor(0, 0, 0);
+            // --- Table Header with gradient effect ---
+            // Header background
+            doc.setFillColor(41, 128, 185);
+            doc.rect(10, y, pageWidth - 20, 12, 'F');
+            
+            doc.setTextColor(255, 255, 255);
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
             
-            const columns = ['#', 'Department', 'Semester', 'Subject', 'Date', 'Time', 'Type', 'Status'];
-            const colWidths = [10, 30, 20, 50, 25, 20, 20, 20];
+            const columns = ['#', 'Department', 'Sem.', 'Subject', 'Date', 'Time', 'Type', 'Status'];
+            const colWidths = [10, 32, 16, 48, 28, 20, 18, 20];
             let x = 10;
             
             columns.forEach((col, index) => {
-                doc.text(col, x + colWidths[index] / 2, y + 6, { align: 'center' });
+                const align = (index === 1 || index === 3) ? 'left' : 'center';
+                const xPos = align === 'left' ? x + 2 : x + colWidths[index] / 2;
+                doc.text(col, xPos, y + 8, { align: align });
                 x += colWidths[index];
             });
             
-            y += 10;
+            y += 12;
             
             // --- Table Content ---
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(9);
             
-            // Store current page number
-            let currentPage = 1;
+            let rowCount = 0;
             
-            exams.forEach((exam, index) => {
+            upcomingExams.forEach((exam, index) => {
                 // Check if we need new page
-                if (y > pageHeight - 20) {
+                if (y > pageHeight - 25) {
                     doc.addPage();
-                    currentPage++;
                     y = 20;
                     
                     // Re-draw header on new page
-                    doc.setFillColor(240, 240, 240);
-                    doc.rect(10, y, pageWidth - 20, 10, 'F');
-                    doc.setTextColor(0, 0, 0);
+                    doc.setFillColor(41, 128, 185);
+                    doc.rect(10, y, pageWidth - 20, 12, 'F');
+                    doc.setTextColor(255, 255, 255);
                     doc.setFontSize(10);
                     doc.setFont('helvetica', 'bold');
                     
                     let hx = 10;
                     columns.forEach((col, idx) => {
-                        doc.text(col, hx + colWidths[idx] / 2, y + 6, { align: 'center' });
+                        const align = (idx === 1 || idx === 3) ? 'left' : 'center';
+                        const xPos = align === 'left' ? hx + 2 : hx + colWidths[idx] / 2;
+                        doc.text(col, xPos, y + 8, { align: align });
                         hx += colWidths[idx];
                     });
                     
-                    y += 10;
+                    y += 12;
                 }
                 
                 // Determine status
-                const currentDateStr = new Date().toISOString().split('T')[0];
+                const currentDateStr2 = new Date().toISOString().split('T')[0];
                 let status = 'Upcoming';
-                let statusColor = [76, 175, 80];
+                let statusColor = [46, 204, 113]; // Green
                 
                 if (exam.examDate) {
                     try {
-                        if (exam.examDate === currentDateStr) {
-                            status = 'Today';
-                            statusColor = [255, 152, 0];
-                        } else if (exam.examDate < currentDateStr) {
-                            status = 'Completed';
-                            statusColor = [244, 67, 54];
+                        if (exam.examDate === currentDateStr2) {
+                            status = 'Today!';
+                            statusColor = [231, 76, 60]; // Red for today
                         }
                     } catch (e) {}
                 }
@@ -620,7 +654,7 @@ class PDFDownloader {
                 // Get exam type
                 const examType = exam.examType || 'written';
                 const typeDisplay = examType === 'practical' || examType === 'Practical' ? 'Practical' : 'Written';
-                const typeColor = typeDisplay === 'Practical' ? [76, 175, 80] : [33, 150, 243];
+                const typeColor = typeDisplay === 'Practical' ? [46, 204, 113] : [52, 152, 219];
                 
                 // Format date
                 let displayDate = exam.examDate;
@@ -629,71 +663,100 @@ class PDFDownloader {
                         displayDate = window.dataFunctions.formatDate(exam.examDate);
                     } catch (e) {}
                 }
-                
-                // Row background
-                if (index % 2 === 0) {
-                    doc.setFillColor(250, 250, 250);
-                    doc.rect(10, y, pageWidth - 20, 8, 'F');
+                // Shorten date if too long
+                if (displayDate.length > 14) {
+                    displayDate = displayDate.substring(0, 12) + '..';
                 }
                 
-                // Draw row data - with correct positioning
+                // Row background - alternating
+                if (index % 2 === 0) {
+                    doc.setFillColor(249, 250, 252);
+                    doc.rect(10, y, pageWidth - 20, 9, 'F');
+                }
+                
+                // Draw row data with precise positioning
                 let colX = 10;
                 
                 // Serial number
-                doc.setTextColor(100, 100, 100);
-                doc.text((index + 1).toString(), colX + colWidths[0] / 2, y + 5, { align: 'center' });
+                doc.setTextColor(120, 120, 120);
+                doc.text((index + 1).toString(), colX + colWidths[0] / 2, y + 6, { align: 'center' });
                 colX += colWidths[0];
                 
                 // Department
-                doc.setTextColor(0, 0, 0);
+                doc.setTextColor(60, 60, 60);
                 const deptText = exam.department.length > 12 ? exam.department.substring(0, 10) + '..' : exam.department;
-                doc.text(deptText, colX + 2, y + 5);
+                doc.text(deptText, colX + 2, y + 6);
                 colX += colWidths[1];
                 
                 // Semester
-                doc.text(exam.semester, colX + colWidths[2] / 2, y + 5, { align: 'center' });
+                doc.text(exam.semester, colX + colWidths[2] / 2, y + 6, { align: 'center' });
                 colX += colWidths[2];
                 
                 // Subject
-                const subjectText = exam.subject.length > 20 ? exam.subject.substring(0, 18) + '..' : exam.subject;
-                doc.text(subjectText, colX + 2, y + 5);
+                doc.setTextColor(30, 30, 30);
+                const subjectText = exam.subject.length > 18 ? exam.subject.substring(0, 16) + '..' : exam.subject;
+                doc.text(subjectText, colX + 2, y + 6);
                 colX += colWidths[3];
                 
                 // Date
-                doc.text(displayDate, colX + colWidths[4] / 2, y + 5, { align: 'center' });
+                doc.setTextColor(60, 60, 60);
+                doc.text(displayDate, colX + colWidths[4] / 2, y + 6, { align: 'center' });
                 colX += colWidths[4];
                 
                 // Time
-                doc.text(exam.time, colX + colWidths[5] / 2, y + 5, { align: 'center' });
+                doc.text(exam.time, colX + colWidths[5] / 2, y + 6, { align: 'center' });
                 colX += colWidths[5];
                 
-                // Type
-                doc.setTextColor(typeColor[0], typeColor[1], typeColor[2]);
-                doc.text(typeDisplay, colX + colWidths[6] / 2, y + 5, { align: 'center' });
+                // Type - with colored background
+                doc.setFillColor(typeColor[0], typeColor[1], typeColor[2]);
+                doc.roundedRect(colX + 2, y + 1.5, colWidths[6] - 4, 6, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFont('helvetica', 'bold');
+                doc.text(typeDisplay, colX + colWidths[6] / 2, y + 6, { align: 'center' });
+                doc.setFont('helvetica', 'normal');
                 colX += colWidths[6];
                 
-                // Status
-                doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-                doc.text(status, colX + colWidths[7] / 2, y + 5, { align: 'center' });
+                // Status - with colored background
+                doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+                doc.roundedRect(colX + 2, y + 1.5, colWidths[7] - 4, 6, 3, 3, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFont('helvetica', 'bold');
+                doc.text(status, colX + colWidths[7] / 2, y + 6, { align: 'center' });
+                doc.setFont('helvetica', 'normal');
                 
-                // Draw row border
-                doc.setDrawColor(220, 220, 220);
-                doc.line(10, y + 8, pageWidth - 10, y + 8);
+                // Draw row border (light)
+                doc.setDrawColor(230, 230, 230);
+                doc.line(10, y + 9, pageWidth - 10, y + 9);
                 
-                y += 8;
+                y += 9;
+                rowCount++;
             });
             
-            // --- Footer ---
+            // --- Enhanced Footer ---
+            const footerY = pageHeight - 15;
+            
+            // Footer line
+            doc.setDrawColor(41, 128, 185);
+            doc.setLineWidth(0.5);
+            doc.line(10, footerY - 5, pageWidth - 10, footerY - 5);
+            
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
-            doc.text('Download from exploreex.vercel.app', pageWidth / 2, pageHeight - 10, { align: 'center' });
-            doc.text('© 2026 Explore Routine', pageWidth / 2, pageHeight - 5, { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.text(`📥 Downloaded from exploreex.vercel.app  |  © 2026 Explore Routine`, pageWidth / 2, footerY, { align: 'center' });
             
+            // Page number
+            doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - 15, footerY, { align: 'right' });
+            
+            // Save PDF
             doc.save(filename);
+            
+            window.showNotification(`✅ Downloaded ${upcomingExams.length} upcoming exams as PDF`, 'success');
             return true;
             
         } catch (error) {
             console.error('Error generating PDF:', error);
+            window.showNotification('Failed to download PDF: ' + error.message, 'error');
             throw error;
         }
     }
@@ -709,7 +772,7 @@ class PDFDownloader {
             fileName += '_' + selectedSemester.replace(/\s+/g, '_');
         }
         
-        const count = exams.length;
+        const count = exams ? exams.length : 0;
         fileName += `_${count}_exams`;
         
         const timestamp = new Date().toISOString().split('T')[0];
@@ -719,15 +782,19 @@ class PDFDownloader {
     }
 }
 
-// Global PDF download functions
+// Global PDF download functions - FIXED to only show upcoming
 window.downloadSubjectExams = async function(subject, exams) {
     try {
         const downloader = new PDFDownloader();
+        const upcomingExams = downloader.filterUpcomingExams(exams);
+        if (upcomingExams.length === 0) {
+            window.showNotification(`No upcoming exams for ${subject}`, 'info');
+            return;
+        }
         const subtitle = `Subject: ${subject}`;
         const filename = `Exam_Routine_${subject.replace(/\s+/g, '_')}.pdf`;
         
-        await downloader.downloadAsPDF(filename, exams, 'Subject Exam Schedule', subtitle);
-        window.showNotification(`Downloaded ${subject} exams as PDF`, 'success');
+        await downloader.downloadAsPDF(filename, upcomingExams, 'Subject Exam Schedule', subtitle);
     } catch (error) {
         console.error('Error downloading subject exams:', error);
         window.showNotification('Failed to download PDF', 'error');
@@ -737,11 +804,15 @@ window.downloadSubjectExams = async function(subject, exams) {
 window.downloadDepartmentRoutine = async function(department, semester, exams) {
     try {
         const downloader = new PDFDownloader();
+        const upcomingExams = downloader.filterUpcomingExams(exams);
+        if (upcomingExams.length === 0) {
+            window.showNotification(`No upcoming exams for ${department}`, 'info');
+            return;
+        }
         const subtitle = `${department} Department, ${semester} Semester`;
-        const filename = downloader.generateFileName(`${department}_${semester}_Routine`, exams);
+        const filename = downloader.generateFileName(`${department}_${semester}_Routine`, upcomingExams);
         
-        await downloader.downloadAsPDF(filename, exams, 'Department Routine', subtitle);
-        window.showNotification(`Downloaded ${department} department routine as PDF`, 'success');
+        await downloader.downloadAsPDF(filename, upcomingExams, 'Department Routine', subtitle);
     } catch (error) {
         console.error('Error downloading department routine:', error);
         window.showNotification('Failed to download PDF', 'error');
@@ -751,11 +822,15 @@ window.downloadDepartmentRoutine = async function(department, semester, exams) {
 window.downloadDepartmentExams = async function(department, exams) {
     try {
         const downloader = new PDFDownloader();
+        const upcomingExams = downloader.filterUpcomingExams(exams);
+        if (upcomingExams.length === 0) {
+            window.showNotification(`No upcoming exams for ${department}`, 'info');
+            return;
+        }
         const subtitle = `${department} Department`;
-        const filename = downloader.generateFileName(`${department}_Exams`, exams);
+        const filename = downloader.generateFileName(`${department}_Exams`, upcomingExams);
         
-        await downloader.downloadAsPDF(filename, exams, 'Department Exam Schedule', subtitle);
-        window.showNotification(`Downloaded ${department} department exams as PDF`, 'success');
+        await downloader.downloadAsPDF(filename, upcomingExams, 'Department Exam Schedule', subtitle);
     } catch (error) {
         console.error('Error downloading department exams:', error);
         window.showNotification('Failed to download PDF', 'error');
@@ -765,10 +840,14 @@ window.downloadDepartmentExams = async function(department, exams) {
 window.downloadAllExams = async function(exams) {
     try {
         const downloader = new PDFDownloader();
+        const upcomingExams = downloader.filterUpcomingExams(exams);
+        if (upcomingExams.length === 0) {
+            window.showNotification('No upcoming exams to download', 'info');
+            return;
+        }
         const filename = 'Complete_Exam_Routine.pdf';
         
-        await downloader.downloadAsPDF(filename, exams, 'Complete Exam Routine', 'All Departments and Semesters');
-        window.showNotification('Downloaded complete exam routine as PDF', 'success');
+        await downloader.downloadAsPDF(filename, upcomingExams, 'Complete Exam Routine', 'All Upcoming Exams');
     } catch (error) {
         console.error('Error downloading all exams:', error);
         window.showNotification('Failed to download PDF', 'error');
@@ -778,7 +857,7 @@ window.downloadAllExams = async function(exams) {
 // Initialize PDF downloader when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.pdfDownloader = new PDFDownloader();
-    console.log('PDF Download functions available');
+    console.log('✅ PDF Download functions available (Upcoming only)');
 });
 
 window.PDFDownloader = PDFDownloader;
