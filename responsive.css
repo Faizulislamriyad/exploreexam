@@ -3,11 +3,9 @@
     .app-container {
         flex-direction: column;
     }
-    
     .sidebar {
         width: 100%;
     }
-    
     .routine-header {
         display: flex;
     }
@@ -25,60 +23,46 @@
         padding: 10px;
         border-radius: 15px;
     }
-    
     header {
         padding: 20px;
         text-align: center;
     }
-    
     .logo {
         justify-content: center;
         flex-direction: column;
         text-align: center;
         gap: 10px;
     }
-    
     .logo h1 {
         font-size: 2rem;
     }
-    
     .tagline {
         font-size: 0.9rem;
     }
-    
     .app-container {
         padding: 15px;
         gap: 15px;
     }
-    
-    /* Controls - Mobile */
     .controls {
         padding: 15px;
     }
-    
     .filter-controls {
         flex-direction: column;
         align-items: stretch;
         gap: 15px;
     }
-    
     .class-selector, .date-filter {
         min-width: 100%;
     }
-    
-    /* Make dropdown select boxes smaller on mobile */
     .class-selector select, .date-filter select {
         padding: 10px 12px;
-        font-size: 1rem;              /* 16px minimum */
+        font-size: 1rem;
         height: 45px;
     }
-    
-    /* Routine Table - Mobile */
     .routine-container {
         padding: 15px;
         margin-bottom: 15px;
     }
-    
     .routine-container h2 {
         font-size: 1.3rem;
         margin-bottom: 15px;
@@ -121,68 +105,60 @@
     .routine-item div:nth-child(3) {
         display: block !important;
     }
-    /* Hide scrollbar on mobile */
     .routine-list::-webkit-scrollbar {
         display: none;
     }
-    
     .routine-list {
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
-    
-    /* Today Info - Mobile */
     .today-info {
         padding: 12px 15px;
     }
-    
     .today-info h3 {
         font-size: 1rem;
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
     }
-    
     #nextExamInfo {
         font-size: 0.85rem;
     }
-    
-    /* Sidebar - Mobile */
     .stats-card, .next-exam-card, .upcoming-list {
         padding: 20px;
         margin-bottom: 15px;
     }
-    
     .stats-card h3, .next-exam-card h3, .upcoming-list h3 {
         font-size: 1.1rem;
         margin-bottom: 15px;
     }
-    
     .stat-value {
         font-size: 1.1rem;
     }
-    
     .next-exam-subject {
         font-size: 1.3rem;
     }
-    
-    /* ===== ADMIN PANEL - FULL SCREEN MOBILE ===== */
+
+    /* ===== ADMIN PANEL - 90% AREA ===== */
     .modal-content {
-        width: 100% !important;
-        max-width: 100% !important;
-        height: 100vh !important;
-        max-height: 100vh !important;
-        border-radius: 0 !important;
-        margin: 0 !important;
+        width: 95% !important;
+        max-width: 95% !important;
+        height: 90vh !important;
+        max-height: 90vh !important;
+        border-radius: 20px !important;
+        margin: 5vh auto !important;
         overflow-y: auto !important;
-        /* স্ক্রলবার লুকান */
-        scrollbar-width: none !important;
+        scrollbar-width: thin !important;
     }
     .modal-content::-webkit-scrollbar {
-        display: none !important;
+        width: 4px;
+    }
+    .modal-content::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 10px;
     }
     .modal-header {
-        border-radius: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
     }
     .modal-body {
         padding: 20px !important;
@@ -190,33 +166,52 @@
     .admin-form {
         padding: 0 !important;
     }
-    
-    /* ===== CHATBOT - FULL SCREEN MOBILE ===== */
+
+    /* ===== CHATBOT - 90% AREA ===== */
     .chatbot-container {
-        width: 100% !important;
-        height: 100vh !important;
-        max-height: 100vh !important;
-        right: 0 !important;
-        left: 0 !important;
-        bottom: 0 !important;
-        top: 0 !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        border: none !important;
+        width: 95% !important;
+        height: 90vh !important;
+        max-height: 90vh !important;
+        right: 2.5% !important;
+        left: 2.5% !important;
+        bottom: 5vh !important;
+        top: 5vh !important;
+        border-radius: 20px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+        border: 1px solid #e0e0e0 !important;
     }
     .chatbot-header {
-        border-radius: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 15px !important;
     }
     .chatbot-messages {
-        height: calc(100vh - 130px) !important;
-        min-height: auto !important;
+        height: calc(90vh - 130px) !important;
+        min-height: 200px !important;
         padding: 15px 20px !important;
     }
     .chatbot-input {
-        padding: 15px 20px !important;
+        padding: 10px 15px !important;  /* উপরে সরানো */
+        border-top: 1px solid #e0e0e0 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
     }
-    
-    /* ===== FLOATING BUTTONS - MOBILE ===== */
+    #chatInput {
+        font-size: 16px !important;      /* জুম বন্ধ */
+        padding: 10px 14px !important;
+        min-height: 40px !important;
+        border-radius: 10px !important;
+        border: 2px solid var(--border-color) !important;
+        flex: 1 !important;
+    }
+    .btn-send {
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 50% !important;
+        font-size: 1.2rem !important;
+    }
+
+    /* ===== FLOATING BUTTONS ===== */
     .admin-access-btn {
         position: fixed !important;
         left: 20px !important;
@@ -236,7 +231,6 @@
         opacity: 0.4 !important;
         transition: all 0.3s ease !important;
     }
-    
     .chatbot-toggle {
         position: fixed !important;
         right: 20px !important;
@@ -256,7 +250,6 @@
         opacity: 0.4 !important;
         transition: all 0.3s ease !important;
     }
-    
     .notifications-panel-btn {
         position: fixed !important;
         right: 20px !important;
@@ -276,7 +269,6 @@
         opacity: 0.4 !important;
         transition: all 0.3s ease !important;
     }
-    
     .notif-badge {
         position: absolute;
         top: -5px;
@@ -292,7 +284,6 @@
         text-align: center;
         border: 2px solid white;
     }
-    
     .admin-access-btn:hover,
     .chatbot-toggle:hover,
     .notifications-panel-btn:hover {
@@ -300,7 +291,6 @@
         transform: translateY(-3px) scale(1.05) !important;
         box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
     }
-    
     .admin-access-btn.active,
     .chatbot-toggle.active,
     .notifications-panel-btn.active {
@@ -308,113 +298,89 @@
         transform: translateY(-3px) scale(1.1) !important;
         box-shadow: 0 12px 30px rgba(0,0,0,0.4) !important;
     }
-    
     .container {
         padding-bottom: 130px !important;
     }
-    
-    /* Instructions - Mobile */
+
+    /* ===== INPUT FIELDS MINIMUM 16px ===== */
+    input, select, textarea, button, .form-group input, .form-group select,
+    #chatInput, .search-box input, #searchInput {
+        font-size: 16px !important;
+    }
+
+    /* ===== OTHER MOBILE STYLES ===== */
     .instructions {
         padding: 20px;
         margin-top: 15px;
     }
-    
     .instructions h3 {
         font-size: 1.1rem;
     }
-    
     .instructions li {
         font-size: 0.9rem;
         margin-bottom: 8px;
     }
-    
-    /* Footer - Mobile */
     footer {
         padding: 15px 20px;
     }
-    
     footer p {
         font-size: 0.9rem;
     }
-    
     .btn-set-reminder {
         padding: 10px 15px;
         font-size: 0.95rem;
     }
-    
-    /* Exam Details Modal - Mobile */
     .exam-details-footer {
         flex-wrap: wrap;
         padding-bottom: 60px;
         gap: 8px;
     }
-    
     .btn-remind-me, .btn-share, .btn-download-exam {
         padding: 8px 15px;
         font-size: 0.9rem;
         flex: 1;
         min-width: calc(50% - 4px);
     }
-    
     .explore-routine-text {
         font-size: 0.8rem;
         padding-top: 10px;
     }
-    
-    /* Edit Exam Modal - Mobile */
     .edit-exam-footer {
         flex-wrap: wrap;
         gap: 8px;
     }
-    
     .btn-save-edit, .btn-cancel-edit, .btn-duplicate-exam {
         padding: 8px 15px;
         font-size: 0.9rem;
         flex: 1;
         min-width: calc(50% - 4px);
     }
-    
-    /* Quick Filters - Mobile */
     .quick-filter-buttons {
         gap: 8px;
     }
-    
     .btn-quick-filter {
         padding: 6px 12px;
         font-size: 0.85rem;
     }
-    
-    /* Admin Stats - Mobile */
     .admin-stats {
         flex-direction: column;
         gap: 5px;
         margin-left: 0;
         margin-top: 10px;
     }
-    
     .stat-badge {
         font-size: 0.75rem;
         padding: 3px 8px;
     }
-    
     .last-login-time {
         margin-left: 0;
         margin-top: 5px;
     }
-    
-    /* ===== INPUT FIELDS - MINIMUM FONT SIZE 16px ===== */
-    input, select, textarea, button, .form-group input, .form-group select,
-    #chatInput, .search-box input, #searchInput {
-        font-size: 16px !important;
-    }
-    
-    /* Notifications - Mobile */
     .notification, .admin-notification {
         min-width: 250px;
         max-width: calc(100% - 40px);
         padding: 12px 15px;
     }
-    
     .notification-content span, .admin-notification-content span {
         font-size: 0.9rem;
     }
@@ -425,81 +391,65 @@
     .logo h1 {
         font-size: 1.8rem;
     }
-    
     .tagline {
         font-size: 0.8rem;
     }
-    
     .app-container {
         padding: 10px;
         gap: 10px;
     }
-    
-    /* Routine Table - Extra Small */
     .routine-header, .routine-item {
         grid-template-columns: 1fr;
         text-align: center;
         gap: 5px;
     }
-    
     .routine-header div:nth-child(2),
     .routine-header div:nth-child(3),
     .routine-item div:nth-child(2),
     .routine-item div:nth-child(3) {
         display: none;
     }
-    
     .dept-badge, .status-badge {
         display: inline-block;
         margin: 2px;
     }
-    
     .routine-item {
         padding: 10px 12px;
     }
-    
     .class-selector select, .date-filter select {
         padding: 8px 10px;
         font-size: 16px !important;
         height: 40px;
     }
-    
     .today-info h3 {
         font-size: 0.9rem;
         flex-direction: column;
         align-items: flex-start;
         gap: 5px;
     }
-    
     #nextExamInfo {
         font-size: 0.8rem;
     }
-    
     .stats-card, .next-exam-card, .upcoming-list {
         padding: 15px;
     }
-    
     .next-exam-subject {
         font-size: 1.1rem;
     }
-    
     .countdown-value {
         font-size: 1.5rem;
     }
-    
     .upcoming-item {
         padding: 12px;
     }
-    
     .upcoming-subject {
         font-size: 0.9rem;
     }
-    
     .upcoming-class, .upcoming-date, .upcoming-details {
         font-size: 0.8rem;
     }
-    
-    /* ===== FLOATING BUTTONS - EXTRA SMALL ===== */
+
+    /* Floating buttons - extra small */
     .admin-access-btn {
         left: 15px !important;
         bottom: 85px !important;
@@ -507,7 +457,6 @@
         height: 44px !important;
         font-size: 1.2rem !important;
     }
-    
     .chatbot-toggle {
         right: 15px !important;
         bottom: 15px !important;
@@ -515,7 +464,6 @@
         height: 44px !important;
         font-size: 1.2rem !important;
     }
-    
     .notifications-panel-btn {
         right: 15px !important;
         bottom: 75px !important;
@@ -523,120 +471,115 @@
         height: 44px !important;
         font-size: 1.2rem !important;
     }
-    
     .container {
         padding-bottom: 110px !important;
     }
-    
+
+    /* Chatbot - extra small */
     .chatbot-container {
-        width: 100% !important;
-        right: 0 !important;
-        left: 0 !important;
-        bottom: 0 !important;
-        top: 0 !important;
-        height: 100vh !important;
-        border-radius: 0 !important;
+        width: 98% !important;
+        right: 1% !important;
+        left: 1% !important;
+        height: 92vh !important;
+        max-height: 92vh !important;
+        bottom: 4vh !important;
+        top: 4vh !important;
+        border-radius: 16px !important;
     }
-    
-    /* Chatbot messages height */
     .chatbot-messages {
-        height: calc(100vh - 120px) !important;
-        padding: 15px !important;
+        height: calc(92vh - 120px) !important;
+        padding: 12px !important;
     }
-    
     .chatbot-header {
-        padding: 10px 20px !important;
+        padding: 10px 15px !important;
     }
-    
     .chatbot-header h3 {
         font-size: 1.1rem !important;
     }
-    
     .chatbot-input {
-        padding: 15px !important;
+        padding: 8px 12px !important;
     }
-    
     #chatInput {
-        padding: 10px 15px !important;
         font-size: 16px !important;
-        min-height: 40px !important;
+        padding: 8px 12px !important;
+        min-height: 36px !important;
     }
-    
     .btn-send {
-        width: 40px !important;
-        height: 40px !important;
+        width: 38px !important;
+        height: 38px !important;
         font-size: 1rem !important;
     }
-    
     .message {
         padding: 10px 14px !important;
         font-size: 0.95rem !important;
         margin-bottom: 10px !important;
     }
-    
+
+    /* Admin modal - extra small */
+    .modal-content {
+        width: 98% !important;
+        max-width: 98% !important;
+        height: 92vh !important;
+        max-height: 92vh !important;
+        border-radius: 16px !important;
+        margin: 4vh auto !important;
+    }
+    .modal-header {
+        border-radius: 16px 16px 0 0 !important;
+    }
+    .modal-body {
+        padding: 15px !important;
+    }
+
     footer {
         padding: 12px 15px;
     }
-    
     footer p {
         font-size: 0.8rem;
     }
-    
     .exam-details-content {
         width: 95%;
     }
-    
     .exam-details-header h3 {
         font-size: 1.1rem;
     }
-    
     .detail-row {
         flex-direction: column;
         align-items: flex-start;
         gap: 2px;
     }
-    
     .detail-label {
         font-size: 0.9rem;
     }
-    
     .detail-value {
         text-align: left;
         font-size: 0.9rem;
     }
-    
     .exam-details-footer {
         padding: 15px;
         padding-bottom: 50px;
     }
-    
     .btn-remind-me, .btn-share, .btn-download-exam {
         min-width: 100%;
         margin-bottom: 5px;
     }
-    
     .explore-routine-text {
         font-size: 0.75rem;
     }
-    
     .form-grid {
         gap: 15px;
     }
-    
     .form-group label {
         font-size: 0.9rem;
     }
-    
     .form-group input,
     .form-group select {
         padding: 10px 12px;
         font-size: 16px !important;
     }
-    
     .quick-filter-buttons {
         justify-content: center;
     }
-    
     .btn-quick-filter {
         padding: 5px 10px;
         font-size: 0.8rem;
@@ -646,15 +589,18 @@
 /* ===== SMALL HEIGHT DEVICES ===== */
 @media (max-height: 700px) {
     .chatbot-container {
-        max-height: 100vh !important;
-        height: 100vh !important;
+        height: 95vh !important;
+        max-height: 95vh !important;
+        top: 2.5vh !important;
+        bottom: 2.5vh !important;
     }
     .chatbot-messages {
-        height: calc(100vh - 130px) !important;
+        height: calc(95vh - 120px) !important;
     }
     .modal-content {
-        max-height: 100vh !important;
-        height: 100vh !important;
+        height: 95vh !important;
+        max-height: 95vh !important;
+        margin: 2.5vh auto !important;
     }
     .routine-list {
         max-height: 350px;
@@ -666,45 +612,32 @@
 
 /* ===== PRINT STYLES ===== */
 @media print {
-    .admin-access-btn,
-    .chatbot-toggle,
-    .notifications-panel-btn,
-    .chatbot-container,
-    .notification,
-    .exam-details-modal,
-    .edit-exam-modal,
-    .exam-actions-hover,
-    .btn-refresh,
-    .quick-filters,
-    .routine-search {
+    .admin-access-btn, .chatbot-toggle, .notifications-panel-btn,
+    .chatbot-container, .notification, .exam-details-modal,
+    .edit-exam-modal, .exam-actions-hover, .btn-refresh,
+    .quick-filters, .routine-search {
         display: none !important;
     }
-    
     .routine-item {
         break-inside: avoid;
     }
-    
     body {
         background-color: white !important;
     }
-    
     .container {
         box-shadow: none !important;
         margin: 0 !important;
         max-width: 100% !important;
     }
-    
     .routine-list {
         max-height: none !important;
         overflow: visible !important;
     }
 }
 
-/* Hide star badges on mobile devices */
+/* Hide star badges on mobile */
 @media screen and (max-width: 768px) {
-    .star-badge,
-    .stat-badge,
-    .admin-stats .stat-badge {
+    .star-badge, .stat-badge, .admin-stats .stat-badge {
         display: none !important;
     }
     .admin-stats {
@@ -722,13 +655,10 @@
         margin-top: 10px !important;
         order: 3;
     }
-    
     .filter-controls {
         align-items: stretch;
     }
-    
-    .class-selector,
-    .date-filter {
+    .class-selector, .date-filter {
         min-width: 100% !important;
     }
 }
