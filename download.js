@@ -115,6 +115,7 @@ class RoutineDownloader {
 
             this.showNotification('Generating routine image...', 'info');
 
+            // Keep only upcoming exams
             const filteredExams = this.filterOutCompletedExams(examsToDownload);
             
             if (filteredExams.length === 0) {
@@ -454,9 +455,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.RoutineDownloader = RoutineDownloader;
 
-// ============================================================
-// ✅ FIXED PDF Download – Clean, Date sorted, Center aligned
-// ============================================================
+// =====================================================
+// ✅ PDF Download – Clean, only upcoming, date sorted
+// =====================================================
 
 class PDFDownloader {
     constructor() {
@@ -479,38 +480,27 @@ class PDFDownloader {
         });
     }
 
-    // Helper: filter only upcoming exams
+    // Filter only upcoming exams
     filterUpcoming(exams) {
         const today = new Date().toISOString().split('T')[0];
         return exams.filter(exam => exam.examDate && exam.examDate >= today);
     }
 
-    // Helper: sort exams by date (earliest first)
+    // Sort by date
     sortByDate(exams) {
         return exams.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
     }
 
-    // Helper: format date as dd/mm/yyyy
-    formatDate(dateStr) {
-        if (!dateStr) return '';
-        const parts = dateStr.split('-');
-        if (parts.length === 3) {
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
-        return dateStr;
-    }
-
     async downloadAsPDF(filename, exams, title = 'Exam Routine', subtitle = '') {
         try {
-            // Only keep upcoming exams
+            // Only keep upcoming exams and sort by date
             let upcomingExams = this.filterUpcoming(exams);
+            upcomingExams = this.sortByDate(upcomingExams);
+            
             if (upcomingExams.length === 0) {
                 if (window.showNotification) window.showNotification('No upcoming exams to download', 'error');
                 return false;
             }
-
-            // Sort by date (earliest first)
-            upcomingExams = this.sortByDate(upcomingExams);
 
             await this.ensureJSPDF();
             const { jsPDF } = window.jspdf;
@@ -518,7 +508,17 @@ class PDFDownloader {
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
 
-            // --- HEADER ---
+            // Helper: format date as dd/mm/yyyy
+            const formatDate = (dateStr) => {
+                if (!dateStr) return '';
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return dateStr;
+            };
+
+            // ----- HEADER -----
             let y = 20;
             doc.setFillColor(41, 128, 185);
             doc.rect(0, 0, pageWidth, 40, 'F');
@@ -533,7 +533,7 @@ class PDFDownloader {
 
             y = 50;
 
-            // Subtitle (if any)
+            // Subtitle
             if (subtitle) {
                 doc.setTextColor(100, 100, 100);
                 doc.setFontSize(12);
@@ -541,7 +541,7 @@ class PDFDownloader {
                 y += 10;
             }
 
-            // Generation info - CENTER ALIGNED
+            // Generation info (centered)
             const now = new Date();
             const day = String(now.getDate()).padStart(2, '0');
             const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -555,7 +555,7 @@ class PDFDownloader {
             doc.text(genText, pageWidth / 2, y, { align: 'center' });
             y += 15;
 
-            // --- TABLE HEADER ---
+            // ----- TABLE HEADER -----
             doc.setFillColor(240, 240, 240);
             doc.rect(10, y, pageWidth - 20, 10, 'F');
             doc.setTextColor(0, 0, 0);
@@ -571,7 +571,7 @@ class PDFDownloader {
             });
             y += 10;
 
-            // --- TABLE ROWS ---
+            // ----- TABLE ROWS -----
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(9);
 
@@ -625,7 +625,7 @@ class PDFDownloader {
                 colX += colWidths[3];
 
                 // Date (dd/mm/yyyy)
-                const formattedDate = this.formatDate(exam.examDate);
+                const formattedDate = formatDate(exam.examDate);
                 doc.text(formattedDate, colX + colWidths[4] / 2, y + 5, { align: 'center' });
                 colX += colWidths[4];
 
@@ -633,20 +633,22 @@ class PDFDownloader {
                 doc.text(exam.time, colX + colWidths[5] / 2, y + 5, { align: 'center' });
                 colX += colWidths[5];
 
-                // Type (just text, no border/padding)
+                // Type (plain text)
                 const typeDisplay = (exam.examType === 'practical' || exam.examType === 'Practical') ? 'Practical' : 'Written';
-                doc.setTextColor(typeDisplay === 'Practical' ? [76, 175, 80] : [33, 150, 243]);
+                // Use setTextColor with individual R,G,B values
+                const typeColor = typeDisplay === 'Practical' ? [76, 175, 80] : [33, 150, 243];
+                doc.setTextColor(typeColor[0], typeColor[1], typeColor[2]);
                 doc.text(typeDisplay, colX + colWidths[6] / 2, y + 5, { align: 'center' });
                 colX += colWidths[6];
 
-                // Status (just text, no border/padding)
+                // Status (plain text)
                 let status = 'Upcoming';
-                let color = [76, 175, 80];
+                let statusColor = [76, 175, 80];
                 if (exam.examDate === currentDate) {
                     status = 'Today';
-                    color = [255, 152, 0];
+                    statusColor = [255, 152, 0];
                 }
-                doc.setTextColor(color[0], color[1], color[2]);
+                doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
                 doc.text(status, colX + colWidths[7] / 2, y + 5, { align: 'center' });
 
                 // Row border
@@ -656,7 +658,7 @@ class PDFDownloader {
                 y += 8;
             });
 
-            // --- FOOTER ---
+            // ----- FOOTER -----
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
             doc.text('Download from exploreex.vercel.app', pageWidth / 2, pageHeight - 10, { align: 'center' });
@@ -683,7 +685,7 @@ class PDFDownloader {
     }
 }
 
-// --- Global functions (all filter to upcoming only + date sorted) ---
+// --- Global functions (all filter to upcoming only) ---
 
 window.downloadSubjectExams = async function(subject, exams) {
     try {
