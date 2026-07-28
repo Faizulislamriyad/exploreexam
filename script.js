@@ -1,5 +1,5 @@
 // ============================================================
-// script.js - সম্পূর্ণ আপডেটেড (Written ফিল্টার ঠিক করা হয়েছে)
+// script.js - সম্পূর্ণ আপডেটেড (Default 1st Semester & Written)
 // ============================================================
 
 if (!window.showNotification) {
@@ -42,7 +42,6 @@ if (!window.showNotification) {
 
 // DOM Elements
 const deptSelect = document.getElementById("deptSelect");
-const semesterSelect = document.getElementById("semesterSelect");
 const dateFilter = document.getElementById("dateFilter");
 const routineList = document.getElementById("routineList");
 const totalExamsEl = document.getElementById("totalExams");
@@ -96,6 +95,12 @@ async function init() {
   setupFirebaseListener();
 
   checkStudentScheduledNotifications();
+
+  // Initialize custom dropdowns
+  initDropdowns();
+
+  // ✅ Set default filters: 1st Semester and Written
+  setDefaultFilters();
 }
 
 // Setup Firebase realtime listener for auto-refresh
@@ -274,6 +279,109 @@ function showErrorState() {
   }
 }
 
+// ============================================================
+// DROPDOWN WITH CHECKBOX FUNCTIONS
+// ============================================================
+
+// Initialize dropdowns
+function initDropdowns() {
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.custom-dropdown')) {
+      document.querySelectorAll('.dropdown-body').forEach(b => b.classList.remove('open'));
+      document.querySelectorAll('.dropdown-header').forEach(h => h.classList.remove('active'));
+    }
+  });
+
+  // Toggle dropdown on header click
+  document.querySelectorAll('.dropdown-header').forEach(header => {
+    header.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const dropdown = this.closest('.custom-dropdown');
+      const body = dropdown.querySelector('.dropdown-body');
+      const isOpen = body.classList.contains('open');
+      
+      // Close all other dropdowns
+      document.querySelectorAll('.dropdown-body').forEach(b => b.classList.remove('open'));
+      document.querySelectorAll('.dropdown-header').forEach(h => h.classList.remove('active'));
+      
+      if (!isOpen) {
+        body.classList.add('open');
+        this.classList.add('active');
+      }
+    });
+  });
+
+  // Update header text when checkbox changes
+  document.querySelectorAll('.custom-dropdown input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const dropdown = this.closest('.custom-dropdown');
+      updateDropdownHeader(dropdown.id);
+    });
+  });
+
+  // Set initial header text
+  updateDropdownHeader('semesterDropdown');
+  updateDropdownHeader('examTypeDropdown');
+}
+
+// Get selected values from dropdown
+function getSelectedDropdownValues(dropdownId) {
+  const checkboxes = document.querySelectorAll(`#${dropdownId} input[type="checkbox"]:checked`);
+  const values = Array.from(checkboxes).map(cb => cb.value);
+  return values;
+}
+
+// Update dropdown header text
+function updateDropdownHeader(dropdownId) {
+  const dropdown = document.getElementById(dropdownId);
+  if (!dropdown) return;
+  
+  const headerText = dropdown.querySelector('.dropdown-selected-text');
+  const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+  const checked = dropdown.querySelectorAll('input[type="checkbox"]:checked');
+  
+  if (checked.length === 0) {
+    headerText.textContent = 'None';
+  } else if (checked.length === checkboxes.length) {
+    headerText.textContent = 'All';
+  } else if (checked.length <= 2) {
+    const values = Array.from(checked).map(cb => cb.value);
+    headerText.textContent = values.join(', ');
+  } else {
+    headerText.textContent = `${checked.length} selected`;
+  }
+}
+
+// ============================================================
+// DEFAULT FILTERS: 1st Semester & Written
+// ============================================================
+function setDefaultFilters() {
+  // Set semester: check "1st"
+  const semCheckboxes = document.querySelectorAll('#semesterDropdown input[type="checkbox"]');
+  semCheckboxes.forEach(cb => {
+    if (cb.value === '1st') {
+      cb.checked = true;
+    }
+  });
+  // Set exam type: check "written"
+  const typeCheckboxes = document.querySelectorAll('#examTypeDropdown input[type="checkbox"]');
+  typeCheckboxes.forEach(cb => {
+    if (cb.value === 'written') {
+      cb.checked = true;
+    }
+  });
+  // Update dropdown headers
+  updateDropdownHeader('semesterDropdown');
+  updateDropdownHeader('examTypeDropdown');
+  // Apply filters
+  handleFilterChange();
+}
+
+// ============================================================
+// END DROPDOWN FUNCTIONS
+// ============================================================
+
 // Setup event listeners with debouncing
 function setupEventListeners() {
   const debouncedFilterChange = debounce(() => {
@@ -282,10 +390,21 @@ function setupEventListeners() {
     }
   }, 300);
 
-  if (deptSelect) deptSelect.addEventListener("change", debouncedFilterChange);
-  if (semesterSelect)
-    semesterSelect.addEventListener("change", debouncedFilterChange);
-  if (dateFilter) dateFilter.addEventListener("change", debouncedFilterChange);
+  // Department dropdown
+  if (deptSelect) deptSelect.addEventListener('change', debouncedFilterChange);
+  
+  // Date filter
+  if (dateFilter) dateFilter.addEventListener('change', debouncedFilterChange);
+
+  // Semester dropdown checkboxes
+  document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', debouncedFilterChange);
+  });
+
+  // Exam Type dropdown checkboxes
+  document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', debouncedFilterChange);
+  });
 
   addClearFiltersButton();
 
@@ -310,8 +429,20 @@ function addClearFiltersButton() {
       console.log("Clear filters clicked");
 
       if (deptSelect) deptSelect.value = "all";
-      if (semesterSelect) semesterSelect.value = "all";
       if (dateFilter) dateFilter.value = "upcoming";
+
+      // Uncheck all checkboxes in semester dropdown
+      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+      });
+      // Uncheck all checkboxes in exam type dropdown
+      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+      });
+
+      // Update dropdown headers
+      updateDropdownHeader('semesterDropdown');
+      updateDropdownHeader('examTypeDropdown');
 
       clearBtn.style.display = "none";
 
@@ -323,7 +454,7 @@ function addClearFiltersButton() {
       );
       if (allBtn) allBtn.classList.add("active");
 
-      applyFilters("all", "all", "upcoming");
+      applyFilters("all", [], []);
     });
   }
 }
@@ -378,58 +509,94 @@ function applyQuickFilter(filter) {
   switch (filter) {
     case "today":
       if (deptSelect) deptSelect.value = "all";
-      if (semesterSelect) semesterSelect.value = "all";
-      if (dateFilter) dateFilter.value = "all";
-      applyFilters("all", "all", "all", "today");
+      if (dateFilter) dateFilter.value = "upcoming";
+      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      updateDropdownHeader('semesterDropdown');
+      updateDropdownHeader('examTypeDropdown');
+      applyFilters("all", [], []);
+      // Filter today manually
+      const todayExams = examData.filter(exam => exam.examDate === currentAppDate);
+      filteredExamRoutine = todayExams;
+      window.filteredExamRoutine = filteredExamRoutine;
+      filteredExamRoutine.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
+      updateRoutineDisplay();
+      updateStatistics();
+      updateNextExam();
+      updateUpcomingList();
       if (clearBtn) clearBtn.style.display = "flex";
       break;
     case "upcoming":
       if (deptSelect) deptSelect.value = "all";
-      if (semesterSelect) semesterSelect.value = "all";
       if (dateFilter) dateFilter.value = "upcoming";
-      applyFilters("all", "all", "upcoming");
+      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      updateDropdownHeader('semesterDropdown');
+      updateDropdownHeader('examTypeDropdown');
+      applyFilters("all", [], []);
       if (clearBtn) clearBtn.style.display = "flex";
       break;
     case "computer":
       if (deptSelect) deptSelect.value = "Computer";
-      if (semesterSelect) semesterSelect.value = "all";
       if (dateFilter) dateFilter.value = "upcoming";
-      applyFilters("Computer", "all", "upcoming");
+      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      updateDropdownHeader('semesterDropdown');
+      updateDropdownHeader('examTypeDropdown');
+      applyFilters("Computer", [], []);
       if (clearBtn) clearBtn.style.display = "flex";
       break;
     case "civil":
       if (deptSelect) deptSelect.value = "Civil";
-      if (semesterSelect) semesterSelect.value = "all";
       if (dateFilter) dateFilter.value = "upcoming";
-      applyFilters("Civil", "all", "upcoming");
+      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      updateDropdownHeader('semesterDropdown');
+      updateDropdownHeader('examTypeDropdown');
+      applyFilters("Civil", [], []);
       if (clearBtn) clearBtn.style.display = "flex";
       break;
     case "practical":
       if (deptSelect) deptSelect.value = "all";
-      if (semesterSelect) semesterSelect.value = "all";
-      if (dateFilter) dateFilter.value = "practical";
-      applyFilters("all", "all", "practical");
+      if (dateFilter) dateFilter.value = "upcoming";
+      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelector('#examTypeDropdown input[value="practical"]').checked = true;
+      updateDropdownHeader('semesterDropdown');
+      updateDropdownHeader('examTypeDropdown');
+      applyFilters("all", [], ["practical"]);
       if (clearBtn) clearBtn.style.display = "flex";
       break;
     case "written":
       if (deptSelect) deptSelect.value = "all";
-      if (semesterSelect) semesterSelect.value = "all";
-      if (dateFilter) dateFilter.value = "written";
-      applyFilters("all", "all", "written");
+      if (dateFilter) dateFilter.value = "upcoming";
+      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelector('#examTypeDropdown input[value="written"]').checked = true;
+      updateDropdownHeader('semesterDropdown');
+      updateDropdownHeader('examTypeDropdown');
+      applyFilters("all", [], ["written"]);
       if (clearBtn) clearBtn.style.display = "flex";
       break;
     case "referred":
       if (deptSelect) deptSelect.value = "all";
-      if (semesterSelect) semesterSelect.value = "all";
-      if (dateFilter) dateFilter.value = "referred";
-      applyFilters("all", "all", "referred");
+      if (dateFilter) dateFilter.value = "upcoming";
+      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelector('#examTypeDropdown input[value="referred"]').checked = true;
+      updateDropdownHeader('semesterDropdown');
+      updateDropdownHeader('examTypeDropdown');
+      applyFilters("all", [], ["referred"]);
       if (clearBtn) clearBtn.style.display = "flex";
       break;
     default:
       if (deptSelect) deptSelect.value = "all";
-      if (semesterSelect) semesterSelect.value = "all";
       if (dateFilter) dateFilter.value = "upcoming";
-      applyFilters("all", "all", "upcoming");
+      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+      updateDropdownHeader('semesterDropdown');
+      updateDropdownHeader('examTypeDropdown');
+      applyFilters("all", [], []);
       if (clearBtn) clearBtn.style.display = "none";
   }
 }
@@ -469,14 +636,6 @@ function updateRoutineTitle(selectedDept, selectedSemester) {
     titleText += " (Upcoming)";
   } else if (dateFilterValue === "past") {
     titleText += " (Past)";
-  } else if (dateFilterValue === "practical") {
-    titleText += " (Upcoming Practical)";
-  } else if (dateFilterValue === "written") {
-    titleText += " (Upcoming Written)";
-  } else if (dateFilterValue === "referred") {
-    titleText += " (Upcoming Referred)";
-  } else if (dateFilterValue === "all") {
-    titleText += " (All Upcoming)";
   }
   routineTitle.innerHTML = titleText;
 }
@@ -628,104 +787,85 @@ function handleFilterChange() {
   clearSearch();
 
   const selectedDept = deptSelect ? deptSelect.value : "all";
-  const selectedSemester = semesterSelect ? semesterSelect.value : "all";
+  const selectedSemesters = getSelectedDropdownValues('semesterDropdown');
+  const selectedExamTypes = getSelectedDropdownValues('examTypeDropdown');
   const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
 
   console.log("Filter changed:", {
     selectedDept,
-    selectedSemester,
+    selectedSemesters,
+    selectedExamTypes,
     dateFilterValue,
   });
 
-  applyFilters(selectedDept, selectedSemester, dateFilterValue);
+  applyFilters(selectedDept, selectedSemesters, selectedExamTypes, dateFilterValue);
 
   isFilterChanging = false;
 }
 
 // ============================================================
-// ✅ Apply filters function - Written filter fixed
+// ✅ Apply filters function - UPDATED: Fixed upcoming filter bug
 // ============================================================
-function applyFilters(dept, semester, dateFilter, specialFilter = null) {
+function applyFilters(dept, semesters, examTypes, dateFilterValue = null) {
   const clearBtn = document.getElementById("clearFiltersBtn");
+  
+  // Check if any filter is active
+  const isFilterActive = dept !== "all" || 
+                         (semesters && semesters.length > 0) || 
+                         (examTypes && examTypes.length > 0) ||
+                         (dateFilterValue && dateFilterValue === "past");
+  
   if (clearBtn) {
-    if (
-      dept !== "all" ||
-      semester !== "all" ||
-      dateFilter !== "upcoming" ||
-      specialFilter
-    ) {
-      clearBtn.style.display = "flex";
-    } else {
-      clearBtn.style.display = "none";
-    }
+    clearBtn.style.display = isFilterActive ? "flex" : "none";
   }
 
   let tempFiltered = [...examData];
 
+  // Department filter
   if (dept !== "all") {
     tempFiltered = tempFiltered.filter((exam) => exam.department === dept);
   }
 
-  if (semester !== "all") {
-    tempFiltered = tempFiltered.filter((exam) => exam.semester === semester);
+  // Semester filter
+  if (semesters && semesters.length > 0) {
+    tempFiltered = tempFiltered.filter((exam) => semesters.includes(exam.semester));
   }
 
-  if (specialFilter === "today") {
-    tempFiltered = tempFiltered.filter(
-      (exam) => exam.examDate === currentAppDate,
-    );
-  } else {
-    switch (dateFilter) {
-      case "upcoming":
-        tempFiltered = tempFiltered.filter(
-          (exam) => exam.examDate >= currentAppDate,
-        );
-        break;
-      case "past":
-        tempFiltered = tempFiltered.filter(
-          (exam) => exam.examDate < currentAppDate,
-        );
-        break;
-      case "practical":
-        tempFiltered = tempFiltered.filter(
-          (exam) =>
-            exam.examType === "practical" && exam.examDate >= currentAppDate,
-        );
-        break;
-      case "written":
-        // ✅ শুধুমাত্র written টাইপের exams দেখাবে (undefined/null বাদ)
-        tempFiltered = tempFiltered.filter(
-          (exam) =>
-            exam.examType === "written" && exam.examDate >= currentAppDate,
-        );
-        break;
-      case "referred":
-        tempFiltered = tempFiltered.filter(
-          (exam) =>
-            exam.examType === "referred" && exam.examDate >= currentAppDate,
-        );
-        break;
-      case "all":
-      default:
-        tempFiltered = tempFiltered.filter(
-          (exam) => exam.examDate >= currentAppDate,
-        );
-        break;
-    }
+  // Exam Type filter
+  if (examTypes && examTypes.length > 0) {
+    tempFiltered = tempFiltered.filter((exam) => {
+      const type = exam.examType || 'written';
+      return examTypes.includes(type);
+    });
   }
+
+  // ✅ FIXED: Date filter - properly handle both 'upcoming' and 'past'
+  const filterVal = dateFilterValue !== null ? dateFilterValue : (dateFilter ? dateFilter.value : "upcoming");
+  
+  if (filterVal === "past") {
+    // Show only past exams
+    tempFiltered = tempFiltered.filter((exam) => exam.examDate < currentAppDate);
+  } else if (filterVal === "upcoming") {
+    // Show only upcoming exams (including today)
+    tempFiltered = tempFiltered.filter((exam) => exam.examDate >= currentAppDate);
+  }
+  // Note: 'all' option doesn't exist in dropdown anymore, but if it did, we'd show everything
 
   filteredExamRoutine = tempFiltered;
   window.filteredExamRoutine = filteredExamRoutine;
 
   console.log(
-    `Filtered ${examData.length} exams down to ${filteredExamRoutine.length} exams (dateFilter: ${dateFilter})`,
+    `Filtered ${examData.length} exams down to ${filteredExamRoutine.length} exams (${filterVal})`,
   );
 
   filteredExamRoutine.sort(
     (a, b) => new Date(a.examDate) - new Date(b.examDate),
   );
 
-  updateRoutineTitle(dept, semester);
+  // Update title
+  const titleDept = dept !== "all" ? dept : "all";
+  const titleSem = (semesters && semesters.length === 1) ? semesters[0] : "all";
+  updateRoutineTitle(titleDept, titleSem);
 
   updateRoutineDisplay();
   updateStatistics();
@@ -756,10 +896,11 @@ async function refreshRoutine() {
     window.examData = examData;
 
     const selectedDept = deptSelect ? deptSelect.value : "all";
-    const selectedSemester = semesterSelect ? semesterSelect.value : "all";
+    const selectedSemesters = getSelectedDropdownValues('semesterDropdown');
+    const selectedExamTypes = getSelectedDropdownValues('examTypeDropdown');
     const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
 
-    applyFilters(selectedDept, selectedSemester, dateFilterValue);
+    applyFilters(selectedDept, selectedSemesters, selectedExamTypes, dateFilterValue);
 
     updateDepartmentOptions();
 
@@ -803,10 +944,10 @@ function updateRoutineDisplay() {
 
   const routineContainer = document.querySelector(".routine-container");
   const selectedDept = deptSelect ? deptSelect.value : "all";
-  const selectedSemester = semesterSelect ? semesterSelect.value : "all";
+  const selectedSemesters = getSelectedDropdownValues('semesterDropdown');
 
   if (routineContainer) {
-    if (selectedDept !== "all" || selectedSemester !== "all") {
+    if (selectedDept !== "all" || selectedSemesters.length > 0) {
       routineContainer.classList.add("filtered");
     } else {
       routineContainer.classList.remove("filtered");
@@ -836,10 +977,13 @@ function updateRoutineDisplay() {
         .getElementById("clearFiltersFromEmpty")
         ?.addEventListener("click", () => {
           if (deptSelect) deptSelect.value = "all";
-          if (semesterSelect) semesterSelect.value = "all";
           if (dateFilter) dateFilter.value = "upcoming";
+          document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+          document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+          updateDropdownHeader('semesterDropdown');
+          updateDropdownHeader('examTypeDropdown');
 
-          applyFilters("all", "all", "upcoming");
+          applyFilters("all", [], []);
 
           const clearBtn = document.getElementById("clearFiltersBtn");
           if (clearBtn) clearBtn.style.display = "none";
@@ -1299,16 +1443,12 @@ function showExamDetails(exam) {
                     <span class="detail-label">Status:</span>
                     <span class="detail-value status-${statusClass}">${statusText}</span>
                 </div>
-                ${
-                  exam.addedBy
-                    ? `
+                ${exam.addedBy ? `
                 <div class="detail-row">
                     <span class="detail-label">Added by:</span>
                     <span class="detail-value">${exam.addedBy}</span>
                 </div>
-                `
-                    : ""
-                }
+                ` : ""}
             </div>
             <div class="exam-details-footer">
                 <button class="btn-remind-me" data-exam-id="${exam.id}">
@@ -1450,16 +1590,12 @@ async function downloadExamAsJPG(exam) {
                         <div style="font-size: 18px;">${exam.room}</div>
                     </div>
                     
-                    ${
-                      exam.addedBy
-                        ? `
+                    ${exam.addedBy ? `
                     <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 30px;">
                         <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Added by</div>
                         <div style="font-size: 18px;">${exam.addedBy}</div>
                     </div>
-                    `
-                        : ""
-                    }
+                    ` : ""}
                     
                     <div style="text-align: center; margin-top: 30px; padding-top: 30px; border-top: 2px solid rgba(255,255,255,0.2);">
                         <div style="font-size: 22px; font-weight: bold; margin-bottom: 10px; color: #ffd700;">Explore Routine 2026</div>
@@ -1556,7 +1692,7 @@ function updateStatistics() {
     return;
 
   const selectedDept = deptSelect ? deptSelect.value : "all";
-  const selectedSemester = semesterSelect ? semesterSelect.value : "all";
+  const selectedSemesters = getSelectedDropdownValues('semesterDropdown');
   const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
 
   let examsForStats = examData;
@@ -1567,9 +1703,9 @@ function updateStatistics() {
     );
   }
 
-  if (selectedSemester !== "all") {
+  if (selectedSemesters.length > 0) {
     examsForStats = examsForStats.filter(
-      (exam) => exam.semester === selectedSemester,
+      (exam) => selectedSemesters.includes(exam.semester),
     );
   }
 
@@ -1595,7 +1731,7 @@ function updateNextExam() {
   if (!nextExamCard) return;
 
   const selectedDept = deptSelect ? deptSelect.value : "all";
-  const selectedSemester = semesterSelect ? semesterSelect.value : "all";
+  const selectedSemesters = getSelectedDropdownValues('semesterDropdown');
   const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
 
   let filteredExams = filteredExamRoutine;
@@ -1681,7 +1817,7 @@ function updateUpcomingList() {
   if (!upcomingList) return;
 
   const selectedDept = deptSelect ? deptSelect.value : "all";
-  const selectedSemester = semesterSelect ? semesterSelect.value : "all";
+  const selectedSemesters = getSelectedDropdownValues('semesterDropdown');
 
   let filteredExams = filteredExamRoutine.filter(
     (exam) => exam.examDate >= currentAppDate,
@@ -1774,3 +1910,5 @@ window.examData = examData;
 window.filteredExamRoutine = filteredExamRoutine;
 window.showNotification = showNotification;
 window.refreshRoutine = refreshRoutine;
+window.getSelectedDropdownValues = getSelectedDropdownValues;
+window.updateDropdownHeader = updateDropdownHeader;

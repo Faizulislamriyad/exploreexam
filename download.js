@@ -1,3 +1,33 @@
+function convertTimeTo24Hour(time12) {
+    if (!time12) return '00:00';
+    // যদি ইতিমধ্যে ২৪-ঘণ্টা ফরম্যাটে থাকে
+    if (/^\d{2}:\d{2}$/.test(time12)) {
+        return time12;
+    }
+    const parts = time12.split(' ');
+    if (parts.length !== 2) return time12; // fallback
+    const [time, modifier] = parts;
+    let [hours, minutes] = time.split(':');
+    hours = parseInt(hours);
+    if (modifier === 'PM' && hours !== 12) hours += 12;
+    if (modifier === 'AM' && hours === 12) hours = 0;
+    return `${hours.toString().padStart(2, '0')}:${minutes || '00'}`;
+}
+
+function sortExamsByDateAndTime(exams) {
+    return exams.sort((a, b) => {
+        const dateA = new Date(a.examDate);
+        const dateB = new Date(b.examDate);
+        if (dateA - dateB !== 0) {
+            return dateA - dateB;
+        }
+        const timeA = convertTimeTo24Hour(a.time);
+        const timeB = convertTimeTo24Hour(b.time);
+        return timeA.localeCompare(timeB);
+    });
+}
+
+// ---------- RoutineDownloader ক্লাস ----------
 class RoutineDownloader {
     constructor() {
         this.isInitialized = false;
@@ -133,6 +163,9 @@ class RoutineDownloader {
                 this.showNotification('No upcoming exams to download', 'info');
                 return;
             }
+
+            // ✅ সাজানো: তারিখ ও সময় অনুযায়ী
+            filteredExams = sortExamsByDateAndTime(filteredExams);
 
             // ✅ Pass all filter info to generate correct title
             await this.generateAndDownloadJPG(filteredExams, selectedDept, selectedSemester, dateFilter, searchTerm);
@@ -499,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.RoutineDownloader = RoutineDownloader;
 
 // =====================================================
-// ✅ PDF Download – Respects current filters
+// ✅ PDF Download – Respects current filters + sorted
 // =====================================================
 
 class PDFDownloader {
@@ -523,16 +556,15 @@ class PDFDownloader {
         });
     }
 
-    // ✅ Get current filtered exams (respects user filters)
+    // ✅ Get current filtered exams (respects user filters) + sorted
     getFilteredExams() {
-        // Priority: window.filteredExamRoutine (applied filters)
+        let exams = [];
         if (window.filteredExamRoutine && window.filteredExamRoutine.length > 0) {
-            return window.filteredExamRoutine;
+            exams = window.filteredExamRoutine;
+        } else if (window.examData) {
+            exams = window.examData;
         }
-        if (window.examData) {
-            return window.examData;
-        }
-        return [];
+        return sortExamsByDateAndTime(exams);
     }
 
     // Filter only upcoming exams
@@ -541,9 +573,9 @@ class PDFDownloader {
         return exams.filter(exam => exam.examDate && exam.examDate >= today);
     }
 
-    // Sort by date
+    // Sort by date and time (already handled globally, but keeping for safety)
     sortByDate(exams) {
-        return exams.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
+        return sortExamsByDateAndTime(exams);
     }
 
     // ✅ Get current filter info for subtitle
@@ -600,8 +632,8 @@ class PDFDownloader {
                 filteredExams = examsToDownload.filter(exam => exam.examDate && exam.examDate < today);
             }
             
-            // Sort by date
-            filteredExams = this.sortByDate(filteredExams);
+            // Sort by date and time
+            filteredExams = sortExamsByDateAndTime(filteredExams);
             
             if (filteredExams.length === 0) {
                 if (window.showNotification) window.showNotification('No exams match the current filters', 'error');
@@ -808,16 +840,14 @@ class PDFDownloader {
     }
 }
 
-// --- Global functions (all respect current filters) ---
+// --- Global functions (all respect current filters + sorted) ---
 
 window.downloadSubjectExams = async function(subject, exams = null) {
     try {
         const downloader = new PDFDownloader();
-        // ✅ If exams not provided, use filtered exams
         let examsToUse = exams || downloader.getFilteredExams();
-        // Filter by subject
         examsToUse = examsToUse.filter(exam => exam.subject.toLowerCase().includes(subject.toLowerCase()));
-        const subtitle = `Subject: ${subject}`;
+        examsToUse = sortExamsByDateAndTime(examsToUse);
         const filename = downloader.generateFileName(`Exam_Routine_${subject.replace(/\s+/g, '_')}`, examsToUse);
         await downloader.downloadAsPDF(filename, examsToUse, 'Subject Exam Schedule');
         if (window.showNotification) window.showNotification(`Downloaded ${subject} exams as PDF`, 'success');
@@ -831,11 +861,10 @@ window.downloadDepartmentRoutine = async function(department, semester, exams = 
     try {
         const downloader = new PDFDownloader();
         let examsToUse = exams || downloader.getFilteredExams();
-        // Filter by department and semester
         examsToUse = examsToUse.filter(exam => 
             exam.department === department && exam.semester === semester
         );
-        const subtitle = `${department} Department, ${semester} Semester`;
+        examsToUse = sortExamsByDateAndTime(examsToUse);
         const filename = downloader.generateFileName(`${department}_${semester}_Routine`, examsToUse);
         await downloader.downloadAsPDF(filename, examsToUse, 'Department Routine');
         if (window.showNotification) window.showNotification(`Downloaded ${department} department routine as PDF`, 'success');
@@ -849,9 +878,8 @@ window.downloadDepartmentExams = async function(department, exams = null) {
     try {
         const downloader = new PDFDownloader();
         let examsToUse = exams || downloader.getFilteredExams();
-        // Filter by department
         examsToUse = examsToUse.filter(exam => exam.department === department);
-        const subtitle = `${department} Department`;
+        examsToUse = sortExamsByDateAndTime(examsToUse);
         const filename = downloader.generateFileName(`${department}_Exams`, examsToUse);
         await downloader.downloadAsPDF(filename, examsToUse, 'Department Exam Schedule');
         if (window.showNotification) window.showNotification(`Downloaded ${department} department exams as PDF`, 'success');
@@ -865,8 +893,9 @@ window.downloadAllExams = async function(exams = null) {
     try {
         const downloader = new PDFDownloader();
         const examsToUse = exams || downloader.getFilteredExams();
-        const filename = downloader.generateFileName('Complete_Exam_Routine', examsToUse);
-        await downloader.downloadAsPDF(filename, examsToUse, 'Complete Exam Routine');
+        const sortedExams = sortExamsByDateAndTime(examsToUse);
+        const filename = downloader.generateFileName('Complete_Exam_Routine', sortedExams);
+        await downloader.downloadAsPDF(filename, sortedExams, 'Complete Exam Routine');
         if (window.showNotification) window.showNotification('Downloaded complete exam routine as PDF', 'success');
     } catch (error) {
         console.error('Error downloading all exams:', error);

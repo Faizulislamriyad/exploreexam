@@ -71,7 +71,7 @@ header {
     display: flex;
     padding: 25px;
     gap: 25px;
-    align-items: stretch; /* দুই কলাম সমান উচ্চতা */
+    align-items: stretch;
 }
 
 .main-content {
@@ -137,6 +137,116 @@ header {
   box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.2);
 }
 
+/* ===== NEW: Checkbox Group Styles ===== */
+/* ===== CUSTOM DROPDOWN WITH CHECKBOXES ===== */
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+    min-width: 200px;
+    user-select: none;
+}
+
+.dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.95rem;
+}
+
+.dropdown-header:hover {
+    border-color: var(--primary-color);
+}
+
+.dropdown-header.active {
+    border-color: var(--primary-color);
+    border-radius: 10px 10px 0 0;
+}
+
+.dropdown-header i {
+    transition: transform 0.3s;
+    color: var(--gray-color);
+}
+
+.dropdown-header.active i {
+    transform: rotate(180deg);
+}
+
+.dropdown-selected-text {
+    color: var(--dark-color);
+    font-weight: 500;
+}
+
+.dropdown-body {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 2px solid var(--primary-color);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 100;
+    padding: 8px 0;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.dropdown-body.open {
+    display: block;
+}
+
+.dropdown-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 0.9rem;
+    color: var(--dark-color);
+}
+
+.dropdown-checkbox-item:hover {
+    background: #f0f4ff;
+}
+
+.dropdown-checkbox-item input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.dropdown-checkbox-item input[type="checkbox"]:checked + span {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* scrollbar */
+.dropdown-body::-webkit-scrollbar {
+    width: 6px;
+}
+.dropdown-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+.dropdown-body::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+.dropdown-body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* ===== TODAY INFO ===== */
 .today-info {
   background-color: white;
   border-radius: 10px;
@@ -197,7 +307,6 @@ header {
     max-height: 500px; 
 }
 
-/* Routine list scrollbar styling */
 .routine-list::-webkit-scrollbar {
   width: 8px;
   display:none;
@@ -220,7 +329,7 @@ header {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
- /* This targets the 4th column (Exam Date) */
+
 .exam-cell:nth-child(4) {
   font-size: 12px;
 }
@@ -454,8 +563,8 @@ header {
     margin-bottom: 25px;
     display: flex;
     flex-direction: column;
-    flex: 1; /* প্রয়োজনে বাড়বে */
-    max-height: 1000px; /* একই উচ্চতা */
+    flex: 1;
+    max-height: 1000px;
     overflow-y: auto;
 }
 
@@ -1166,6 +1275,7 @@ header {
   transform: scale(1.1);
   box-shadow: 0 8px 25px rgba(75, 108, 183, 0.7);
 }
+
 /* ===== FOOTER ===== */
 footer {
   background-color: var(--light-color);
@@ -1886,6 +1996,7 @@ footer {
     box-shadow: 0 0 0 0 rgba(75, 108, 183, 0);
   }
 }
+
 /* Department-specific color classes */
 .dept-badge.dept-computer {
     background-color: #3498db;

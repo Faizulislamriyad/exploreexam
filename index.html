@@ -23,6 +23,7 @@
             <div class="main-content">
                 <div class="controls">
                     <div class="filter-controls">
+                        <!-- Department: Normal Dropdown (unchanged) -->
                         <div class="class-selector">
                             <label for="deptSelect"><i class="fas fa-graduation-cap"></i> Select Department:</label>
                             <select id="deptSelect">
@@ -37,29 +38,69 @@
                                 <option value="Tourism & Hospitality Management">Tourism</option>
                             </select>
                         </div>
-                        <div class="class-selector">
-                            <label for="semesterSelect"><i class="fas fa-graduation-cap"></i> Select Semester:</label>
-                            <select id="semesterSelect">
-                                <option value="all">All Semesters</option>
-                                <option value="1st">1st</option>
-                                <option value="2nd">2nd</option>
-                                <option value="3rd">3rd</option>
-                                <option value="4th">4th</option>
-                                <option value="5th">5th</option>
-                                <option value="6th">6th</option>
-                                <option value="7th">7th</option>
-                            </select>
+
+                        <!-- Semester: Custom Dropdown with Checkboxes -->
+                        <div class="class-selector filter-group">
+                            <label><i class="fas fa-layer-group"></i> Select Semester(s):</label>
+                            <div class="custom-dropdown" id="semesterDropdown">
+                                <div class="dropdown-header" id="semesterDropdownHeader">
+                                    <span class="dropdown-selected-text">All Semesters</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="dropdown-body" id="semesterDropdownBody">
+                                    <label class="dropdown-checkbox-item">
+                                        <input type="checkbox" value="1st"> <span>1st</span>
+                                    </label>
+                                    <label class="dropdown-checkbox-item">
+                                        <input type="checkbox" value="2nd"> <span>2nd</span>
+                                    </label>
+                                    <label class="dropdown-checkbox-item">
+                                        <input type="checkbox" value="3rd"> <span>3rd</span>
+                                    </label>
+                                    <label class="dropdown-checkbox-item">
+                                        <input type="checkbox" value="4th"> <span>4th</span>
+                                    </label>
+                                    <label class="dropdown-checkbox-item">
+                                        <input type="checkbox" value="5th"> <span>5th</span>
+                                    </label>
+                                    <label class="dropdown-checkbox-item">
+                                        <input type="checkbox" value="6th"> <span>6th</span>
+                                    </label>
+                                    <label class="dropdown-checkbox-item">
+                                        <input type="checkbox" value="7th"> <span>7th</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-                        
+
+                        <!-- Exam Type: Custom Dropdown with Checkboxes -->
+                        <div class="class-selector filter-group">
+                            <label><i class="fas fa-tag"></i> Exam Type:</label>
+                            <div class="custom-dropdown" id="examTypeDropdown">
+                                <div class="dropdown-header" id="examTypeDropdownHeader">
+                                    <span class="dropdown-selected-text">All Types</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="dropdown-body" id="examTypeDropdownBody">
+                                    <label class="dropdown-checkbox-item">
+                                        <input type="checkbox" value="written"> <span>Written</span>
+                                    </label>
+                                    <label class="dropdown-checkbox-item">
+                                        <input type="checkbox" value="practical"> <span>Practical</span>
+                                    </label>
+                                    <label class="dropdown-checkbox-item">
+                                        <input type="checkbox" value="referred"> <span>Referred</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date Filter: dropdown (only 'upcoming' and 'past') -->
                         <div class="date-filter">
                             <label for="dateFilter"><i class="fas fa-filter"></i> Show:</label>
                             <select id="dateFilter">
-                                <option value="upcoming">Upcoming Exams Only</option>
-                                <option value="all">All Exams</option>
+                                <option value="upcoming">Upcoming Exams</option>
                                 <option value="past">Past Exams</option>
-                                <option value="practical">Practical</option>
-                                <option value="written">Written</option>
-                                <option value="referred">Referred</option>
                             </select>
                         </div>
                     </div>
@@ -110,7 +151,6 @@
                         <span id="completedExams" class="stat-value">0</span>
                     </div>
                 </div>
-
 
                 <div class="upcoming-list">
                     <h3><i class="fas fa-calendar-check"></i> Upcoming Exams</h3>
@@ -195,7 +235,6 @@
                                     <select id="newExamType">
                                         <option value="written">Written</option>
                                         <option value="practical">Practical</option>
-                                        <!-- ✅ NEW: Referred option added -->
                                         <option value="referred">Referred</option>
                                     </select>
                                 </div>
