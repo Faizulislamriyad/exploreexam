@@ -1,4 +1,3 @@
-/* ===== TABLET STYLES (768px - 1200px) ===== */
 @media (max-width: 1200px) {
     .app-container {
         flex-direction: column;
@@ -10,7 +9,7 @@
         display: flex;
     }
     .routine-item {
-        grid-template-columns: 1fr 0.8fr 1.2fr 1fr 0.8fr 0.8fr 1fr;
+        grid-template-columns: 1fr 0.8fr 0.6fr 1.2fr 1fr 0.8fr 0.8fr 1fr;
     }
     .form-grid {
         grid-template-columns: 1fr;
@@ -71,7 +70,7 @@
         margin-bottom: 15px;
     }
     
-    /* ===== ROUTINE TABLE - MOBILE (সব ডেটা সহ) ===== */
+    /* ===== ROUTINE TABLE - MOBILE (সব ডেটা সহ + Group) ===== */
     /* হেডার লুকান */
     .routine-header {
         display: none !important;
@@ -103,7 +102,7 @@
         border-bottom: none;
     }
     
-    /* লেবেল তৈরি করুন */
+    /* লেবেল তৈরি করুন - গ্রুপ সহ */
     .routine-item .exam-cell::before {
         content: attr(data-label);
         font-weight: 600;
@@ -121,28 +120,32 @@
     .routine-item .exam-cell:nth-child(2)::before {
         content: "Semester";
     }
+    /* Group - 3rd cell */
     .routine-item .exam-cell:nth-child(3)::before {
-        content: "Subject";
+        content: "Group";
     }
     .routine-item .exam-cell:nth-child(4)::before {
-        content: "Exam Date";
+        content: "Subject";
     }
     .routine-item .exam-cell:nth-child(5)::before {
-        content: "Time";
+        content: "Exam Date";
     }
     .routine-item .exam-cell:nth-child(6)::before {
-        content: "Type";
+        content: "Time";
     }
     .routine-item .exam-cell:nth-child(7)::before {
+        content: "Type";
+    }
+    .routine-item .exam-cell:nth-child(8)::before {
         content: "Status";
     }
     
-    /* ===== সাবজেক্ট সেলের জন্য বিশেষ স্টাইল ===== */
-    .routine-item .exam-cell:nth-child(3) {
+    /* ===== সাবজেক্ট সেলের জন্য বিশেষ স্টাইল (এখন 4th) ===== */
+    .routine-item .exam-cell:nth-child(4) {
         flex-direction: row;
         align-items: flex-start;
     }
-    .routine-item .exam-cell:nth-child(3) .subject-name {
+    .routine-item .exam-cell:nth-child(4) .subject-name {
         font-weight: 600;
         font-size: 0.95rem;
         color: #2196F3;
@@ -150,7 +153,7 @@
         text-align: right;
         width: 100%;
     }
-    .routine-item .exam-cell:nth-child(3) .exam-added-by {
+    .routine-item .exam-cell:nth-child(4) .exam-added-by {
         font-size: 0.6rem;
         color: #999;
         text-align: right;
@@ -158,12 +161,22 @@
         margin-top: 2px;
         display: block;
     }
-    .routine-item .exam-cell:nth-child(3) > div,
-    .routine-item .exam-cell:nth-child(3) > strong {
+    .routine-item .exam-cell:nth-child(4) > div,
+    .routine-item .exam-cell:nth-child(4) > strong {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
         flex: 1;
+    }
+    
+    /* Group cell - বিশেষ স্টাইল */
+    .routine-item .exam-cell:nth-child(3) .group-badge {
+        font-size: 0.85rem;
+        padding: 3px 12px;
+        background: #f0f0f0;
+        border-radius: 12px;
+        font-weight: 600;
+        color: #182848;
     }
     
     /* ডেটা ভ্যালু স্টাইল */
@@ -174,6 +187,11 @@
     .routine-item .exam-cell .exam-type-badge,
     .routine-item .exam-cell .status-badge {
         font-size: 0.9rem;
+        text-align: right;
+        flex: 1;
+    }
+    .routine-item .exam-cell .group-badge {
+        font-size: 0.85rem;
         text-align: right;
         flex: 1;
     }
@@ -188,6 +206,10 @@
         padding: 3px 10px;
     }
     .routine-item .exam-cell .exam-type-badge {
+        font-size: 0.75rem;
+        padding: 3px 10px;
+    }
+    .routine-item .exam-cell .group-badge {
         font-size: 0.75rem;
         padding: 3px 10px;
     }
@@ -540,11 +562,11 @@
         min-width: 70px;
     }
     
-    /* সাবজেক্ট - ছোট স্ক্রিনে */
-    .routine-item .exam-cell:nth-child(3) .subject-name {
+    /* সাবজেক্ট - ছোট স্ক্রিনে (এখন 4th) */
+    .routine-item .exam-cell:nth-child(4) .subject-name {
         font-size: 0.85rem;
     }
-    .routine-item .exam-cell:nth-child(3) .exam-added-by {
+    .routine-item .exam-cell:nth-child(4) .exam-added-by {
         font-size: 0.55rem;
     }
     
@@ -554,6 +576,10 @@
     }
     .routine-item .exam-cell .status-badge,
     .routine-item .exam-cell .exam-type-badge {
+        font-size: 0.65rem;
+        padding: 2px 8px;
+    }
+    .routine-item .exam-cell .group-badge {
         font-size: 0.65rem;
         padding: 2px 8px;
     }
@@ -807,4 +833,242 @@
     .class-selector, .date-filter {
         min-width: 100% !important;
     }
+}
+
+/* ===== মোবাইল রেসপন্সিভ (টগল সুইচ সহ) ===== */
+@media (max-width: 992px) {
+  .filter-controls {
+    gap: 12px 15px;
+  }
+  .class-selector,
+  .date-filter,
+  .filter-group {
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .class-selector,
+  .date-filter,
+  .filter-group {
+    min-width: 100%;
+    width: 100%;
+  }
+  
+  .toggle-switch {
+    width: 32px;
+    height: 18px;
+  }
+  .toggle-slider::before {
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+  }
+  .toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(14px);
+  }
+  .toggle-label {
+    font-size: 0.75rem;
+  }
+  
+  /* Routine table mobile - updated with Group */
+  .routine-header {
+    display: none !important;
+  }
+  .routine-item {
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    gap: 6px;
+  }
+  .routine-item .exam-cell {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px dashed #f0f0f0;
+    width: 100%;
+  }
+  .routine-item .exam-cell::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #555;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    margin-right: 10px;
+    min-width: 80px;
+  }
+  .routine-item .exam-cell:first-child::before {
+    content: "Department";
+  }
+  .routine-item .exam-cell:nth-child(2)::before {
+    content: "Semester";
+  }
+  .routine-item .exam-cell:nth-child(3)::before {
+    content: "Group";
+  }
+  .routine-item .exam-cell:nth-child(4)::before {
+    content: "Subject";
+  }
+  .routine-item .exam-cell:nth-child(5)::before {
+    content: "Exam Date";
+  }
+  .routine-item .exam-cell:nth-child(6)::before {
+    content: "Time";
+  }
+  .routine-item .exam-cell:nth-child(7)::before {
+    content: "Type";
+  }
+  .routine-item .exam-cell:nth-child(8)::before {
+    content: "Status";
+  }
+  
+  .exam-actions-hover {
+    position: static !important;
+    transform: none !important;
+    opacity: 1 !important;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    background: transparent;
+    box-shadow: none;
+  }
+  
+  /* Modal */
+  .modal-content {
+    width: 95% !important;
+    max-width: 95% !important;
+    height: 90vh !important;
+    max-height: 90vh !important;
+  }
+  
+  /* Chatbot */
+  .chatbot-container {
+    width: 95% !important;
+    height: 90vh !important;
+    max-height: 90vh !important;
+    right: 2.5% !important;
+    left: 2.5% !important;
+    bottom: 5vh !important;
+    top: 5vh !important;
+  }
+  .chatbot-messages {
+    height: calc(90vh - 130px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .toggle-switch {
+    width: 28px;
+    height: 16px;
+  }
+  .toggle-slider::before {
+    height: 10px;
+    width: 10px;
+    left: 3px;
+    bottom: 3px;
+  }
+  .toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(12px);
+  }
+  .toggle-label {
+    font-size: 0.7rem;
+  }
+  
+  .admin-access-btn,
+  .chatbot-toggle,
+  .notifications-panel-btn {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 1.2rem !important;
+  }
+  .admin-access-btn {
+    left: 15px !important;
+    bottom: 85px !important;
+  }
+  .chatbot-toggle {
+    right: 15px !important;
+    bottom: 15px !important;
+  }
+  .notifications-panel-btn {
+    right: 15px !important;
+    bottom: 75px !important;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .admin-access-btn, .chatbot-toggle, .notifications-panel-btn,
+  .chatbot-container, .notification, .exam-details-modal,
+  .edit-exam-modal, .exam-actions-hover, .btn-refresh,
+  .quick-filters, .routine-search {
+    display: none !important;
+  }
+  .routine-item {
+    break-inside: avoid;
+  }
+  body {
+    background-color: white !important;
+  }
+  .container {
+    box-shadow: none !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+  .routine-list {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+/* ===== EXACT NOTIFICATION MODAL - RESPONSIVE ===== */
+@media (max-width: 600px) {
+  .exact-notification-content {
+    max-width: 98%;
+    border-radius: 16px;
+  }
+  .exact-notification-header {
+    border-radius: 16px 16px 0 0;
+    padding: 16px 18px;
+  }
+  .exact-notification-header h3 {
+    font-size: 1rem;
+  }
+  .exact-notification-body {
+    padding: 16px;
+  }
+  .exact-notification-footer {
+    flex-direction: column;
+    padding: 16px 18px;
+  }
+  .exact-notification-footer button {
+    width: 100%;
+    justify-content: center;
+  }
+  .timing-options {
+    gap: 8px;
+  }
+  .timing-option label {
+    font-size: 0.9rem;
+  }
+  .preview-body p {
+    font-size: 0.9rem;
+  }
+}
+
+/* ===== TOGGLE STATUS ON MOBILE ===== */
+@media (max-width: 768px) {
+  .toggle-container {
+    margin-top: 6px;
+  }
+  .toggle-label {
+    font-size: 0.8rem;
+  }
 }

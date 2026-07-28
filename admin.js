@@ -1,4 +1,4 @@
-// admin.js - Enhanced Admin Panel with Smart Features
+// admin.js - Enhanced Admin Panel with Smart Features + Group Support for Practical Exams
 
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
@@ -14,7 +14,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchExam = document.getElementById('searchExam');
     const loginError = document.getElementById('loginError');
     const addExamMessage = document.getElementById('addExamMessage');
-    
+
+    // Group field elements
+    const groupField = document.getElementById('groupField');
+    const newExamType = document.getElementById('newExamType');
+    const newGroup = document.getElementById('newGroup');
+
     // Admin state
     let isAdminLoggedIn = false;
     let allExams = [];
@@ -45,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Event Listeners
         setupEventListeners();
-        
+
         // Set default date to today and min date to today
         const today = new Date().toISOString().split('T')[0];
         const examDateInput = document.getElementById('newExamDate');
@@ -53,18 +58,36 @@ document.addEventListener('DOMContentLoaded', function() {
             examDateInput.value = today;
             examDateInput.min = today;
         }
-        
+
         // Set min time based on current time if date is today
         updateMinTime();
-        
+
         // Initialize auto-suggest
         initAutoSuggest();
+
+        // Group field toggle on exam type change
+        if (newExamType) {
+            newExamType.addEventListener('change', toggleGroupField);
+            // Initial state
+            toggleGroupField();
+        }
+    }
+
+    function toggleGroupField() {
+        if (!groupField || !newExamType) return;
+        if (newExamType.value === 'practical') {
+            groupField.style.display = 'block';
+            // Set default group if not set
+            if (!newGroup.value) newGroup.value = 'A1';
+        } else {
+            groupField.style.display = 'none';
+        }
     }
 
     function setupEventListeners() {
         adminAccessBtn.addEventListener('click', openAdminModal);
         closeModalBtn.addEventListener('click', closeAdminModal);
-        
+
         // Close modal when clicking outside
         adminModal.addEventListener('click', function(e) {
             if (e.target === adminModal) {
@@ -89,19 +112,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (searchExam) {
             searchExam.addEventListener('input', debounce(searchExams, 300));
         }
-        
+
         // Date change listener to update min time
         const examDateInput = document.getElementById('newExamDate');
         if (examDateInput) {
             examDateInput.addEventListener('change', updateMinTime);
         }
-        
+
         // Form auto-save
         setupFormAutoSave();
-        
+
         // Keyboard shortcuts
         setupKeyboardShortcuts();
-        
+
         // Form validation
         setupFormValidation();
     }
@@ -109,12 +132,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateMinTime() {
         const examDateInput = document.getElementById('newExamDate');
         const examTimeInput = document.getElementById('newExamTime');
-        
+
         if (!examDateInput || !examTimeInput) return;
-        
+
         const today = new Date().toISOString().split('T')[0];
         const selectedDate = examDateInput.value;
-        
+
         if (selectedDate === today) {
             // If date is today, set min time to current time + 30 minutes
             const now = new Date();
@@ -131,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function openAdminModal() {
         adminModal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
-        
+
         // Update min date and time when modal opens
         const today = new Date().toISOString().split('T')[0];
         const examDateInput = document.getElementById('newExamDate');
@@ -140,15 +163,15 @@ document.addEventListener('DOMContentLoaded', function() {
             examDateInput.min = today;
         }
         updateMinTime();
-        
+
         if (isAdminLoggedIn) {
             loadExams();
             updateAdminStats();
-            
+
             // Show welcome back message
             showAdminNotification('Welcome back!', 'info');
         }
-        
+
         // Focus on first input
         setTimeout(() => {
             if (isAdminLoggedIn) {
@@ -168,17 +191,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loginForm) {
             loginForm.style.display = 'block';
             loginForm.style.opacity = '0';
-            
+
             setTimeout(() => {
                 loginForm.style.transition = 'opacity 0.3s ease';
                 loginForm.style.opacity = '1';
             }, 10);
         }
-        
+
         if (adminDashboard) {
             adminDashboard.style.display = 'none';
         }
-        
+
         clearLoginForm();
     }
 
@@ -186,17 +209,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loginForm) {
             loginForm.style.display = 'none';
         }
-        
+
         if (adminDashboard) {
             adminDashboard.style.display = 'block';
             adminDashboard.style.opacity = '0';
-            
+
             setTimeout(() => {
                 adminDashboard.style.transition = 'opacity 0.3s ease';
                 adminDashboard.style.opacity = '1';
             }, 10);
         }
-        
+
         // Set admin name
         const adminName = document.getElementById('adminName');
         const user = window.firebase.auth.currentUser;
@@ -204,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = user.email.split('@')[0];
             adminName.textContent = name.charAt(0).toUpperCase() + name.slice(1);
         }
-        
+
         // Update last login time
         updateLastLoginTime();
     }
@@ -236,50 +259,50 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show loading state
             loginBtn.disabled = true;
             loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
-            
+
             // Check if Firebase auth is available
             if (!window.firebase || !window.firebase.auth) {
                 throw new Error('Firebase not initialized. Please refresh the page.');
             }
-            
+
             // Try Firebase authentication
             const userCredential = await window.firebase.signInWithEmailAndPassword(
-                window.firebase.auth, 
-                email, 
+                window.firebase.auth,
+                email,
                 password
             );
-            
+
             console.log('Login successful:', userCredential.user.email);
-            
+
             // Clear error
             if (loginError) loginError.textContent = '';
-            
+
             // Show success animation
             loginBtn.innerHTML = '<i class="fas fa-check"></i> Success!';
-            
+
             // Small delay before showing dashboard
             setTimeout(() => {
                 showAdminDashboard();
                 loadExams();
                 loadSubjectSuggestions();
                 updateAdminStats();
-                
+
                 // Show success message
                 showAdminNotification('Login successful!', 'success');
-                
+
                 // Reset login button
                 setTimeout(() => {
                     loginBtn.disabled = false;
                     loginBtn.innerHTML = 'Login';
                 }, 1000);
-                
+
             }, 500);
-            
+
         } catch (error) {
             console.error('Login error:', error);
-            
+
             let errorMessage = 'Login failed. ';
-            
+
             if (error.code === 'auth/invalid-email') {
                 errorMessage = 'Invalid email format. Please check your email.';
             } else if (error.code === 'auth/user-disabled') {
@@ -297,9 +320,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 errorMessage += error.message;
             }
-            
+
             showLoginError(errorMessage);
-            
+
             // Reset login button
             loginBtn.disabled = false;
             loginBtn.innerHTML = 'Login';
@@ -310,11 +333,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loginError) {
             loginError.textContent = message;
             loginError.style.opacity = '0';
-            
+
             setTimeout(() => {
                 loginError.style.transition = 'opacity 0.3s ease';
                 loginError.style.opacity = '1';
-                
+
                 // Shake animation
                 loginError.classList.add('shake');
                 setTimeout(() => loginError.classList.remove('shake'), 500);
@@ -336,28 +359,28 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show loading state
             logoutBtn.disabled = true;
             logoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging out...';
-            
+
             if (window.firebase && window.firebase.auth) {
                 await window.firebase.signOut(window.firebase.auth);
             }
-            
+
             // Show logout animation
             logoutBtn.innerHTML = '<i class="fas fa-check"></i> Logged out';
-            
+
             setTimeout(() => {
                 showLoginForm();
-                
+
                 // Reset logout button
                 logoutBtn.disabled = false;
                 logoutBtn.innerHTML = 'Logout';
             }, 500);
-            
+
             showAdminNotification('Logged out successfully', 'info');
-            
+
         } catch (error) {
             console.error('Logout error:', error);
             showAdminNotification('Logout failed: ' + error.message, 'error');
-            
+
             // Reset logout button
             logoutBtn.disabled = false;
             logoutBtn.innerHTML = 'Logout';
@@ -378,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const examType = document.getElementById('newExamType').value;
         const examDate = document.getElementById('newExamDate').value;
         const examTime = document.getElementById('newExamTime').value;
-        
+
         // Fixed room number
         const room = 'Depends on sit plan';
 
@@ -393,6 +416,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Format time to 12-hour format
         const timeFormatted = formatTimeTo12Hour(examTime);
 
+        // Group handling
+        let group = null;
+        if (examType === 'practical') {
+            group = document.getElementById('newGroup').value || 'A1';
+        }
+
         try {
             // Show loading state
             addExamBtn.disabled = true;
@@ -406,6 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 examDate: examDate,
                 time: timeFormatted,
                 room: room,
+                group: group, // store group (null for non-practical)
                 createdAt: new Date().toISOString(),
                 addedBy: auth.currentUser.email,
                 addedById: auth.currentUser.uid
@@ -424,30 +454,30 @@ document.addEventListener('DOMContentLoaded', function() {
             const addDoc = window.firebase.addDoc;
 
             const docRef = await addDoc(collection(db, "exams"), examData);
-            
+
             console.log('Exam added with ID:', docRef.id);
-            
+
             // Add subject to suggestions
             addSubjectSuggestion(subject);
-            
+
             // Clear form
             clearAddExamForm();
-            
+
             // Show success animation
             addExamBtn.innerHTML = '<i class="fas fa-check"></i> Added!';
-            
+
             // Reset button after delay
             setTimeout(() => {
                 addExamBtn.disabled = false;
                 addExamBtn.innerHTML = 'Add Exam';
             }, 1000);
-            
+
             showAdminNotification('Exam added successfully!', 'success');
-            
+
             // Reload exams
             await loadExams();
             updateAdminStats();
-            
+
             // Refresh main routine display
             if (typeof window.updateRoutineDisplay === 'function') {
                 setTimeout(() => {
@@ -457,14 +487,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.updateUpcomingList();
                 }, 1000);
             }
-            
+
             // Play success sound if available
             playSuccessSound();
-            
+
         } catch (error) {
             console.error('Error adding exam:', error);
             showAdminNotification('Failed to add exam: ' + error.message, 'error');
-            
+
             // Reset button
             addExamBtn.disabled = false;
             addExamBtn.innerHTML = 'Add Exam';
@@ -478,29 +508,29 @@ document.addEventListener('DOMContentLoaded', function() {
         if (subject.length < 2) return { valid: false, message: 'Subject name is too short', field: 'newSubject' };
         if (!examDate) return { valid: false, message: 'Please select an exam date', field: 'newExamDate' };
         if (!examTime) return { valid: false, message: 'Please select an exam time', field: 'newExamTime' };
-        
+
         // Check if date is in the past
         const selectedDate = new Date(examDate);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         if (selectedDate < today) {
             return { valid: false, message: 'Exam date cannot be in the past', field: 'newExamDate' };
         }
-        
+
         // Check if date is today and time is in the past
         if (selectedDate.getTime() === today.getTime()) {
             const selectedDateTime = new Date(`${examDate}T${examTime}`);
             const now = new Date();
-            
+
             // Allow at least 30 minutes from now
             const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
-            
+
             if (selectedDateTime < thirtyMinutesFromNow) {
                 return { valid: false, message: 'Exam time must be at least 30 minutes from now for today\'s exams', field: 'newExamTime' };
             }
         }
-        
+
         return { valid: true };
     }
 
@@ -509,7 +539,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (field) {
             field.classList.add('invalid');
             field.focus();
-            
+
             // Remove highlight after 3 seconds
             setTimeout(() => {
                 field.classList.remove('invalid');
@@ -533,10 +563,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('newExamDate').value = today;
         document.getElementById('newExamTime').value = '10:00';
-        
+        // Reset group
+        document.getElementById('newGroup').value = 'A1';
+        // Hide group field (will be toggled by exam type change)
+        if (groupField) groupField.style.display = 'none';
+
         // Update min time
         updateMinTime();
-        
+
         // Focus on subject field
         document.getElementById('newSubject').focus();
     }
@@ -562,10 +596,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const querySnapshot = await getDocs(collection(db, "exams"));
             allExams = [];
-            
+
             querySnapshot.forEach((doc) => {
                 const examData = doc.data();
-                
+
                 allExams.push({
                     id: doc.id,
                     ...examData
@@ -575,7 +609,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Loaded exams:', allExams.length);
             displayExams(allExams);
             updateAdminStats();
-            
+
         } catch (error) {
             console.error('Error loading exams:', error);
             if (examList) {
@@ -593,9 +627,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function displayExams(exams) {
         if (!examList) return;
-        
+
         examList.innerHTML = '';
-        
+
         if (exams.length === 0) {
             examList.innerHTML = `
                 <div class="empty-state">
@@ -617,7 +651,7 @@ document.addEventListener('DOMContentLoaded', function() {
             examItem.className = 'exam-item';
             examItem.style.opacity = '0';
             examItem.style.transform = 'translateY(20px)';
-            
+
             // Format date for display
             const examDate = new Date(exam.examDate);
             const formattedDate = examDate.toLocaleDateString('en-US', {
@@ -626,7 +660,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 month: 'short',
                 day: 'numeric'
             });
-            
+
             // Get status
             const currentDate = window.dataFunctions ? window.dataFunctions.getCurrentDate() : new Date().toISOString().split('T')[0];
             let status = 'upcoming';
@@ -635,10 +669,18 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (exam.examDate === currentDate) {
                 status = 'today';
             }
-            
+
             // Convert department name to valid CSS class
             const deptClass = exam.department.toLowerCase().replace(/[&\s]+/g, '-');
-            
+
+            // Group display
+            let groupDisplay = '-';
+            if (exam.examType === 'practical' && exam.group) {
+                groupDisplay = exam.group;
+            } else if (exam.examType === 'practical') {
+                groupDisplay = 'A1'; // default if missing
+            }
+
             examItem.innerHTML = `
                 <div class="exam-info">
                     <div class="exam-header">
@@ -648,6 +690,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="exam-meta">
                         <span class="dept-badge dept-${deptClass}">${exam.department}</span>
                         <span class="meta-item"><i class="fas fa-graduation-cap"></i> ${exam.semester}</span>
+                        ${exam.examType === 'practical' ? `<span class="meta-item"><i class="fas fa-users"></i> Group: ${groupDisplay}</span>` : ''}
                         <span class="meta-item"><i class="fas fa-calendar"></i> ${formattedDate}</span>
                         <span class="meta-item"><i class="fas fa-clock"></i> ${exam.time}</span>
                     </div>
@@ -679,14 +722,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const deleteBtn = examItem.querySelector('.btn-delete');
             const notifyBtn = examItem.querySelector('.btn-notify');
             const copyBtn = examItem.querySelector('.btn-copy');
-            
+
             editBtn.addEventListener('click', () => editExam(exam));
             deleteBtn.addEventListener('click', () => deleteExam(exam.id));
             notifyBtn.addEventListener('click', () => sendExactNotification(exam));
             copyBtn.addEventListener('click', () => copyExamDetails(exam));
 
             examList.appendChild(examItem);
-            
+
             // Stagger animation
             setTimeout(() => {
                 examItem.style.transition = 'all 0.3s ease';
@@ -698,12 +741,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function searchExams() {
         const searchTerm = searchExam.value.toLowerCase().trim();
-        
+
         if (!searchTerm) {
             displayExams(allExams);
             return;
         }
-        
+
         const filteredExams = allExams.filter(exam => {
             return exam.subject.toLowerCase().includes(searchTerm) ||
                    exam.department.toLowerCase().includes(searchTerm) ||
@@ -711,11 +754,12 @@ document.addEventListener('DOMContentLoaded', function() {
                    (exam.examType && exam.examType.toLowerCase().includes(searchTerm)) ||
                    exam.room.toLowerCase().includes(searchTerm) ||
                    exam.time.toLowerCase().includes(searchTerm) ||
-                   (exam.addedBy && exam.addedBy.toLowerCase().includes(searchTerm));
+                   (exam.addedBy && exam.addedBy.toLowerCase().includes(searchTerm)) ||
+                   (exam.group && exam.group.toLowerCase().includes(searchTerm));
         });
-        
+
         displayExams(filteredExams);
-        
+
         // Show search results count
         const searchResults = document.getElementById('searchResultsCount');
         if (!searchResults) {
@@ -727,10 +771,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 searchBox.parentNode.insertBefore(resultsDiv, searchBox.nextSibling);
             }
         }
-        
+
         const resultsElement = document.getElementById('searchResultsCount');
         if (resultsElement) {
-            resultsElement.textContent = 
+            resultsElement.textContent =
                 filteredExams.length === 0 ? 'No results found' :
                 `Found ${filteredExams.length} exam${filteredExams.length !== 1 ? 's' : ''}`;
         }
@@ -740,7 +784,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create edit modal
         const modal = document.createElement('div');
         modal.className = 'edit-exam-modal';
-        
+
+        const examType = exam.examType || 'written';
+        const groupDisplay = (examType === 'practical') ? (exam.group || 'A1') : 'A1';
+
         modal.innerHTML = `
             <div class="edit-exam-content">
                 <div class="edit-exam-header">
@@ -781,10 +828,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="form-group">
                             <label for="editExamType">Exam Type:</label>
                             <select id="editExamType">
-                                <option value="written" ${(exam.examType || 'written') === 'written' ? 'selected' : ''}>Written</option>
-                                <option value="practical" ${(exam.examType || 'written') === 'practical' ? 'selected' : ''}>Practical</option>
-                                <!-- ✅ NEW: Referred option added -->
-                                <option value="referred" ${(exam.examType || 'written') === 'referred' ? 'selected' : ''}>Referred</option>
+                                <option value="written" ${examType === 'written' ? 'selected' : ''}>Written</option>
+                                <option value="practical" ${examType === 'practical' ? 'selected' : ''}>Practical</option>
+                                <option value="referred" ${examType === 'referred' ? 'selected' : ''}>Referred</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="editGroupField" style="${examType === 'practical' ? 'display:block;' : 'display:none;'}">
+                            <label for="editGroup">Group:</label>
+                            <select id="editGroup">
+                                <option value="A1" ${groupDisplay === 'A1' ? 'selected' : ''}>A1</option>
+                                <option value="B1" ${groupDisplay === 'B1' ? 'selected' : ''}>B1</option>
+                                <option value="C1" ${groupDisplay === 'C1' ? 'selected' : ''}>C1</option>
+                                <option value="A2" ${groupDisplay === 'A2' ? 'selected' : ''}>A2</option>
+                                <option value="B2" ${groupDisplay === 'B2' ? 'selected' : ''}>B2</option>
+                                <option value="C2" ${groupDisplay === 'C2' ? 'selected' : ''}>C2</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -804,21 +861,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
+        // Toggle group visibility on exam type change in edit modal
+        const editExamType = modal.querySelector('#editExamType');
+        const editGroupField = modal.querySelector('#editGroupField');
+        if (editExamType && editGroupField) {
+            editExamType.addEventListener('change', function() {
+                if (this.value === 'practical') {
+                    editGroupField.style.display = 'block';
+                } else {
+                    editGroupField.style.display = 'none';
+                }
+            });
+        }
+
         // Add event listeners
         modal.querySelector('.btn-close-edit').addEventListener('click', () => modal.remove());
         modal.querySelector('.btn-cancel-edit').addEventListener('click', () => modal.remove());
-        
+
         modal.querySelector('.btn-save-edit').addEventListener('click', async () => {
             await saveExamEdit(exam.id, modal);
         });
-        
+
         modal.querySelector('.btn-duplicate-exam').addEventListener('click', async () => {
             await duplicateExam(exam, modal);
         });
-        
+
         // Close on background click
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
@@ -834,16 +904,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const examType = modal.querySelector('#editExamType').value;
         const examDate = modal.querySelector('#editExamDate').value;
         const examTime = modal.querySelector('#editExamTime').value;
-        
+
         // Validation
         if (!department || !semester || !subject || !examDate || !examTime) {
             showAdminNotification('Please fill all fields', 'error');
             return;
         }
-        
+
+        // Group handling
+        let group = null;
+        if (examType === 'practical') {
+            group = modal.querySelector('#editGroup').value || 'A1';
+        }
+
         try {
             const timeFormatted = formatTimeTo12Hour(examTime);
-            
+
             const updatedData = {
                 department,
                 semester,
@@ -852,26 +928,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 examDate,
                 time: timeFormatted,
                 room: 'Depends on sit plan',
+                group: group,
                 updatedAt: new Date().toISOString(),
                 updatedBy: window.firebase.auth.currentUser.email
             };
-            
+
             await window.firebase.updateDoc(
                 window.firebase.doc(window.firebase.db, "exams", examId),
                 updatedData
             );
-            
+
             modal.remove();
             showAdminNotification('Exam updated successfully!', 'success');
             loadExams();
-            
+
             // Refresh main display
             if (typeof window.updateRoutineDisplay === 'function') {
                 setTimeout(() => {
                     window.updateRoutineDisplay();
                 }, 1000);
             }
-            
+
         } catch (error) {
             console.error('Error updating exam:', error);
             showAdminNotification('Failed to update exam: ' + error.message, 'error');
@@ -881,7 +958,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function duplicateExam(exam, modal) {
         if (confirm('Create a duplicate of this exam?')) {
             modal.remove();
-            
+
             // Populate add form with exam data
             document.getElementById('newDept').value = exam.department;
             document.getElementById('newSemester').value = exam.semester;
@@ -889,9 +966,17 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('newExamType').value = exam.examType || 'written';
             document.getElementById('newExamDate').value = exam.examDate;
             document.getElementById('newExamTime').value = convertTimeTo24Hour(exam.time);
-            
+            // Set group if practical
+            if (exam.examType === 'practical' && exam.group) {
+                document.getElementById('newGroup').value = exam.group;
+            } else {
+                document.getElementById('newGroup').value = 'A1';
+            }
+            // Toggle group field visibility
+            toggleGroupField();
+
             showAdminNotification('Exam details copied to form. Adjust as needed and click Add Exam.', 'info');
-            
+
             // Scroll to form
             document.getElementById('newSubject').focus();
         }
@@ -899,7 +984,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function convertTimeTo24Hour(time12) {
         if (!time12) return '10:00';
-        
+
         // Check if already in 24-hour format
         if (time12.includes(':')) {
             const parts = time12.split(':');
@@ -910,20 +995,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
-        
+
         const [time, modifier] = time12.split(' ');
         if (!time || !modifier) return '10:00';
-        
+
         let [hours, minutes] = time.split(':');
-        
+
         if (hours === '12') {
             hours = '00';
         }
-        
+
         if (modifier === 'PM') {
             hours = parseInt(hours, 10) + 12;
         }
-        
+
         return `${hours.toString().padStart(2, '0')}:${minutes || '00'}`;
     }
 
@@ -936,15 +1021,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!window.firebase || !window.firebase.db) {
                 throw new Error('Firebase not available');
             }
-            
+
             await window.firebase.deleteDoc(
                 window.firebase.doc(window.firebase.db, "exams", examId)
             );
-            
+
             showAdminNotification('Exam deleted successfully!', 'success');
             loadExams();
             updateAdminStats();
-            
+
             // Refresh main routine display
             if (typeof window.updateRoutineDisplay === 'function') {
                 setTimeout(() => {
@@ -954,7 +1039,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.updateUpcomingList();
                 }, 1000);
             }
-            
+
         } catch (error) {
             console.error('Error deleting exam:', error);
             showAdminNotification('Failed to delete exam: ' + error.message, 'error');
@@ -966,15 +1051,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create notification modal
         const modal = document.createElement('div');
         modal.className = 'exact-notification-modal';
-        
+
         const examDateTime = new Date(`${exam.examDate}T${convertTimeTo24Hour(exam.time)}`);
         const now = new Date();
         const timeDiff = examDateTime - now;
-        
+
         // Calculate days and hours
         const daysLeft = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
         const hoursLeft = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        
+
         modal.innerHTML = `
             <div class="exact-notification-content">
                 <div class="exact-notification-header">
@@ -988,12 +1073,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p>Date: ${window.dataFunctions ? window.dataFunctions.formatDate(exam.examDate) : exam.examDate}</p>
                         <p>Time: ${exam.time}</p>
                         <p>Type: ${(exam.examType || 'written').toUpperCase()}</p>
-                        
+
                         <div class="countdown-info">
                             <p><strong>Exam in: ${daysLeft} days, ${hoursLeft} hours</strong></p>
                         </div>
                     </div>
-                    
+
                     <div class="notification-timing">
                         <h5>Send Notification at Exact Time:</h5>
                         <div class="timing-options">
@@ -1027,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="notification-preview">
                         <h5>Notification Preview:</h5>
                         <div class="preview-card">
@@ -1057,14 +1142,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Update preview based on timing selection
         const updatePreview = () => {
             const timing = modal.querySelector('input[name="notificationType"]:checked').value;
             let timingText = '';
-            
+
             switch(timing) {
                 case 'exact':
                     timingText = `Will notify at exact exam time: ${exam.time}`;
@@ -1079,36 +1164,36 @@ document.addEventListener('DOMContentLoaded', function() {
                     timingText = `Will notify 1 hour before: ${calculateTimeBefore(exam.time, 60)}`;
                     break;
             }
-            
+
             const previewElement = modal.querySelector('#notification-timing-preview');
             if (previewElement) {
                 previewElement.textContent = timingText;
             }
         };
-        
+
         // Add event listeners for timing options
         modal.querySelectorAll('input[name="notificationType"]').forEach(radio => {
             radio.addEventListener('change', updatePreview);
         });
-        
+
         // Initial preview update
         updatePreview();
-        
+
         // Add event listeners for buttons
         modal.querySelector('.btn-close-exact').addEventListener('click', () => modal.remove());
         modal.querySelector('.btn-cancel-exact').addEventListener('click', () => modal.remove());
-        
+
         modal.querySelector('.btn-test-notification').addEventListener('click', async () => {
             await sendTestNotificationNow(exam);
             showAdminNotification('Test notification sent!', 'success');
         });
-        
+
         modal.querySelector('.btn-schedule-exact').addEventListener('click', async () => {
             const timing = modal.querySelector('input[name="notificationType"]:checked').value;
             await scheduleExactNotification(exam, timing);
             modal.remove();
         });
-        
+
         // Close on background click
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
@@ -1120,18 +1205,18 @@ document.addEventListener('DOMContentLoaded', function() {
     function calculateTimeBefore(examTime, minutesBefore) {
         const [time, modifier] = examTime.split(' ');
         let [hours, minutes] = time.split(':');
-        
+
         hours = parseInt(hours);
         if (modifier === 'PM' && hours !== 12) hours += 12;
         if (modifier === 'AM' && hours === 12) hours = 0;
-        
+
         const totalMinutes = hours * 60 + parseInt(minutes) - minutesBefore;
         const newHours = Math.floor(totalMinutes / 60);
         const newMinutes = totalMinutes % 60;
-        
+
         const newModifier = newHours >= 12 ? 'PM' : 'AM';
         const displayHours = newHours % 12 || 12;
-        
+
         return `${displayHours}:${newMinutes.toString().padStart(2, '0')} ${newModifier}`;
     }
 
@@ -1145,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     tag: `exam-${exam.id}-test`,
                     requireInteraction: true
                 });
-                
+
                 return true;
             } else if (Notification.permission !== "denied") {
                 const permission = await Notification.requestPermission();
@@ -1156,7 +1241,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         tag: `exam-${exam.id}-test`,
                         requireInteraction: true
                     });
-                    
+
                     return true;
                 }
             }
@@ -1168,7 +1253,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const examDateTime = new Date(`${exam.examDate}T${convertTimeTo24Hour(exam.time)}`);
         let notificationTime;
         let timingText = '';
-        
+
         switch(notificationType) {
             case 'exact':
                 notificationTime = examDateTime;
@@ -1187,10 +1272,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 timingText = '1 hour before';
                 break;
         }
-        
+
         const now = new Date();
         const delay = notificationTime - now;
-        
+
         if (delay > 0) {
             // Store notification schedule in localStorage
             const notifications = JSON.parse(localStorage.getItem('adminScheduledNotifications') || '[]');
@@ -1205,9 +1290,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 notificationType: notificationType,
                 scheduledAt: new Date().toISOString()
             });
-            
+
             localStorage.setItem('adminScheduledNotifications', JSON.stringify(notifications));
-            
+
             // Schedule the notification
             setTimeout(() => {
                 if ("Notification" in window && Notification.permission === "granted") {
@@ -1218,16 +1303,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         requireInteraction: true
                     });
                 }
-                
+
                 // Remove from localStorage after sending
                 const updatedNotifications = JSON.parse(localStorage.getItem('adminScheduledNotifications') || '[]');
-                const filtered = updatedNotifications.filter(n => 
+                const filtered = updatedNotifications.filter(n =>
                     !(n.examId === exam.id && n.notificationTime === notificationTime.toISOString())
                 );
                 localStorage.setItem('adminScheduledNotifications', JSON.stringify(filtered));
-                
+
             }, delay);
-            
+
             showAdminNotification(`Notification scheduled ${timingText} for ${exam.subject}`, 'success');
         } else {
             showAdminNotification('Cannot schedule notification in the past', 'error');
@@ -1235,8 +1320,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function copyExamDetails(exam) {
-        const text = `Subject: ${exam.subject}\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nType: ${exam.examType || 'written'}\nDate: ${exam.examDate}\nTime: ${exam.time}\nRoom: ${exam.room}`;
-        
+        let text = `Subject: ${exam.subject}\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nType: ${exam.examType || 'written'}\nDate: ${exam.examDate}\nTime: ${exam.time}\nRoom: ${exam.room}`;
+        if (exam.examType === 'practical' && exam.group) {
+            text += `\nGroup: ${exam.group}`;
+        }
+
         navigator.clipboard.writeText(text).then(() => {
             showAdminNotification('Exam details copied to clipboard!', 'success');
         }).catch(err => {
@@ -1247,15 +1335,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function initAutoSuggest() {
         const subjectInput = document.getElementById('newSubject');
-        
+
         if (!subjectInput) return;
-        
+
         // Create datalist for suggestions
         const datalist = document.createElement('datalist');
         datalist.id = 'subjectSuggestions';
         document.body.appendChild(datalist);
         subjectInput.setAttribute('list', 'subjectSuggestions');
-        
+
         // Load existing suggestions
         loadSubjectSuggestions();
     }
@@ -1263,11 +1351,11 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadSubjectSuggestions() {
         try {
             if (!window.firebase || !window.firebase.db) return;
-            
+
             const querySnapshot = await window.firebase.getDocs(
                 window.firebase.collection(window.firebase.db, "exams")
             );
-            
+
             subjectSuggestions.clear();
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
@@ -1275,9 +1363,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     subjectSuggestions.add(data.subject);
                 }
             });
-            
+
             updateSubjectDatalist();
-            
+
         } catch (error) {
             console.error('Error loading suggestions:', error);
         }
@@ -1286,7 +1374,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateSubjectDatalist() {
         const datalist = document.getElementById('subjectSuggestions');
         if (!datalist) return;
-        
+
         datalist.innerHTML = '';
         subjectSuggestions.forEach(subject => {
             const option = document.createElement('option');
@@ -1308,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const practicalExams = allExams.filter(exam => exam.examType === 'practical').length;
         const writtenExams = allExams.filter(exam => !exam.examType || exam.examType === 'written').length;
         const referredExams = allExams.filter(exam => exam.examType === 'referred').length;
-        
+
         // Update stats in admin header if elements exist
         const statsElement = document.getElementById('adminStats');
         if (!statsElement) {
@@ -1352,7 +1440,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             lastLoginElement.innerHTML = `<small>Last login: Just now</small>`;
-            
+
             // Update time every minute
             setTimeout(() => {
                 lastLoginElement.innerHTML = `<small>Last login: 1 minute ago</small>`;
@@ -1363,7 +1451,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupFormAutoSave() {
         const formFields = ['newSubject'];
         const storageKey = 'examFormDraft';
-        
+
         // Load saved draft
         const savedDraft = localStorage.getItem(storageKey);
         if (savedDraft) {
@@ -1375,7 +1463,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         element.value = draft[field];
                     }
                 });
-                
+
                 // Show restore notification
                 if (Object.values(draft).some(val => val)) {
                     setTimeout(() => {
@@ -1386,7 +1474,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error loading draft:', e);
             }
         }
-        
+
         // Auto-save on input
         formFields.forEach(field => {
             const element = document.getElementById(field);
@@ -1401,7 +1489,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 1000));
             }
         });
-        
+
         // Clear draft on successful submit
         document.getElementById('addExamBtn')?.addEventListener('click', () => {
             localStorage.removeItem(storageKey);
@@ -1412,13 +1500,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.addEventListener('keydown', (e) => {
             // Only in admin modal
             if (adminModal.style.display !== 'flex') return;
-            
+
             // Ctrl/Cmd + S to save exam
             if ((e.ctrlKey || e.metaKey) && e.key === 's' && isAdminLoggedIn) {
                 e.preventDefault();
                 addNewExam();
             }
-            
+
             // Ctrl/Cmd + F to focus search
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
                 e.preventDefault();
@@ -1427,12 +1515,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     searchExam.select();
                 }
             }
-            
+
             // Escape to close modal
             if (e.key === 'Escape') {
                 closeAdminModal();
             }
-            
+
             // Ctrl/Cmd + L to logout
             if ((e.ctrlKey || e.metaKey) && e.key === 'l' && isAdminLoggedIn) {
                 e.preventDefault();
@@ -1443,7 +1531,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function setupFormValidation() {
         const subjectInput = document.getElementById('newSubject');
-        
+
         if (subjectInput) {
             subjectInput.addEventListener('blur', () => {
                 if (subjectInput.value.length > 0 && subjectInput.value.length < 2) {
@@ -1458,7 +1546,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Remove existing notification
         const existing = document.querySelector('.admin-notification');
         if (existing) existing.remove();
-        
+
         const notification = document.createElement('div');
         notification.className = `admin-notification notification-${type}`;
         notification.innerHTML = `
@@ -1468,20 +1556,20 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <button class="btn-close-notification">&times;</button>
         `;
-        
+
         adminModal.appendChild(notification);
-        
+
         // Show notification
         setTimeout(() => {
             notification.classList.add('show');
         }, 10);
-        
+
         // Auto hide after 4 seconds
         setTimeout(() => {
             notification.classList.remove('show');
             setTimeout(() => notification.remove(), 300);
         }, 4000);
-        
+
         // Close button
         notification.querySelector('.btn-close-notification').addEventListener('click', () => {
             notification.classList.remove('show');
@@ -1495,16 +1583,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
+
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
+
             oscillator.frequency.value = 800;
             oscillator.type = 'sine';
-            
+
             gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-            
+
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.5);
         } catch (e) {
@@ -1528,20 +1616,20 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkScheduledNotifications() {
         const notifications = JSON.parse(localStorage.getItem('adminScheduledNotifications') || '[]');
         const now = new Date();
-        
+
         // Remove past notifications
         const validNotifications = notifications.filter(notification => {
             const notificationTime = new Date(notification.notificationTime);
             return notificationTime > now;
         });
-        
+
         localStorage.setItem('adminScheduledNotifications', JSON.stringify(validNotifications));
-        
+
         // Reschedule valid notifications
         validNotifications.forEach(notification => {
             const notificationTime = new Date(notification.notificationTime);
             const delay = notificationTime - now;
-            
+
             if (delay > 0) {
                 setTimeout(() => {
                     if ("Notification" in window && Notification.permission === "granted") {
@@ -1552,14 +1640,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             requireInteraction: true
                         });
                     }
-                    
+
                     // Remove from localStorage after sending
                     const updatedNotifications = JSON.parse(localStorage.getItem('adminScheduledNotifications') || '[]');
-                    const filtered = updatedNotifications.filter(n => 
+                    const filtered = updatedNotifications.filter(n =>
                         !(n.examId === notification.examId && n.notificationTime === notification.notificationTime)
                     );
                     localStorage.setItem('adminScheduledNotifications', JSON.stringify(filtered));
-                    
+
                 }, delay);
             }
         });

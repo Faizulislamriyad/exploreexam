@@ -1,3 +1,5 @@
+// download.js - সম্পূর্ণ আপডেটেড (Group Column সহ)
+
 function convertTimeTo24Hour(time12) {
     if (!time12) return '00:00';
     // যদি ইতিমধ্যে ২৪-ঘণ্টা ফরম্যাটে থাকে
@@ -147,7 +149,7 @@ class RoutineDownloader {
 
             // Get current filter values from DOM
             const selectedDept = document.getElementById('deptSelect')?.value || 'all';
-            const selectedSemester = document.getElementById('semesterSelect')?.value || 'all';
+            const selectedSemester = document.getElementById('semesterSingleSelect')?.value || 'all';
             const dateFilter = document.getElementById('dateFilter')?.value || 'upcoming';
             const searchTerm = document.getElementById('searchInput')?.value || '';
 
@@ -230,6 +232,18 @@ class RoutineDownloader {
                 } catch (e) {}
             }
 
+            // Get Group from DOM (if available)
+            let group = '-';
+            const groupBadge = element.querySelector('.group-badge');
+            if (groupBadge) {
+                group = groupBadge.textContent.trim();
+            } else if (examId && window.examData) {
+                const originalExam = window.examData.find(e => e.id === examId);
+                if (originalExam && originalExam.examType === 'practical' && originalExam.group) {
+                    group = originalExam.group;
+                }
+            }
+
             let isCompleted = false;
             const statusBadge = element.querySelector('.status-badge');
             if (statusBadge) {
@@ -246,6 +260,7 @@ class RoutineDownloader {
                 examDate: examDate,
                 time: element.querySelector('.exam-time')?.textContent || '',
                 examType: examType,
+                group: group,
                 isCompleted: isCompleted
             };
             
@@ -307,12 +322,13 @@ class RoutineDownloader {
         }
     }
 
+    // ✅ আপডেটেড: ৮টি কলাম (Group সহ)
     createRoutineContent(exams, title, subtitle) {
         let tableRows = '';
         const currentDate = new Date().toISOString().split('T')[0];
         
         exams.forEach((exam, index) => {
-            // ✅ Use formatDateShort for dd/mm/yyyy format
+            // ✅ Date format: dd/mm/yyyy
             let examDate = exam.examDate;
             if (window.dataFunctions && typeof window.dataFunctions.formatDateShort === 'function') {
                 try {
@@ -320,7 +336,7 @@ class RoutineDownloader {
                 } catch (e) {}
             }
             
-            // ✅ Handle all three types: Written, Practical, Referred
+            // ✅ Exam Type
             let typeDisplay = 'Written';
             let typeBgColor = '#2196F3'; // blue
             if (exam.examType === 'practical' || exam.examType === 'Practical') {
@@ -329,6 +345,14 @@ class RoutineDownloader {
             } else if (exam.examType === 'referred' || exam.examType === 'Referred') {
                 typeDisplay = 'Referred';
                 typeBgColor = '#e74c3c'; // red
+            }
+
+            // ✅ Group
+            let groupDisplay = '-';
+            if ((exam.examType === 'practical' || exam.examType === 'Practical') && exam.group) {
+                groupDisplay = exam.group;
+            } else if ((exam.examType === 'practical' || exam.examType === 'Practical') && !exam.group) {
+                groupDisplay = 'A1'; // default
             }
             
             let status = 'Upcoming';
@@ -341,15 +365,20 @@ class RoutineDownloader {
                     if (examDateObj.toDateString() === currentDateObj.toDateString()) {
                         status = 'Today';
                         statusColor = '#FF9800';
+                    } else if (examDateObj < currentDateObj) {
+                        status = 'Completed';
+                        statusColor = '#999';
                     }
                 } catch (e) {}
             }
 
+            // ✅ ৮টি কলাম: #, Department, Semester, Group, Subject, Date, Time, Type, Status
             tableRows += `
                 <tr style="border-bottom: 1px solid #e0e0e0; background: ${index % 2 === 0 ? '#f9f9f9' : 'white'};">
                     <td style="padding: 12px; text-align: center; font-size: 14px; font-weight: bold; color: #555;">${index + 1}</td>
                     <td style="padding: 12px; text-align: left; font-size: 14px; color: #333;">${exam.department}</td>
                     <td style="padding: 12px; text-align: center; font-size: 14px; color: #333;">${exam.semester}</td>
+                    <td style="padding: 12px; text-align: center; font-size: 14px; font-weight: 600; color: #182848;">${groupDisplay}</td>
                     <td style="padding: 12px; text-align: left; font-size: 14px; font-weight: 600; color: #2196F3;">${exam.subject}</td>
                     <td style="padding: 12px; text-align: center; font-size: 14px; color: #333;">${examDate}</td>
                     <td style="padding: 12px; text-align: center; font-size: 14px; color: #333;">${exam.time}</td>
@@ -392,7 +421,7 @@ class RoutineDownloader {
                         position: fixed;
                         top: -10000px;
                         left: -10000px;
-                        width: 1000px;
+                        width: 1100px;
                         padding: 40px;
                         background: white;
                         color: #333;
@@ -443,9 +472,10 @@ class RoutineDownloader {
         });
     }
 
+    // ✅ HTML for Canvas - 8 Columns with Group
     generateHTMLForCanvas(content) {
         return `
-            <div style="width: 100%; max-width: 1000px; margin: 0 auto; box-sizing: border-box;">
+            <div style="width: 100%; max-width: 1100px; margin: 0 auto; box-sizing: border-box;">
                 <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #667eea;">
                     <h1 style="font-size: 32px; margin: 0 0 10px 0; color: #333; font-weight: 700;">
                         ${content.title}
@@ -453,17 +483,18 @@ class RoutineDownloader {
                     <h2 style="font-size: 20px; margin: 0; color: #666; font-weight: 500;">${content.subtitle}</h2>
                 </div>
                 <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; border: 2px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
+                    <table style="width: 100%; border-collapse: collapse; border: 2px solid #e0e0e0; border-radius: 10px; overflow: hidden; font-size: 13px;">
                         <thead>
                             <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                                <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">#</th>
-                                <th style="padding: 15px; text-align: left; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Department</th>
-                                <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Semester</th>
-                                <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Subject</th>
-                                <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Date</th>
-                                <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Time</th>
-                                <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Type</th>
-                                <th style="padding: 15px; text-align: center; font-size: 15px; font-weight: 600;">Status</th>
+                                <th style="padding: 12px 8px; text-align: center; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">#</th>
+                                <th style="padding: 12px 8px; text-align: left; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Department</th>
+                                <th style="padding: 12px 8px; text-align: center; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Semester</th>
+                                <th style="padding: 12px 8px; text-align: center; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Group</th>
+                                <th style="padding: 12px 8px; text-align: left; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Subject</th>
+                                <th style="padding: 12px 8px; text-align: center; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Date</th>
+                                <th style="padding: 12px 8px; text-align: center; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Time</th>
+                                <th style="padding: 12px 8px; text-align: center; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2);">Type</th>
+                                <th style="padding: 12px 8px; text-align: center; font-weight: 600;">Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -581,7 +612,7 @@ class PDFDownloader {
     // ✅ Get current filter info for subtitle
     getFilterInfo() {
         const dept = document.getElementById('deptSelect')?.value || 'all';
-        const sem = document.getElementById('semesterSelect')?.value || 'all';
+        const sem = document.getElementById('semesterSingleSelect')?.value || 'all';
         const filter = document.getElementById('dateFilter')?.value || 'upcoming';
         const search = document.getElementById('searchInput')?.value || '';
         
@@ -606,6 +637,7 @@ class PDFDownloader {
         return info || 'All Upcoming Exams';
     }
 
+    // ✅ PDF ডাউনলোড – ৮টি কলাম (Group সহ)
     async downloadAsPDF(filename, exams = null, title = 'Exam Routine') {
         try {
             // ✅ If exams not provided, use filtered exams
@@ -642,7 +674,7 @@ class PDFDownloader {
 
             await this.ensureJSPDF();
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
+            const doc = new jsPDF('landscape', 'mm', 'a4'); // landscape for more columns
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -659,25 +691,25 @@ class PDFDownloader {
             // ----- HEADER -----
             let y = 20;
             doc.setFillColor(41, 128, 185);
-            doc.rect(0, 0, pageWidth, 40, 'F');
+            doc.rect(0, 0, pageWidth, 35, 'F');
             doc.setTextColor(255, 255, 255);
-            doc.setFontSize(24);
+            doc.setFontSize(20);
             doc.setFont('helvetica', 'bold');
-            doc.text('EXAM ROUTINE', pageWidth / 2, 25, { align: 'center' });
+            doc.text('EXAM ROUTINE', pageWidth / 2, 22, { align: 'center' });
 
-            doc.setFontSize(14);
+            doc.setFontSize(12);
             doc.setFont('helvetica', 'normal');
-            doc.text(title, pageWidth / 2, 35, { align: 'center' });
+            doc.text(title, pageWidth / 2, 32, { align: 'center' });
 
-            y = 50;
+            y = 45;
 
             // ✅ Subtitle with current filter info
             const subtitle = this.getFilterInfo();
             if (subtitle) {
                 doc.setTextColor(100, 100, 100);
-                doc.setFontSize(12);
+                doc.setFontSize(10);
                 doc.text(subtitle, pageWidth / 2, y, { align: 'center' });
-                y += 10;
+                y += 8;
             }
 
             // Generation info
@@ -689,88 +721,101 @@ class PDFDownloader {
             const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
             const genText = `Generated: ${dateStr} at ${timeStr}  |  Total: ${filteredExams.length} exams`;
 
-            doc.setFontSize(10);
+            doc.setFontSize(9);
             doc.setTextColor(150, 150, 150);
             doc.text(genText, pageWidth / 2, y, { align: 'center' });
-            y += 15;
+            y += 12;
 
-            // ----- TABLE HEADER -----
+            // ----- TABLE HEADER (8 Columns) -----
             doc.setFillColor(240, 240, 240);
-            doc.rect(10, y, pageWidth - 20, 10, 'F');
+            doc.rect(10, y, pageWidth - 20, 8, 'F');
             doc.setTextColor(0, 0, 0);
-            doc.setFontSize(10);
+            doc.setFontSize(8);
             doc.setFont('helvetica', 'bold');
 
-            const columns = ['#', 'Department', 'Semester', 'Subject', 'Date', 'Time', 'Type', 'Status'];
-            const colWidths = [10, 30, 20, 50, 25, 20, 20, 20];
+            const columns = ['#', 'Department', 'Semester', 'Group', 'Subject', 'Date', 'Time', 'Type', 'Status'];
+            const colWidths = [8, 28, 16, 14, 36, 20, 16, 16, 16];
             let x = 10;
             columns.forEach((col, idx) => {
-                doc.text(col, x + colWidths[idx] / 2, y + 6, { align: 'center' });
+                doc.text(col, x + colWidths[idx] / 2, y + 5, { align: 'center' });
                 x += colWidths[idx];
             });
-            y += 10;
+            y += 8;
 
             // ----- TABLE ROWS -----
             doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9);
+            doc.setFontSize(7);
 
             const currentDate = new Date().toISOString().split('T')[0];
 
             filteredExams.forEach((exam, index) => {
                 // New page if needed
-                if (y > pageHeight - 20) {
+                if (y > pageHeight - 15) {
                     doc.addPage();
                     y = 20;
                     // Re-draw header
                     doc.setFillColor(240, 240, 240);
-                    doc.rect(10, y, pageWidth - 20, 10, 'F');
+                    doc.rect(10, y, pageWidth - 20, 8, 'F');
                     doc.setTextColor(0, 0, 0);
-                    doc.setFontSize(10);
+                    doc.setFontSize(8);
                     doc.setFont('helvetica', 'bold');
                     let hx = 10;
                     columns.forEach((col, idx) => {
-                        doc.text(col, hx + colWidths[idx] / 2, y + 6, { align: 'center' });
+                        doc.text(col, hx + colWidths[idx] / 2, y + 5, { align: 'center' });
                         hx += colWidths[idx];
                     });
-                    y += 10;
+                    y += 8;
                 }
 
                 // Row background
                 if (index % 2 === 0) {
                     doc.setFillColor(250, 250, 250);
-                    doc.rect(10, y, pageWidth - 20, 8, 'F');
+                    doc.rect(10, y, pageWidth - 20, 7, 'F');
                 }
 
                 let colX = 10;
 
                 // # (Serial)
                 doc.setTextColor(100, 100, 100);
-                doc.text((index + 1).toString(), colX + colWidths[0] / 2, y + 5, { align: 'center' });
+                doc.text((index + 1).toString(), colX + colWidths[0] / 2, y + 4.5, { align: 'center' });
                 colX += colWidths[0];
 
                 // Department
                 doc.setTextColor(0, 0, 0);
                 const deptText = exam.department.length > 12 ? exam.department.substring(0, 10) + '..' : exam.department;
-                doc.text(deptText, colX + 2, y + 5);
+                doc.text(deptText, colX + 1, y + 4.5);
                 colX += colWidths[1];
 
                 // Semester
-                doc.text(exam.semester, colX + colWidths[2] / 2, y + 5, { align: 'center' });
+                doc.text(exam.semester, colX + colWidths[2] / 2, y + 4.5, { align: 'center' });
                 colX += colWidths[2];
 
-                // Subject
-                const subjText = exam.subject.length > 20 ? exam.subject.substring(0, 18) + '..' : exam.subject;
-                doc.text(subjText, colX + 2, y + 5);
+                // Group
+                let groupDisplay = '-';
+                if ((exam.examType === 'practical' || exam.examType === 'Practical') && exam.group) {
+                    groupDisplay = exam.group;
+                } else if ((exam.examType === 'practical' || exam.examType === 'Practical') && !exam.group) {
+                    groupDisplay = 'A1';
+                }
+                doc.setTextColor(50, 50, 50);
+                doc.text(groupDisplay, colX + colWidths[3] / 2, y + 4.5, { align: 'center' });
                 colX += colWidths[3];
 
-                // Date (dd/mm/yyyy)
-                const formattedDate = formatDate(exam.examDate);
-                doc.text(formattedDate, colX + colWidths[4] / 2, y + 5, { align: 'center' });
+                // Subject
+                doc.setTextColor(33, 150, 243);
+                const subjText = exam.subject.length > 18 ? exam.subject.substring(0, 16) + '..' : exam.subject;
+                doc.text(subjText, colX + 1, y + 4.5);
                 colX += colWidths[4];
 
-                // Time
-                doc.text(exam.time, colX + colWidths[5] / 2, y + 5, { align: 'center' });
+                // Date (dd/mm/yyyy)
+                doc.setTextColor(0, 0, 0);
+                const formattedDate = formatDate(exam.examDate);
+                doc.text(formattedDate, colX + colWidths[5] / 2, y + 4.5, { align: 'center' });
                 colX += colWidths[5];
+
+                // Time
+                doc.text(exam.time, colX + colWidths[6] / 2, y + 4.5, { align: 'center' });
+                colX += colWidths[6];
 
                 // Type with color
                 let typeDisplay = 'Written';
@@ -783,8 +828,8 @@ class PDFDownloader {
                     typeColor = [231, 76, 60];
                 }
                 doc.setTextColor(typeColor[0], typeColor[1], typeColor[2]);
-                doc.text(typeDisplay, colX + colWidths[6] / 2, y + 5, { align: 'center' });
-                colX += colWidths[6];
+                doc.text(typeDisplay, colX + colWidths[7] / 2, y + 4.5, { align: 'center' });
+                colX += colWidths[7];
 
                 // Status
                 let status = 'Upcoming';
@@ -797,20 +842,20 @@ class PDFDownloader {
                     statusColor = [150, 150, 150];
                 }
                 doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-                doc.text(status, colX + colWidths[7] / 2, y + 5, { align: 'center' });
+                doc.text(status, colX + colWidths[8] / 2, y + 4.5, { align: 'center' });
 
                 // Row border
                 doc.setDrawColor(220, 220, 220);
-                doc.line(10, y + 8, pageWidth - 10, y + 8);
+                doc.line(10, y + 7, pageWidth - 10, y + 7);
 
-                y += 8;
+                y += 7;
             });
 
             // ----- FOOTER -----
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
-            doc.text('Download from exploreex.vercel.app', pageWidth / 2, pageHeight - 10, { align: 'center' });
-            doc.text('© 2026 Explore Routine', pageWidth / 2, pageHeight - 5, { align: 'center' });
+            doc.text('Download from exploreex.vercel.app', pageWidth / 2, pageHeight - 8, { align: 'center' });
+            doc.text('© 2026 Explore Routine', pageWidth / 2, pageHeight - 4, { align: 'center' });
 
             doc.save(filename);
             return true;
@@ -824,7 +869,7 @@ class PDFDownloader {
     generateFileName(prefix, exams) {
         let fileName = prefix;
         const dept = document.getElementById('deptSelect')?.value || 'all';
-        const sem = document.getElementById('semesterSelect')?.value || 'all';
+        const sem = document.getElementById('semesterSingleSelect')?.value || 'all';
         const filter = document.getElementById('dateFilter')?.value || 'upcoming';
         
         if (dept !== 'all') fileName += '_' + dept.replace(/\s+/g, '_');
