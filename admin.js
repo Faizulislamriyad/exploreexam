@@ -1,5 +1,4 @@
 // admin.js - Enhanced Admin Panel with Smart Features + Group Support for Practical Exams
-// Added: Allowed admin emails check (only authorized emails can access admin panel)
 
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
@@ -26,12 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let allExams = [];
     let subjectSuggestions = new Set();
 
-    // ✅ Allowed admin emails (add your admin emails here)
-    const ALLOWED_ADMIN_EMAILS = [
-        'admin@example.com',   // change this to your admin email
-        'your-email@example.com'
-    ];
-
     // Initialize
     initAdminPanel();
 
@@ -41,26 +34,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.firebase && window.firebase.auth) {
             window.firebase.auth.onAuthStateChanged((user) => {
                 if (user) {
-                    // Check if user is an allowed admin
-                    const isAdmin = ALLOWED_ADMIN_EMAILS.includes(user.email);
-                    if (isAdmin) {
-                        console.log('Admin signed in:', user.email);
-                        isAdminLoggedIn = true;
-                        showAdminDashboard();
-                        loadExams();
-                        loadSubjectSuggestions();
-                        updateAdminStats();
-                    } else {
-                        // Not an admin - show login form and error
-                        console.log('User is not an admin:', user.email);
-                        isAdminLoggedIn = false;
-                        showLoginForm();
-                        if (loginError) {
-                            loginError.textContent = 'You are not authorized to access the admin panel.';
-                        }
-                        // Sign out the unauthorized user
-                        window.firebase.auth.signOut();
-                    }
+                    console.log('Admin is signed in:', user.email);
+                    isAdminLoggedIn = true;
+                    showAdminDashboard();
+                    loadExams();
+                    loadSubjectSuggestions();
+                    updateAdminStats();
                 } else {
                     console.log('Admin is signed out');
                     isAdminLoggedIn = false;
@@ -276,12 +255,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Check if email is allowed as admin
-        if (!ALLOWED_ADMIN_EMAILS.includes(email)) {
-            showLoginError('This email is not authorized as admin.');
-            return;
-        }
-
         try {
             // Show loading state
             loginBtn.disabled = true;
@@ -419,12 +392,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const auth = window.firebase ? window.firebase.auth : null;
         if (!auth || !auth.currentUser) {
             showAdminNotification('Please login first to add exams', 'error');
-            return;
-        }
-
-        // Check if user is an allowed admin
-        if (!ALLOWED_ADMIN_EMAILS.includes(auth.currentUser.email)) {
-            showAdminNotification('You are not authorized to add exams', 'error');
             return;
         }
 

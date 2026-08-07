@@ -17,21 +17,6 @@
                 <h1>Explore Routine</h1> 
             </div>
             <p class="tagline">Exam Routine Management System</p>
-            <!-- User Area: Login/Profile & Notification -->
-            <div class="user-area">
-                <button id="notificationBtn" class="notif-icon" title="Notifications">
-                    <i class="fas fa-bell"></i>
-                    <span id="notifBadgeHeader" class="notif-badge-header">0</span>
-                </button>
-                <div id="userProfileArea">
-                    <button id="loginBtnHeader" class="btn-login-header">Login with Google</button>
-                    <div id="userInfo" style="display:none;">
-                        <span id="userNameDisplay"></span>
-                        <img id="userAvatar" src="" alt="avatar" class="user-avatar">
-                        <button id="profileSettingsBtn" class="btn-profile-settings"><i class="fas fa-cog"></i></button>
-                    </div>
-                </div>
-            </div>
         </header>
 
         <div class="app-container">
@@ -359,81 +344,6 @@
             </div>
         </div>
 
-        <!-- Profile Settings Modal (User) -->
-        <div id="profileModal" class="modal">
-            <div class="modal-content" style="max-width: 550px;">
-                <div class="modal-header">
-                    <h3><i class="fas fa-user-circle"></i> Profile Settings</h3>
-                    <button class="close-modal close-profile-modal">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <form id="profileForm">
-                        <div class="form-group">
-                            <label>Display Name</label>
-                            <input type="text" id="profileDisplayName" class="form-control" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" id="profileEmail" class="form-control" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="profileDept">Department</label>
-                            <select id="profileDept" class="form-control">
-                                <option value="Computer">Computer</option>
-                                <option value="Civil">Civil</option>
-                                <option value="Electrical">Electrical</option>
-                                <option value="Power">Power</option>
-                                <option value="Mechanical">Mechanical</option>
-                                <option value="Electronics">Electronics</option>
-                                <option value="Electro-Medical">Electro-Medical</option>
-                                <option value="Tourism & Hospitality Management">Tourism</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="profileSemester">My Semester</label>
-                            <select id="profileSemester" class="form-control">
-                                <option value="1st">1st</option>
-                                <option value="2nd">2nd</option>
-                                <option value="3rd">3rd</option>
-                                <option value="4th">4th</option>
-                                <option value="5th">5th</option>
-                                <option value="6th">6th</option>
-                                <option value="7th">7th</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="profileReferredSemesters">Referred Semesters (select multiple)</label>
-                            <select id="profileReferredSemesters" class="form-control" multiple>
-                                <option value="1st">1st</option>
-                                <option value="2nd">2nd</option>
-                                <option value="3rd">3rd</option>
-                                <option value="4th">4th</option>
-                                <option value="5th">5th</option>
-                                <option value="6th">6th</option>
-                                <option value="7th">7th</option>
-                            </select>
-                            <small>Hold Ctrl/Cmd to select multiple semesters. These will be added to your default filter.</small>
-                        </div>
-                        <button type="submit" class="btn-save-profile">Save Settings</button>
-                        <button type="button" id="logoutUserBtn" class="btn-logout-user">Logout</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Notification Preview Modal -->
-        <div id="notificationPreviewModal" class="modal">
-            <div class="modal-content" style="max-width: 500px;">
-                <div class="modal-header" style="background: #f39c12;">
-                    <h3><i class="fas fa-bell"></i> Your Exam Notifications</h3>
-                    <button class="close-modal close-notif-preview">&times;</button>
-                </div>
-                <div class="modal-body" id="notificationPreviewBody">
-                    <p>Loading notifications...</p>
-                </div>
-            </div>
-        </div>
-
         <!-- Chatbot -->
         <div class="chatbot-container">
             <div class="chatbot-header">
@@ -478,10 +388,9 @@
     <!-- JavaScript Files -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-        // ✅ সঠিক Firebase কনফিগ
         const firebaseConfig = {
             apiKey: "AIzaSyCaM7TUs8rxFFDEMgmAx2DG7XllBthnoAA",
             authDomain: "barisal-polytechnic-inst-54ce1.firebaseapp.com",
@@ -495,25 +404,17 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const googleProvider = new GoogleAuthProvider();
 
-        window.firebase = {
-            db, auth,
-            collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, setDoc, getDoc,
-            createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
-            GoogleAuthProvider: GoogleAuthProvider,
-            googleProvider: googleProvider,
-            signInWithPopup, onAuthStateChanged
+        window.firebase = { 
+            db, auth, 
+            collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot,
+            createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut 
         };
-
-        console.log('Firebase initialized successfully');
     </script>
-
     <script src="data.js"></script>
     <script src="notification.js"></script>
     <script src="chatbot.js"></script>
     <script src="admin.js"></script>
-    <script src="user-auth.js"></script>
     <script src="script.js"></script>
     <script src="download.js"></script>
     <script src="Extra.js"></script>

@@ -1,5 +1,4 @@
-// notification.js - Persistent Notification Manager for Students + User-Specific Notifications
-// Updated with user profile integration for personalized exam notifications
+// notification.js - Persistent Notification Manager for Students (With Forced Styling)
 
 const NOTIF_STORAGE_KEY = 'studentNotifications';
 let activeNotificationTimeouts = [];
@@ -198,100 +197,16 @@ function clearAllNotifications() {
     }
 }
 
-// ----- Update Notification Badge (Header & Floating) -----
 function updateNotificationBadge() {
-    // Count upcoming exams for the logged-in user (if any)
-    const user = window.firebase?.auth?.currentUser;
-    let count = 0;
-    if (user && window.userProfile) {
-        const dept = window.userProfile.department;
-        const semesters = [];
-        if (window.userProfile.semester && window.userProfile.semester !== 'all') semesters.push(window.userProfile.semester);
-        if (window.userProfile.referredSemesters) semesters.push(...window.userProfile.referredSemesters);
-        if (semesters.length > 0 && window.examData) {
-            const today = new Date().toISOString().split('T')[0];
-            const exams = window.examData.filter(exam => {
-                const deptMatch = dept === 'all' || exam.department === dept;
-                const semMatch = semesters.includes(exam.semester);
-                return deptMatch && semMatch && exam.examDate >= today;
-            });
-            count = exams.length;
-        }
-    }
-    // Update header badge
-    const headerBadge = document.getElementById('notifBadgeHeader');
-    if (headerBadge) {
-        headerBadge.textContent = count > 0 ? count : '0';
-        headerBadge.style.display = count > 0 ? 'inline-block' : 'none';
-    }
-    // Update floating badge (same as student notifications count)
-    const studentNotifs = getStoredNotifications();
-    const floatingBadge = document.getElementById('notifBadge');
-    if (floatingBadge) {
-        const total = studentNotifs.length;
-        floatingBadge.textContent = total > 0 ? total : '0';
-        floatingBadge.style.display = total > 0 ? 'inline-block' : 'none';
+    const badge = document.getElementById('notifBadge');
+    if (badge) {
+        const count = getStoredNotifications().length;
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'inline-block' : 'none';
     }
 }
 
-// ----- Generate User Notifications (for preview modal) -----
-function generateUserNotifications() {
-    const user = window.firebase?.auth?.currentUser;
-    if (!user) {
-        return '<p>Please login to see your personalized notifications.</p>';
-    }
-    const dept = window.userProfile.department;
-    const semesters = [];
-    if (window.userProfile.semester && window.userProfile.semester !== 'all') semesters.push(window.userProfile.semester);
-    if (window.userProfile.referredSemesters) semesters.push(...window.userProfile.referredSemesters);
-    if (semesters.length === 0) {
-        return '<p>No semesters selected. Please update your profile.</p>';
-    }
-
-    let exams = window.examData || [];
-    if (!exams.length) {
-        return '<p>No exam data available.</p>';
-    }
-
-    // Filter by department and semesters
-    const filtered = exams.filter(exam => {
-        const deptMatch = dept === 'all' || exam.department === dept;
-        const semMatch = semesters.includes(exam.semester);
-        return deptMatch && semMatch;
-    });
-
-    // Sort by date
-    const sorted = filtered.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
-
-    // Get upcoming exams (today or future)
-    const today = new Date().toISOString().split('T')[0];
-    const upcoming = sorted.filter(exam => exam.examDate >= today);
-
-    if (upcoming.length === 0) {
-        return `<p>No upcoming exams for your department (${dept}) and semesters (${semesters.join(', ')}).</p>`;
-    }
-
-    // Build notification messages
-    let html = `<h4>Upcoming Exams for ${dept} Department</h4><ul>`;
-    upcoming.slice(0, 10).forEach(exam => {
-        const dateObj = new Date(exam.examDate);
-        const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        const daysLeft = Math.ceil((dateObj - new Date()) / (1000 * 60 * 60 * 24));
-        let msg = '';
-        if (daysLeft === 0) msg = 'TODAY!';
-        else if (daysLeft === 1) msg = 'tomorrow';
-        else msg = `in ${daysLeft} days`;
-        const examType = exam.examType || 'Written';
-        html += `<li><strong>${exam.subject}</strong> - ${exam.semester} semester (${examType}) - ${dateStr} at ${exam.time} (${msg})</li>`;
-    });
-    html += '</ul>';
-    if (upcoming.length > 10) {
-        html += `<p>... and ${upcoming.length - 10} more exams.</p>`;
-    }
-    return html;
-}
-
-// ----- Render the list inside the "My Scheduled Notifications" modal -----
+// ----- Render the list inside the modal -----
 function renderScheduledNotificationsList() {
     const container = document.getElementById('scheduledNotificationsList');
     if (!container) return;
@@ -360,8 +275,10 @@ function openNotificationsModal() {
     if (clearAllBtn) clearAllBtn.onclick = clearAllNotifications;
 }
 
-// ----- The actual notification options modal (for setting a reminder) -----
+// ----- The actual notification options modal with inline styles -----
 function showNotificationOptionsModal(exam) {
+    // This function is called from script.js (showNotificationOptions)
+    // We'll define it globally here.
     const modal = document.createElement('div');
     modal.className = 'notification-options-modal';
     modal.style.cssText = `
@@ -481,23 +398,35 @@ function showNotificationOptionsModal(exam) {
     document.body.appendChild(modal);
 
     // ---- Event Listeners ----
+    // Close button
     const closeBtn = content.querySelector('.btn-close-notify-options');
     closeBtn.addEventListener('click', () => modal.remove());
     const cancelBtn = content.querySelector('.btn-cancel-notify');
     cancelBtn.addEventListener('click', () => modal.remove());
 
+    // Test notification
     const testBtn = content.querySelector('.btn-test-notification-now');
     testBtn.addEventListener('click', () => {
-        sendTestNotificationNow(exam);
+        if (window.NotificationManager && window.NotificationManager.sendTestNotificationNow) {
+            window.NotificationManager.sendTestNotificationNow(exam);
+        } else {
+            sendTestNotificationNow(exam);
+        }
     });
 
+    // Option buttons
     content.querySelectorAll('.btn-notify-option').forEach(btn => {
         btn.addEventListener('click', function() {
             const minutes = parseInt(this.dataset.minutes);
-            scheduleStudentNotification(exam, minutes);
+            if (window.NotificationManager && window.NotificationManager.scheduleStudentNotification) {
+                window.NotificationManager.scheduleStudentNotification(exam, minutes);
+            } else {
+                scheduleStudentNotification(exam, minutes);
+            }
             modal.remove();
         });
-        // hover effect
+
+        // Hover effect using inline style (will be overridden by CSS if present, but we add a listener)
         btn.addEventListener('mouseenter', function() {
             this.style.background = '#6c5ce7';
             this.style.borderColor = '#6c5ce7';
@@ -522,12 +451,14 @@ function showNotificationOptionsModal(exam) {
         });
     });
 
+    // Close on background click
     modal.addEventListener('click', (e) => {
         if (e.target === modal) modal.remove();
     });
 }
 
-// Override the showNotificationOptions function in script.js
+// Override the showNotificationOptions function in script.js if needed.
+// But we'll just attach it to window so it can be called from script.js
 window.showNotificationOptionsModal = showNotificationOptionsModal;
 
 // ----- Send test notification -----
@@ -572,16 +503,6 @@ function initNotificationSystem() {
     const notifBtn = document.getElementById('myNotificationsBtn');
     if (notifBtn) notifBtn.addEventListener('click', openNotificationsModal);
     
-    // Listen for exam data loaded to update badge
-    window.addEventListener('examDataLoaded', function() {
-        updateNotificationBadge();
-    });
-
-    // Listen for profile updates (from user-auth.js)
-    window.addEventListener('profileUpdated', function() {
-        updateNotificationBadge();
-    });
-
     // Inject comprehensive CSS styles for both modals
     if (!document.querySelector('#notifStyles')) {
         const style = document.createElement('style');
@@ -842,12 +763,14 @@ function initNotificationSystem() {
     }
 
     // Override the showNotificationOptions function in script.js
+    // We'll patch the global function if it exists
     if (window.showNotificationOptions && typeof window.showNotificationOptions === 'function') {
         const original = window.showNotificationOptions;
         window.showNotificationOptions = function(exam) {
             showNotificationOptionsModal(exam);
         };
     } else {
+        // Define it globally
         window.showNotificationOptions = showNotificationOptionsModal;
     }
 }
@@ -861,10 +784,7 @@ window.NotificationManager = {
     convertTimeTo24Hour,
     sendTestNotificationNow,
     clearAllNotifications,
-    showNotificationOptionsModal,
-    updateNotificationBadge,
-    generateUserNotifications,
-    openNotificationsModal
+    showNotificationOptionsModal
 };
 
 // Automatically init when DOM is ready
