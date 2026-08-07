@@ -1,5 +1,5 @@
 // ============================================================
-// script.js - সম্পূর্ণ আপডেটেড (Group Column সহ)
+// script.js - সম্পূর্ণ আপডেটেড (User Profile Support সহ)
 // ============================================================
 
 if (!window.showNotification) {
@@ -99,6 +99,13 @@ async function init() {
 
   initializeUI();
 
+  // ✅ Set default toggle states (OFF)
+  setDefaultToggleStates();
+
+  // ✅ Apply initial filters based on user login state
+  applyInitialFilters();
+
+  // ✅ Update routine title
   updateRoutineTitle("all", "all");
 
   setupFirebaseListener();
@@ -108,11 +115,83 @@ async function init() {
   // Initialize custom dropdowns
   initDropdowns();
 
-  // ✅ Set default: 1st Semester and Written
-  setDefaultFilters();
+  // Listen for profile changes from user-auth.js
+  window.addEventListener('profileUpdated', function() {
+    // Re-apply filters when profile is updated
+    if (window.userAuth && window.userAuth.applyDefaultFilters) {
+      window.userAuth.applyDefaultFilters();
+    }
+  });
+}
 
-  // ✅ Toggle default state (OFF)
-  setDefaultToggleStates();
+// ============================================================
+// APPLY INITIAL FILTERS (based on user login)
+// ============================================================
+function applyInitialFilters() {
+  // Check if user is logged in
+  const user = window.firebase?.auth?.currentUser;
+  if (user) {
+    // User is logged in - let user-auth.js handle it
+    // But we need to ensure that the profile is loaded and applied
+    if (window.userAuth && typeof window.userAuth.applyDefaultFilters === 'function') {
+      // It will call handleFilterChange internally
+      window.userAuth.applyDefaultFilters();
+    } else {
+      // Fallback to all
+      setAllFilters();
+    }
+  } else {
+    // No user - set all filters to 'all'
+    setAllFilters();
+  }
+}
+
+// ============================================================
+// SET ALL FILTERS TO 'ALL' (default)
+// ============================================================
+function setAllFilters() {
+  // Department
+  if (deptSelect) deptSelect.value = 'all';
+  
+  // Semester - single select
+  if (semesterSingleSelect) semesterSingleSelect.value = 'all';
+  // Semester - multiple (uncheck all)
+  document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+  if (window.updateDropdownHeader) window.updateDropdownHeader('semesterDropdown');
+  
+  // Exam Type - single select
+  if (examTypeSingleSelect) examTypeSingleSelect.value = 'all';
+  // Exam Type - multiple (uncheck all)
+  document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+  if (window.updateDropdownHeader) window.updateDropdownHeader('examTypeDropdown');
+  
+  // Date filter
+  if (dateFilter) dateFilter.value = 'upcoming';
+  
+  // Toggles OFF
+  if (semesterMultipleToggle) {
+    semesterMultipleToggle.checked = false;
+    document.getElementById('semesterToggleStatus').textContent = 'OFF';
+    semesterSingleSelect.style.display = 'block';
+    semesterMultipleContainer.style.display = 'none';
+    semesterMultipleContainer.classList.remove('active');
+  }
+  if (examTypeMultipleToggle) {
+    examTypeMultipleToggle.checked = false;
+    document.getElementById('examTypeToggleStatus').textContent = 'OFF';
+    examTypeSingleSelect.style.display = 'block';
+    examTypeMultipleContainer.style.display = 'none';
+    examTypeMultipleContainer.classList.remove('active');
+  }
+  
+  // Hide clear filters button
+  const clearBtn = document.getElementById('clearFiltersBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  
+  // Apply filters
+  if (typeof handleFilterChange === 'function') {
+    handleFilterChange();
+  }
 }
 
 // ============================================================
@@ -235,27 +314,22 @@ function getSelectedExamTypeValues() {
 }
 
 // ============================================================
-// DEFAULT FILTERS: 1st Semester & Written
+// DEFAULT FILTERS: 1st Semester & Written (legacy - kept for compatibility)
 // ============================================================
 function setDefaultFilters() {
-  // Semester: set "1st" (using single select since toggle is OFF)
+  // This is kept for backward compatibility but we no longer call it in init.
+  // Instead we use setAllFilters or applyInitialFilters.
+  // If called, it will set 1st and written.
   semesterSingleSelect.value = '1st';
-  
-  // Exam Type: set "written"
   examTypeSingleSelect.value = 'written';
-  
-  // Also check in multiple containers (for when toggle is ON)
   document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => {
     cb.checked = (cb.value === '1st');
   });
   document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => {
     cb.checked = (cb.value === 'written');
   });
-  
   updateDropdownHeader('semesterDropdown');
   updateDropdownHeader('examTypeDropdown');
-  
-  // Apply filters
   handleFilterChange();
 }
 
@@ -350,6 +424,10 @@ function setupFirebaseListener() {
         window.autoRefreshTimeout = setTimeout(() => {
           refreshRoutine();
           showNotification("Exam schedule updated automatically", "info");
+          // Update notification badge if user is logged in
+          if (window.userAuth && window.userAuth.updateNotificationBadge) {
+            window.userAuth.updateNotificationBadge();
+          }
         }, 1000);
       }
     });
@@ -452,6 +530,10 @@ async function loadInitialData() {
     } else {
       highlightTodaysExams();
     }
+
+    // Dispatch event for other modules (e.g., notification badge)
+    window.dispatchEvent(new Event('examDataLoaded'));
+
   } catch (error) {
     console.error("Error loading initial data:", error);
     showErrorState();
@@ -1066,7 +1148,11 @@ function handleFilterChange() {
 
   isFilterChanging = true;
 
-  clearSearch();
+  // Clear search if active
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput && searchInput.value.trim() !== "") {
+    clearSearch();
+  }
 
   const dept = deptSelect ? deptSelect.value : "all";
   const semesterValues = getSelectedSemesterValues();
@@ -1188,6 +1274,10 @@ async function refreshRoutine() {
     } else {
       highlightTodaysExams();
     }
+
+    // Dispatch event for other modules
+    window.dispatchEvent(new Event('examDataLoaded'));
+
   } catch (error) {
     console.error("Error refreshing routine:", error);
     throw error;
@@ -2220,3 +2310,6 @@ window.getSelectedSemesterValues = getSelectedSemesterValues;
 window.getSelectedExamTypeValues = getSelectedExamTypeValues;
 window.updateDropdownHeader = updateDropdownHeader;
 window.clearAllFilters = clearAllFilters;
+window.handleFilterChange = handleFilterChange;
+window.applyFilters = applyFilters;
+window.setAllFilters = setAllFilters;
