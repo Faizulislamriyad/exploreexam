@@ -481,6 +481,7 @@
         import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
+        // ✅ সঠিক Firebase কনফিগ
         const firebaseConfig = {
             apiKey: "AIzaSyCaM7TUs8rxFFDEMgmAx2DG7XllBthnoAA",
             authDomain: "barisal-polytechnic-inst-54ce1.firebaseapp.com",
@@ -494,16 +495,20 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
+        const googleProvider = new GoogleAuthProvider();
 
-        window.firebase = { 
-            db, auth, 
+        window.firebase = {
+            db, auth,
             collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, setDoc, getDoc,
             createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
-            GoogleAuthProvider: provider,
+            GoogleAuthProvider: GoogleAuthProvider,
+            googleProvider: googleProvider,
             signInWithPopup, onAuthStateChanged
         };
+
+        console.log('Firebase initialized successfully');
     </script>
+
     <script src="data.js"></script>
     <script src="notification.js"></script>
     <script src="chatbot.js"></script>

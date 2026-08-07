@@ -1,4 +1,5 @@
 // user-auth.js - Google Login + Profile Settings + Default Filters
+// Fixed: GoogleAuthProvider constructor usage
 
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
@@ -45,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const setDoc = window.firebase.setDoc;
     const getDoc = window.firebase.getDoc;
     const signInWithPopup = window.firebase.signInWithPopup;
-    const GoogleAuthProvider = window.firebase.GoogleAuthProvider;
+    const GoogleAuthProvider = window.firebase.GoogleAuthProvider; // constructor
     const onAuthStateChanged = window.firebase.onAuthStateChanged;
     const signOut = window.firebase.signOut;
 
@@ -71,13 +72,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (user) {
             // User is signed in
             console.log('User logged in:', user.displayName);
-            // Store basic info
             window.userProfile.uid = user.uid;
             window.userProfile.displayName = user.displayName || 'User';
             window.userProfile.email = user.email;
             window.userProfile.photoURL = user.photoURL || '';
 
-            // Show user info in header
             loginBtnHeader.style.display = 'none';
             userInfoDiv.style.display = 'flex';
             userNameDisplay.textContent = window.userProfile.displayName;
@@ -88,21 +87,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 userAvatar.style.display = 'none';
             }
 
-            // Load profile from Firestore
             await loadUserProfile(user.uid);
-
-            // Apply default filters based on profile
             applyDefaultFilters();
-
-            // Update notification badge
             updateNotificationBadge();
 
         } else {
-            // User is signed out
             console.log('User logged out');
             loginBtnHeader.style.display = 'inline-block';
             userInfoDiv.style.display = 'none';
-            // Reset profile
             window.userProfile = {
                 uid: null,
                 displayName: null,
@@ -112,18 +104,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 semester: 'all',
                 referredSemesters: []
             };
-            // Reset filters to default (all)
             resetFiltersToDefault();
-            // Clear notification badge
             if (notifBadgeHeader) notifBadgeHeader.textContent = '0';
         }
     });
 
-    // ---------- Login Function ----------
+    // ---------- Login Function (FIXED) ----------
     async function loginWithGoogle() {
         try {
-            const result = await signInWithPopup(auth, new GoogleAuthProvider());
-            // User will be handled by onAuthStateChanged
+            const provider = new GoogleAuthProvider(); // ✅ constructor now works
+            const result = await signInWithPopup(auth, provider);
             console.log('Login successful:', result.user.displayName);
         } catch (error) {
             console.error('Login error:', error);
@@ -146,7 +136,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.userProfile.referredSemesters = data.referredSemesters || [];
                 console.log('Profile loaded:', window.userProfile);
             } else {
-                // No profile yet, create default
                 await saveProfileToFirestore(uid);
             }
         } catch (error) {
@@ -182,33 +171,25 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Get values from form
         const dept = profileDept.value;
         const semester = profileSemester.value;
-        // Get selected referred semesters
         const referredSelect = profileReferredSemesters;
         const selectedReferred = Array.from(referredSelect.selectedOptions).map(opt => opt.value);
 
-        // Update global profile
         window.userProfile.department = dept;
         window.userProfile.semester = semester;
         window.userProfile.referredSemesters = selectedReferred;
 
-        // Save to Firestore
         await saveProfileToFirestore(uid);
-
-        // Apply filters immediately
         applyDefaultFilters();
-
-        // Close modal
         closeProfileModalFn();
 
         if (window.showNotification) {
             window.showNotification('Profile saved successfully!', 'success');
         }
-
-        // Update notification badge
         updateNotificationBadge();
+        // Dispatch event for other modules
+        window.dispatchEvent(new Event('profileUpdated'));
     }
 
     // ---------- Apply Default Filters ----------
@@ -217,7 +198,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const semester = window.userProfile.semester || 'all';
         const referred = window.userProfile.referredSemesters || [];
 
-        // Set department select
         const deptSelect = document.getElementById('deptSelect');
         if (deptSelect && dept !== 'all') {
             deptSelect.value = dept;
@@ -225,43 +205,35 @@ document.addEventListener('DOMContentLoaded', function() {
             deptSelect.value = 'all';
         }
 
-        // Set semester: if referred exists, we need to enable multiple toggle and select those
-        // But if only main semester, use single select
         const singleSelect = document.getElementById('semesterSingleSelect');
         const multipleToggle = document.getElementById('semesterMultipleToggle');
         const multipleContainer = document.getElementById('semesterMultipleContainer');
         const semesterCheckboxes = document.querySelectorAll('#semesterDropdown input[type="checkbox"]');
 
-        // Combine main semester + referred
         let semestersToSelect = [];
         if (semester !== 'all') semestersToSelect.push(semester);
         semestersToSelect = semestersToSelect.concat(referred);
 
         if (semestersToSelect.length > 0) {
-            // Enable multiple toggle if more than one semester or referred exists
             if (semestersToSelect.length > 1) {
                 multipleToggle.checked = true;
                 document.getElementById('semesterToggleStatus').textContent = 'ON';
                 singleSelect.style.display = 'none';
                 multipleContainer.style.display = 'block';
                 multipleContainer.classList.add('active');
-                // Check the relevant checkboxes
                 semesterCheckboxes.forEach(cb => {
                     cb.checked = semestersToSelect.includes(cb.value);
                 });
             } else {
-                // Only main semester, use single select
                 multipleToggle.checked = false;
                 document.getElementById('semesterToggleStatus').textContent = 'OFF';
                 singleSelect.style.display = 'block';
                 multipleContainer.style.display = 'none';
                 multipleContainer.classList.remove('active');
                 singleSelect.value = semestersToSelect[0];
-                // Uncheck all checkboxes
                 semesterCheckboxes.forEach(cb => cb.checked = false);
             }
         } else {
-            // No semester selected, set to 'all'
             multipleToggle.checked = false;
             document.getElementById('semesterToggleStatus').textContent = 'OFF';
             singleSelect.style.display = 'block';
@@ -271,12 +243,10 @@ document.addEventListener('DOMContentLoaded', function() {
             semesterCheckboxes.forEach(cb => cb.checked = false);
         }
 
-        // Update dropdown header text
         if (window.updateDropdownHeader) {
             window.updateDropdownHeader('semesterDropdown');
         }
 
-        // Trigger filter change if function exists
         if (window.handleFilterChange) {
             window.handleFilterChange();
         }
@@ -302,7 +272,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         const singleSelectDisplay = document.getElementById('semesterSingleSelect');
         if (singleSelectDisplay) singleSelectDisplay.style.display = 'block';
-        // Uncheck all checkboxes
         document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
         if (window.updateDropdownHeader) window.updateDropdownHeader('semesterDropdown');
         if (window.handleFilterChange) window.handleFilterChange();
@@ -315,12 +284,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (window.showNotification) window.showNotification('Please login first', 'error');
             return;
         }
-        // Populate form with current profile
         profileDisplayName.value = window.userProfile.displayName || '';
         profileEmail.value = window.userProfile.email || '';
         profileDept.value = window.userProfile.department || 'all';
         profileSemester.value = window.userProfile.semester || 'all';
-        // Set referred semesters
         const referred = window.userProfile.referredSemesters || [];
         const options = profileReferredSemesters.options;
         for (let i = 0; i < options.length; i++) {
@@ -352,39 +319,37 @@ document.addEventListener('DOMContentLoaded', function() {
             if (window.showNotification) window.showNotification('Please login to see notifications', 'error');
             return;
         }
-        // Generate notification text based on user's department and semesters
         const notifications = generateUserNotifications();
         notificationPreviewBody.innerHTML = notifications;
         notificationPreviewModal.style.display = 'flex';
     }
 
+    // ---------- Generate User Notifications (used by preview and badge) ----------
     function generateUserNotifications() {
-        const dept = window.userProfile.department;
+        const user = auth.currentUser;
+        if (!user) {
+            return '<p>Please login to see your personalized notifications.</p>';
+        }
+        const dept = window.userProfile.department || 'all';
         const semesters = [];
-        if (window.userProfile.semester !== 'all') semesters.push(window.userProfile.semester);
-        semesters.push(...(window.userProfile.referredSemesters || []));
-
+        if (window.userProfile.semester && window.userProfile.semester !== 'all') semesters.push(window.userProfile.semester);
+        if (window.userProfile.referredSemesters) semesters.push(...window.userProfile.referredSemesters);
         if (semesters.length === 0) {
             return '<p>No semesters selected. Please update your profile.</p>';
         }
 
-        // Get exams from window.examData
         let exams = window.examData || [];
         if (!exams.length) {
             return '<p>No exam data available.</p>';
         }
 
-        // Filter by department and semesters
         const filtered = exams.filter(exam => {
             const deptMatch = dept === 'all' || exam.department === dept;
             const semMatch = semesters.includes(exam.semester);
             return deptMatch && semMatch;
         });
 
-        // Sort by date
         const sorted = filtered.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
-
-        // Get upcoming exams (today or future)
         const today = new Date().toISOString().split('T')[0];
         const upcoming = sorted.filter(exam => exam.examDate >= today);
 
@@ -392,7 +357,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return `<p>No upcoming exams for your department (${dept}) and semesters (${semesters.join(', ')}).</p>`;
         }
 
-        // Build notification messages
         let html = `<h4>Upcoming Exams for ${dept} Department</h4><ul>`;
         upcoming.slice(0, 10).forEach(exam => {
             const dateObj = new Date(exam.examDate);
@@ -402,7 +366,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (daysLeft === 0) msg = 'TODAY!';
             else if (daysLeft === 1) msg = 'tomorrow';
             else msg = `in ${daysLeft} days`;
-            html += `<li><strong>${exam.subject}</strong> - ${exam.semester} semester - ${dateStr} at ${exam.time} (${msg})</li>`;
+            const examType = exam.examType || 'Written';
+            html += `<li><strong>${exam.subject}</strong> - ${exam.semester} semester (${examType}) - ${dateStr} at ${exam.time} (${msg})</li>`;
         });
         html += '</ul>';
         if (upcoming.length > 10) {
@@ -413,16 +378,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---------- Update Notification Badge ----------
     function updateNotificationBadge() {
-        // Count upcoming exams for user
         const user = auth.currentUser;
         if (!user) {
             if (notifBadgeHeader) notifBadgeHeader.textContent = '0';
             return;
         }
-        const dept = window.userProfile.department;
+        const dept = window.userProfile.department || 'all';
         const semesters = [];
-        if (window.userProfile.semester !== 'all') semesters.push(window.userProfile.semester);
-        semesters.push(...(window.userProfile.referredSemesters || []));
+        if (window.userProfile.semester && window.userProfile.semester !== 'all') semesters.push(window.userProfile.semester);
+        if (window.userProfile.referredSemesters) semesters.push(...window.userProfile.referredSemesters);
         if (semesters.length === 0) {
             if (notifBadgeHeader) notifBadgeHeader.textContent = '0';
             return;
