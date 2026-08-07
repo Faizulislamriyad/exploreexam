@@ -1,5 +1,5 @@
 // user-auth.js - Google Login + Profile Settings + Default Filters
-// Fixed: GoogleAuthProvider constructor usage
+// Added: localStorage caching & coordinated filter apply with script.js
 
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
@@ -31,8 +31,11 @@ document.addEventListener('DOMContentLoaded', function() {
         photoURL: null,
         department: 'all',
         semester: 'all',
-        referredSemesters: [] // array of semester strings
+        referredSemesters: []
     };
+
+    // localStorage key for profile cache
+    const PROFILE_CACHE_KEY = 'userProfileCache';
 
     // Firebase auth state
     if (!window.firebase || !window.firebase.auth) {
@@ -46,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const setDoc = window.firebase.setDoc;
     const getDoc = window.firebase.getDoc;
     const signInWithPopup = window.firebase.signInWithPopup;
-    const GoogleAuthProvider = window.firebase.GoogleAuthProvider; // constructor
+    const GoogleAuthProvider = window.firebase.GoogleAuthProvider;
     const onAuthStateChanged = window.firebase.onAuthStateChanged;
     const signOut = window.firebase.signOut;
 
@@ -70,7 +73,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---------- Auth State ----------
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            // User is signed in
             console.log('User logged in:', user.displayName);
             window.userProfile.uid = user.uid;
             window.userProfile.displayName = user.displayName || 'User';
@@ -87,8 +89,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 userAvatar.style.display = 'none';
             }
 
+            // 1. Load from localStorage first (for quick display)
+            const cached = loadProfileFromCache();
+            if (cached) {
+                window.userProfile.department = cached.department || 'all';
+                window.userProfile.semester = cached.semester || 'all';
+                window.userProfile.referredSemesters = cached.referredSemesters || [];
+                // Apply filters immediately from cache
+                applyDefaultFilters();
+            }
+
+            // 2. Then load from Firestore (sync)
             await loadUserProfile(user.uid);
-            applyDefaultFilters();
+            // Firestore load will also call applyDefaultFilters again if needed
+
+            // Update notification badge
             updateNotificationBadge();
 
         } else {
@@ -104,15 +119,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 semester: 'all',
                 referredSemesters: []
             };
+            // Clear cache
+            localStorage.removeItem(PROFILE_CACHE_KEY);
             resetFiltersToDefault();
             if (notifBadgeHeader) notifBadgeHeader.textContent = '0';
         }
     });
 
-    // ---------- Login Function (FIXED) ----------
+    // ---------- Login Function ----------
     async function loginWithGoogle() {
         try {
-            const provider = new GoogleAuthProvider(); // ✅ constructor now works
+            const provider = new GoogleAuthProvider();
             const result = await signInWithPopup(auth, provider);
             console.log('Login successful:', result.user.displayName);
         } catch (error) {
@@ -134,10 +151,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.userProfile.department = data.department || 'all';
                 window.userProfile.semester = data.semester || 'all';
                 window.userProfile.referredSemesters = data.referredSemesters || [];
-                console.log('Profile loaded:', window.userProfile);
+                // Save to cache
+                saveProfileToCache(window.userProfile);
+                console.log('Profile loaded from Firestore:', window.userProfile);
             } else {
+                // No profile yet, create default
                 await saveProfileToFirestore(uid);
             }
+            // Apply filters again (in case cache was different)
+            applyDefaultFilters();
         } catch (error) {
             console.error('Error loading profile:', error);
         }
@@ -153,6 +175,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 updatedAt: new Date().toISOString()
             };
             await setDoc(docRef(db, 'users', uid), profileData, { merge: true });
+            // Save to cache
+            saveProfileToCache(window.userProfile);
             console.log('Profile saved to Firestore');
         } catch (error) {
             console.error('Error saving profile:', error);
@@ -160,6 +184,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.showNotification('Failed to save profile: ' + error.message, 'error');
             }
         }
+    }
+
+    // ---------- Cache functions ----------
+    function saveProfileToCache(profile) {
+        try {
+            const cacheData = {
+                department: profile.department,
+                semester: profile.semester,
+                referredSemesters: profile.referredSemesters
+            };
+            localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(cacheData));
+        } catch (e) {
+            console.warn('Could not save profile to cache:', e);
+        }
+    }
+
+    function loadProfileFromCache() {
+        try {
+            const cached = localStorage.getItem(PROFILE_CACHE_KEY);
+            if (cached) {
+                return JSON.parse(cached);
+            }
+        } catch (e) {
+            console.warn('Could not load profile from cache:', e);
+        }
+        return null;
     }
 
     // ---------- Save Profile (from form) ----------
@@ -188,12 +238,32 @@ document.addEventListener('DOMContentLoaded', function() {
             window.showNotification('Profile saved successfully!', 'success');
         }
         updateNotificationBadge();
-        // Dispatch event for other modules
         window.dispatchEvent(new Event('profileUpdated'));
     }
 
     // ---------- Apply Default Filters ----------
     function applyDefaultFilters() {
+        // Wait for script.js to be ready (handleFilterChange defined)
+        if (typeof window.handleFilterChange === 'function' && typeof window.updateDropdownHeader === 'function') {
+            _applyFilters();
+        } else {
+            // If not ready, wait for a custom event from script.js
+            const listener = function() {
+                _applyFilters();
+                document.removeEventListener('scriptReady', listener);
+            };
+            document.addEventListener('scriptReady', listener);
+            // Also set a fallback timeout
+            setTimeout(() => {
+                if (typeof window.handleFilterChange === 'function') {
+                    document.removeEventListener('scriptReady', listener);
+                    _applyFilters();
+                }
+            }, 500);
+        }
+    }
+
+    function _applyFilters() {
         const dept = window.userProfile.department || 'all';
         const semester = window.userProfile.semester || 'all';
         const referred = window.userProfile.referredSemesters || [];
@@ -324,7 +394,7 @@ document.addEventListener('DOMContentLoaded', function() {
         notificationPreviewModal.style.display = 'flex';
     }
 
-    // ---------- Generate User Notifications (used by preview and badge) ----------
+    // ---------- Generate User Notifications ----------
     function generateUserNotifications() {
         const user = auth.currentUser;
         if (!user) {
