@@ -2313,3 +2313,5 @@ window.clearAllFilters = clearAllFilters;
 window.handleFilterChange = handleFilterChange;
 window.applyFilters = applyFilters;
 window.setAllFilters = setAllFilters;
+document.dispatchEvent(new Event('scriptReady'));
+console.log('script.js ready event dispatched');
