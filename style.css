@@ -409,7 +409,7 @@ header {
   overflow-y: auto;
   border-radius: 10px;
   border: 1px solid #eee;
-  max-height: 500px;
+  max-height: 900px;
 }
 
 .routine-list::-webkit-scrollbar {
@@ -2310,4 +2310,35 @@ footer {
   font-size: 0.7rem;
   font-weight: bold;
   min-width: 18px;
+}
+/* আপডেট নোটিফিকেশন অ্যানিমেশন */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(40px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* মডাল স্ক্রলবার স্টাইল */
+.update-modal-content::-webkit-scrollbar {
+    width: 6px;
+}
+.update-modal-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+.update-modal-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+.update-modal-content::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
 }

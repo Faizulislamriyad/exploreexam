@@ -6,6 +6,7 @@
     <title>Exam Routine Manager</title>
     <link rel="icon" type="image/png" href="icon 1.png">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="calender.css">
     <link rel="stylesheet" href="responsive.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
@@ -23,7 +24,7 @@
             <div class="main-content">
                 <div class="controls">
                     <div class="filter-controls">
-                        <!-- Department: Single Dropdown (NO toggle) -->
+                        <!-- Department: Single Dropdown -->
                         <div class="class-selector">
                             <label for="deptSelect"><i class="fas fa-graduation-cap"></i> Select Department:</label>
                             <select id="deptSelect" class="single-select">
@@ -39,7 +40,7 @@
                             </select>
                         </div>
 
-                        <!-- Semester: Single Dropdown + Multiple Container + Toggle (below) -->
+                        <!-- Semester: Single Dropdown + Multiple Container + Toggle -->
                         <div class="class-selector filter-group">
                             <label><i class="fas fa-layer-group"></i> Select Semester(s):</label>
                             <select id="semesterSingleSelect" class="single-select">
@@ -83,7 +84,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- Toggle below the box -->
                             <div class="toggle-container">
                                 <label class="toggle-switch toggle-sm">
                                     <input type="checkbox" id="semesterMultipleToggle">
@@ -93,7 +93,7 @@
                             </div>
                         </div>
 
-                        <!-- Exam Type: Single Dropdown + Multiple Container + Toggle (below) -->
+                        <!-- Exam Type: Single Dropdown + Multiple Container + Toggle -->
                         <div class="class-selector filter-group">
                             <label><i class="fas fa-tag"></i> Exam Type:</label>
                             <select id="examTypeSingleSelect" class="single-select">
@@ -121,7 +121,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- Toggle below the box -->
                             <div class="toggle-container">
                                 <label class="toggle-switch toggle-sm">
                                     <input type="checkbox" id="examTypeMultipleToggle">
@@ -169,6 +168,25 @@
             </div>
 
             <div class="sidebar">
+                <!-- ===== NEW CALENDAR SECTION ===== -->
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button>
+                        <h3 id="calendarMonthYear"></h3>
+                        <button id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="calendar-weekdays">
+                            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                        </div>
+                        <div id="calendarDays" class="calendar-days"></div>
+                    </div>
+                    <div class="calendar-legend">
+                        <span><span class="legend-dot exam-dot"></span> Exam Day</span>
+                        <span><span class="legend-dot today-dot"></span> Today</span>
+                    </div>
+                </div>
+
                 <div class="stats-card">
                     <h3><i class="fas fa-chart-bar"></i> Exam Statistics</h3>
                     <div class="stat-item">
@@ -413,6 +431,8 @@
     </script>
     <script src="data.js"></script>
     <script src="notification.js"></script>
+    <script src="calendar.js"></script>
+    <script src="update-notification.js"></script>
     <script src="chatbot.js"></script>
     <script src="admin.js"></script>
     <script src="script.js"></script>

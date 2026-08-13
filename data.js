@@ -1,4 +1,4 @@
-// data.js - সম্পূর্ণ ফাইল (নতুন formatDateShort ফাংশন সহ)
+// data.js - সম্পূর্ণ ফাইল (নতুন convertToStandardDate ফাংশন সহ)
 
 // Get current date in YYYY-MM-DD format
 function getCurrentDate() {
@@ -9,20 +9,46 @@ function getCurrentDate() {
     return `${year}-${month}-${day}`;
 }
 
-// Get date in a readable format (Full format - ব্যবহার করা হবে না এখন)
+// Get date in a readable format (Full format)
 function formatDate(dateString) {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', options);
 }
 
-// ✅ NEW: Get date in dd/mm/yyyy format (সব ডিভাইসের জন্য)
+// Get date in dd/mm/yyyy format
 function formatDateShort(dateString) {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
+}
+
+// 🔥 NEW: Convert dd-mm-yyyy or dd/mm/yyyy to YYYY-MM-DD for comparison
+function convertToStandardDate(dateStr) {
+    if (!dateStr) return null;
+    // If already in YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return dateStr;
+    }
+    // Handle dd-mm-yyyy
+    let parts = dateStr.split('-');
+    if (parts.length === 3) {
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[2];
+        return `${year}-${month}-${day}`;
+    }
+    // Handle dd/mm/yyyy
+    parts = dateStr.split('/');
+    if (parts.length === 3) {
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[2];
+        return `${year}-${month}-${day}`;
+    }
+    return dateStr; // fallback
 }
 
 // Get day difference between two dates
@@ -106,7 +132,8 @@ async function refreshExamData() {
 window.dataFunctions = {
     getCurrentDate,
     formatDate,
-    formatDateShort,   // ✅ নতুন ফাংশন এক্সপোর্ট করা হলো
+    formatDateShort,
+    convertToStandardDate,   // ✅ নতুন ফাংশন
     getDayDifference,
     getAllSubjectsFromExams,
     getAllDepartmentsFromExams,

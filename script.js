@@ -521,6 +521,11 @@ async function loadInitialData() {
 
     filteredExamRoutine.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
 
+    // 🔥 Update Calendar with all exam data
+    if (window.calendar && window.calendar.update) {
+      window.calendar.update(examData);
+    }
+
     updateRoutineDisplay();
     updateStatistics();
     updateNextExam();
@@ -1225,6 +1230,10 @@ function applyFilters(dept, semesters, examTypes, dateFilterValue = null) {
   updateStatistics();
   updateNextExam();
   updateUpcomingList();
+
+  // 🔥 Calendar is not updated here because it shows ALL exams regardless of filter
+  // If you want calendar to reflect filtered exams, uncomment the line below:
+  // if (window.calendar && window.calendar.update) window.calendar.update(filteredExamRoutine);
 }
 
 // Handle refresh with visual feedback
@@ -1248,6 +1257,11 @@ async function refreshRoutine() {
     const newExamData = await window.dataFunctions.loadExamsFromFirebase();
     examData = newExamData;
     window.examData = examData;
+
+    // 🔥 Update calendar with fresh exam data
+    if (window.calendar && window.calendar.update) {
+      window.calendar.update(examData);
+    }
 
     const dept = deptSelect ? deptSelect.value : "all";
     const semesters = getSelectedSemesterValues();

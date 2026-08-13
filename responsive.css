@@ -1072,3 +1072,116 @@
     font-size: 0.8rem;
   }
 }
+/* ===== CALENDAR RESPONSIVE ===== */
+/* Desktop: normal */
+.calendar-container {
+    max-height: none;
+    overflow: visible;
+}
+
+/* Tablet & Mobile */
+@media (max-width: 992px) {
+    .calendar-container {
+        padding: 18px;
+    }
+    .calendar-day {
+        min-height: 38px;
+        font-size: 0.85rem;
+    }
+    .calendar-day .day-number {
+        font-size: 0.85rem;
+    }
+    .calendar-header h3 {
+        font-size: 1.1rem;
+    }
+    .dept-dot {
+        width: 7px;
+        height: 7px;
+    }
+}
+
+@media (max-width: 768px) {
+    .calendar-container {
+        padding: 15px;
+        max-height: none;
+        overflow: visible;
+    }
+    .calendar-day {
+        min-height: 34px;
+        font-size: 0.75rem;
+        border-radius: 8px;
+    }
+    .calendar-day .day-number {
+        font-size: 0.75rem;
+    }
+    .calendar-header h3 {
+        font-size: 1rem;
+    }
+    .calendar-header button {
+        font-size: 1rem;
+        padding: 4px 8px;
+    }
+    .calendar-weekdays {
+        font-size: 0.7rem;
+    }
+    .dept-dot {
+        width: 6px;
+        height: 6px;
+    }
+    .dept-dot.extra {
+        width: 10px;
+        height: 10px;
+        font-size: 5px;
+    }
+    .today-label {
+        font-size: 0.4rem;
+        padding: 1px 3px;
+    }
+    .calendar-legend {
+        font-size: 0.7rem;
+        gap: 12px;
+    }
+    .day-details-popup {
+        max-width: 95%;
+        padding: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .calendar-container {
+        padding: 12px;
+    }
+    .calendar-day {
+        min-height: 30px;
+        font-size: 0.7rem;
+        border-radius: 6px;
+    }
+    .calendar-day .day-number {
+        font-size: 0.7rem;
+    }
+    .calendar-header h3 {
+        font-size: 0.9rem;
+    }
+    .calendar-days {
+        gap: 3px;
+    }
+    .dept-dot {
+        width: 5px;
+        height: 5px;
+    }
+    .dept-dot.extra {
+        width: 8px;
+        height: 8px;
+        font-size: 4px;
+    }
+    .calendar-legend {
+        font-size: 0.65rem;
+        gap: 8px;
+    }
+    .day-details-popup {
+        padding: 14px;
+    }
+    .day-details-popup h3 {
+        font-size: 1rem;
+    }
+}
