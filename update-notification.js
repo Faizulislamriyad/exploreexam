@@ -1,43 +1,61 @@
-// update-notification.js - New Update Notification System
+// update-notification.js - New Update Notification System (English Version)
 
 (function() {
     'use strict';
 
-    const CURRENT_VERSION = '1.1.0';
+    // Current version (change this on every update)
+    const CURRENT_VERSION = '1.2.1';
+    // Update release date (YYYY-MM-DD format)
+    const CURRENT_DATE = '2026-08-14';
+
     const STORAGE_KEY = 'examRoutineLastSeenVersion';
 
+    // List of new features – using Font Awesome icons (no emojis)
     const UPDATE_FEATURES = [
         {
             icon: 'fa-calendar-alt',
             title: 'Interactive Calendar',
-            description: 'Click on any date in the calendar to see which exams are scheduled. Department-wise colored dots show exam distribution.'
+            description: 'Click on any date in the calendar to see which exams are scheduled. Department-wise color dots show exam distribution.'
         },
         {
             icon: 'fa-expand-arrows-alt',
-            title: 'More Exams at a Glance',
-            description: 'Increased routine container height. Now you can view more exams simultaneously without scrolling too much.'
+            title: 'Larger Routine View',
+            description: 'The routine list height has been increased, so you can see more exams at once without scrolling too much.'
         },
         {
             icon: 'fa-mobile-alt',
-            title: 'Enhanced Mobile Experience',
-            description: 'Improved responsive design for mobile devices. Better layout and touch-friendly interactions.'
+            title: 'Improved Mobile Experience',
+            description: 'Responsive design has been further enhanced for mobile devices, making it easier to browse on the go.'
         },
         {
             icon: 'fa-bell',
             title: 'Smart Notifications',
-            description: 'Set reminders for upcoming exams and receive timely notifications on your device.'
+            description: 'Set reminders for your exams and get timely notifications so you never miss an exam.'
         }
     ];
 
+    // Check if the user has already seen this update
     function shouldShowUpdate() {
         const lastSeen = localStorage.getItem(STORAGE_KEY);
         return lastSeen !== CURRENT_VERSION;
     }
 
+    // Mark the update as seen after showing
     function markUpdateAsSeen() {
         localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
     }
 
+    // Format date for display (e.g., "14 August 2026")
+    function formatDate(dateStr) {
+        const date = new Date(dateStr + 'T00:00:00');
+        return date.toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+    }
+
+    // Show the update notification modal
     function showUpdateModal() {
         const modal = document.createElement('div');
         modal.className = 'update-modal-overlay';
@@ -71,6 +89,7 @@
             position: relative;
         `;
 
+        // Close button
         const closeBtn = document.createElement('button');
         closeBtn.className = 'update-modal-close';
         closeBtn.innerHTML = '&times;';
@@ -89,6 +108,7 @@
         closeBtn.onmouseover = () => closeBtn.style.color = '#333';
         closeBtn.onmouseout = () => closeBtn.style.color = '#999';
 
+        // Header with icon (no emoji)
         const header = document.createElement('div');
         header.style.cssText = `
             text-align: center;
@@ -96,16 +116,21 @@
             border-bottom: 2px solid #f0f0f0;
             padding-bottom: 18px;
         `;
+        const formattedDate = formatDate(CURRENT_DATE);
         header.innerHTML = `
-            <div style="font-size: 3rem; margin-bottom: 8px;">🎉</div>
+            <div style="font-size: 3rem; color: #4b6cb7; margin-bottom: 8px;">
+                <i class="fas fa-rocket"></i>
+            </div>
             <h2 style="margin: 0; color: #182848; font-size: 1.6rem; font-weight: 700;">
                 New Update Available!
             </h2>
             <p style="margin: 6px 0 0; color: #888; font-size: 0.95rem;">
-                Explore Routine has new features for you
+                <i class="fas fa-calendar-alt" style="margin-right: 6px;"></i>
+                Released: ${formattedDate}
             </p>
         `;
 
+        // Features list – using Font Awesome icons (no emojis)
         const featuresContainer = document.createElement('div');
         featuresContainer.style.cssText = `
             display: flex;
@@ -139,6 +164,7 @@
             featuresContainer.appendChild(item);
         });
 
+        // Footer buttons
         const footer = document.createElement('div');
         footer.style.cssText = `
             display: flex;
@@ -151,7 +177,7 @@
 
         const gotItBtn = document.createElement('button');
         gotItBtn.className = 'btn-update-gotit';
-        gotItBtn.textContent = '👍 Got it!';
+        gotItBtn.textContent = 'Got it, thanks!';
         gotItBtn.style.cssText = `
             padding: 12px 36px;
             background: linear-gradient(135deg, #4b6cb7, #182848);
@@ -200,6 +226,7 @@
         footer.appendChild(gotItBtn);
         footer.appendChild(skipBtn);
 
+        // Append all
         content.appendChild(closeBtn);
         content.appendChild(header);
         content.appendChild(featuresContainer);
@@ -207,6 +234,7 @@
         modal.appendChild(content);
         document.body.appendChild(modal);
 
+        // Event handlers
         function closeModal() {
             modal.style.opacity = '0';
             modal.style.transition = 'opacity 0.3s ease';
@@ -234,6 +262,7 @@
         });
     }
 
+    // Check and show if needed
     function checkForUpdate() {
         if (shouldShowUpdate()) {
             setTimeout(() => {
@@ -242,6 +271,7 @@
         }
     }
 
+    // Expose global functions
     window.updateNotifier = {
         check: checkForUpdate,
         show: showUpdateModal,
@@ -249,9 +279,11 @@
             localStorage.removeItem(STORAGE_KEY);
             location.reload();
         },
-        getVersion: () => CURRENT_VERSION
+        getVersion: () => CURRENT_VERSION,
+        getDate: () => CURRENT_DATE
     };
 
+    // Auto-check when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', checkForUpdate);
     } else {
