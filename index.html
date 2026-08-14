@@ -319,6 +319,15 @@
 
                         <div class="manage-exams">
                             <h5><i class="fas fa-edit"></i> Manage Exams</h5>
+                            <!-- ===== NEW: Archive Filter ===== -->
+                            <div class="archive-filter" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                                <label for="archiveFilter"><i class="fas fa-archive"></i> Show:</label>
+                                <select id="archiveFilter" class="single-select" style="width: auto; display: inline-block;">
+                                    <option value="active">Active (Upcoming/Today)</option>
+                                    <option value="archived">Archived (Past)</option>
+                                    <option value="all">All Exams</option>
+                                </select>
+                            </div>
                             <div class="search-box">
                                 <input type="text" id="searchExam" placeholder="Search exams by subject or department...">
                                 <i class="fas fa-search"></i>

@@ -25,6 +25,66 @@ document.addEventListener('DOMContentLoaded', function() {
     let allExams = [];
     let subjectSuggestions = new Set();
 
+    // ===== NEW FEATURE: Archive filter state =====
+    let archiveFilter = 'active'; // 'active', 'archived', 'all'
+
+    // ===== NEW FEATURE: Local Storage key for form persistence =====
+    const ADMIN_FORM_STATE_KEY = 'adminExamFormData';
+
+    // ===== Helper: format date as dd/mm/yyyy =====
+    function formatDateDDMMYYYY(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    // ===== Helper: save form state to localStorage =====
+    function saveAdminFormState() {
+        const state = {
+            department: document.getElementById('newDept')?.value || '',
+            semester: document.getElementById('newSemester')?.value || '',
+            examType: document.getElementById('newExamType')?.value || '',
+            group: document.getElementById('newGroup')?.value || ''
+        };
+        try {
+            localStorage.setItem(ADMIN_FORM_STATE_KEY, JSON.stringify(state));
+        } catch (e) { /* ignore */ }
+    }
+
+    // ===== Helper: load form state from localStorage =====
+    function loadAdminFormState() {
+        try {
+            const raw = localStorage.getItem(ADMIN_FORM_STATE_KEY);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch (e) { return null; }
+    }
+
+    // ===== Get filtered exams based on archive filter and search =====
+    function getDisplayExams() {
+        let exams = [...allExams];
+        const today = new Date().toISOString().split('T')[0];
+        if (archiveFilter === 'active') {
+            exams = exams.filter(e => e.examDate >= today);
+        } else if (archiveFilter === 'archived') {
+            exams = exams.filter(e => e.examDate < today);
+        }
+        // Apply search
+        const term = searchExam ? searchExam.value.toLowerCase().trim() : '';
+        if (term) {
+            exams = exams.filter(e =>
+                e.subject.toLowerCase().includes(term) ||
+                e.department.toLowerCase().includes(term) ||
+                e.semester.toLowerCase().includes(term) ||
+                (e.examType && e.examType.toLowerCase().includes(term)) ||
+                e.time.toLowerCase().includes(term) ||
+                (e.group && e.group.toLowerCase().includes(term))
+            );
+        }
+        return exams;
+    }
+
     // Initialize
     initAdminPanel();
 
@@ -127,6 +187,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Form validation
         setupFormValidation();
+
+        // ===== NEW: Save form state on change =====
+        const formFields = ['newDept', 'newSemester', 'newExamType', 'newGroup'];
+        formFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', saveAdminFormState);
+            }
+        });
+
+        // ===== NEW: Archive filter change =====
+        const archiveFilterEl = document.getElementById('archiveFilter');
+        if (archiveFilterEl) {
+            archiveFilterEl.addEventListener('change', function() {
+                archiveFilter = this.value;
+                loadExams();
+            });
+        }
     }
 
     function updateMinTime() {
@@ -230,6 +308,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Update last login time
         updateLastLoginTime();
+
+        // ===== NEW: Restore saved form values =====
+        const savedState = loadAdminFormState();
+        if (savedState) {
+            const dept = document.getElementById('newDept');
+            const sem = document.getElementById('newSemester');
+            const type = document.getElementById('newExamType');
+            const group = document.getElementById('newGroup');
+            if (dept && savedState.department) dept.value = savedState.department;
+            if (sem && savedState.semester) sem.value = savedState.semester;
+            if (type && savedState.examType) type.value = savedState.examType;
+            if (group && savedState.group) group.value = savedState.group;
+            toggleGroupField();
+        }
     }
 
     function clearLoginForm() {
@@ -460,7 +552,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add subject to suggestions
             addSubjectSuggestion(subject);
 
-            // Clear form
+            // Clear form (but keep department, semester, exam type, group)
             clearAddExamForm();
 
             // Show success animation
@@ -555,23 +647,36 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${hour12}:${minutes} ${ampm}`;
     }
 
+    // ===== UPDATED: Clear form but KEEP department, semester, exam type, group =====
     function clearAddExamForm() {
-        document.getElementById('newDept').value = 'Computer';
-        document.getElementById('newSemester').value = '1st';
+        // Do NOT reset department, semester, exam type, group - keep them for faster addition
+        // document.getElementById('newDept').value = 'Computer';
+        // document.getElementById('newSemester').value = '1st';
+        // document.getElementById('newExamType').value = 'written';
+        // document.getElementById('newGroup').value = 'A1';
+
+        // Clear subject field
         document.getElementById('newSubject').value = '';
-        document.getElementById('newExamType').value = 'written';
+        // Set date to today
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('newExamDate').value = today;
+        // Set time to default 10:00 (or keep last value? we set default for convenience)
         document.getElementById('newExamTime').value = '10:00';
-        // Reset group
-        document.getElementById('newGroup').value = 'A1';
-        // Hide group field (will be toggled by exam type change)
-        if (groupField) groupField.style.display = 'none';
 
-        // Update min time
+        // Ensure group field visibility matches current exam type
+        if (groupField) {
+            const examType = document.getElementById('newExamType').value;
+            if (examType === 'practical') {
+                groupField.style.display = 'block';
+            } else {
+                groupField.style.display = 'none';
+            }
+        }
+
+        // Update min time (for today's date)
         updateMinTime();
 
-        // Focus on subject field
+        // Focus on subject field for quick entry
         document.getElementById('newSubject').focus();
     }
 
@@ -607,7 +712,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             console.log('Loaded exams:', allExams.length);
-            displayExams(allExams);
+            // ===== USE getDisplayExams() to apply archive filter and search =====
+            const displayExamsList = getDisplayExams();
+            displayExams(displayExamsList);
             updateAdminStats();
 
         } catch (error) {
@@ -637,14 +744,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="fas fa-calendar-plus"></i>
                     </div>
                     <h5>No Exams Found</h5>
-                    <p>Add your first exam using the form above</p>
+                    <p>${archiveFilter === 'archived' ? 'No past exams.' : 'Add your first exam using the form above'}</p>
                 </div>
             `;
             return;
         }
 
-        // Sort by date (newest first)
-        exams.sort((a, b) => new Date(b.examDate) - new Date(a.examDate));
+        // ===== NEW: Sort by createdAt (newest first) =====
+        exams.sort((a, b) => {
+            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            if (aTime !== bTime) return bTime - aTime;
+            return new Date(b.examDate) - new Date(a.examDate);
+        });
 
         exams.forEach((exam, index) => {
             const examItem = document.createElement('div');
@@ -652,14 +764,8 @@ document.addEventListener('DOMContentLoaded', function() {
             examItem.style.opacity = '0';
             examItem.style.transform = 'translateY(20px)';
 
-            // Format date for display
-            const examDate = new Date(exam.examDate);
-            const formattedDate = examDate.toLocaleDateString('en-US', {
-                weekday: 'short',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
+            // ===== NEW: Format date as dd/mm/yyyy =====
+            const formattedDate = formatDateDDMMYYYY(exam.examDate);
 
             // Get status
             const currentDate = window.dataFunctions ? window.dataFunctions.getCurrentDate() : new Date().toISOString().split('T')[0];
@@ -697,7 +803,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${exam.addedBy ? `
                     <div class="exam-added-by">
                         <i class="fas fa-user"></i>
-                        <small>Added by: ${exam.addedBy.split('@')[0]} on ${new Date(exam.createdAt).toLocaleDateString()}</small>
+                        <small>Added by: ${exam.addedBy.split('@')[0]} on ${exam.createdAt ? new Date(exam.createdAt).toLocaleDateString() : ''}</small>
                     </div>
                     ` : ''}
                 </div>
@@ -740,25 +846,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function searchExams() {
-        const searchTerm = searchExam.value.toLowerCase().trim();
-
-        if (!searchTerm) {
-            displayExams(allExams);
-            return;
-        }
-
-        const filteredExams = allExams.filter(exam => {
-            return exam.subject.toLowerCase().includes(searchTerm) ||
-                   exam.department.toLowerCase().includes(searchTerm) ||
-                   exam.semester.toLowerCase().includes(searchTerm) ||
-                   (exam.examType && exam.examType.toLowerCase().includes(searchTerm)) ||
-                   exam.room.toLowerCase().includes(searchTerm) ||
-                   exam.time.toLowerCase().includes(searchTerm) ||
-                   (exam.addedBy && exam.addedBy.toLowerCase().includes(searchTerm)) ||
-                   (exam.group && exam.group.toLowerCase().includes(searchTerm));
-        });
-
-        displayExams(filteredExams);
+        // ===== Use getDisplayExams() to apply archive filter and search =====
+        const filtered = getDisplayExams();
+        displayExams(filtered);
 
         // Show search results count
         const searchResults = document.getElementById('searchResultsCount');
@@ -774,9 +864,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const resultsElement = document.getElementById('searchResultsCount');
         if (resultsElement) {
-            resultsElement.textContent =
-                filteredExams.length === 0 ? 'No results found' :
-                `Found ${filteredExams.length} exam${filteredExams.length !== 1 ? 's' : ''}`;
+            const term = searchExam ? searchExam.value.toLowerCase().trim() : '';
+            if (term) {
+                resultsElement.textContent = `Found ${filtered.length} exam${filtered.length !== 1 ? 's' : ''}`;
+            } else {
+                resultsElement.textContent = '';
+            }
         }
     }
 
