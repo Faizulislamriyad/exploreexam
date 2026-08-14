@@ -3,44 +3,43 @@
 (function() {
     'use strict';
 
-    // Current version (change this on every update)
-    const CURRENT_VERSION = '1.2.1';
-    // Update release date (YYYY-MM-DD format)
+    const CURRENT_VERSION = '4.1.0';
     const CURRENT_DATE = '2026-08-14';
-
     const STORAGE_KEY = 'examRoutineLastSeenVersion';
 
     // List of new features – using Font Awesome icons (no emojis)
     const UPDATE_FEATURES = [
         {
-            icon: 'fa-calendar-alt',
-            title: 'Interactive Calendar',
-            description: 'Click on any date in the calendar to see which exams are scheduled. Department-wise color dots show exam distribution.'
+            icon: 'fa-save',
+            title: 'Updated Memory (Admin Panel)',
+            description: 'Your selected Department, Semester, Exam Type and Group are now saved automatically. No need to re-select them for every new exam – just fill in the subject and date!'
         },
         {
-            icon: 'fa-expand-arrows-alt',
-            title: 'Larger Routine View',
-            description: 'The routine list height has been increased, so you can see more exams at once without scrolling too much.'
+            icon: 'fa-calendar-day ',
+            title: 'New Date Format: DD/MM/YYYY',
+            description: 'Admin panel now displays exam dates in DD/MM/YYYY format for better readability. (Previously it was a longer format.)'
         },
         {
-            icon: 'fa-mobile-alt',
-            title: 'Improved Mobile Experience',
-            description: 'Responsive design has been further enhanced for mobile devices, making it easier to browse on the go.'
+            icon: 'fa-sort-amount-down',
+            title: 'Last Added Exams on Top (Admin Panel)',
+            description: 'The exam list in Manage Exams is now sorted with the most recently added exam appearing first – so you always see your latest entries right away.'
         },
         {
-            icon: 'fa-bell',
-            title: 'Smart Notifications',
-            description: 'Set reminders for your exams and get timely notifications so you never miss an exam.'
+            icon: 'fa-archive',
+            title: 'New Archive Filter (Admin Panel)',
+            description: 'Easily switch between Active (upcoming/today), Archived (past), or All exams using the new filter. Past exams are neatly separated without being deleted.'
+        },
+        {
+            icon: 'fa-clock',
+            title: 'Faster Exam Entry (Admin Panel)',
+            description: 'After adding an exam, the form keeps your previous selections (Department, Semester, Type, Group) – only the subject field is cleared, so you can add multiple exams in quick succession.'
         }
     ];
 
-    // Check if the user has already seen this update
     function shouldShowUpdate() {
         const lastSeen = localStorage.getItem(STORAGE_KEY);
         return lastSeen !== CURRENT_VERSION;
     }
-
-    // Mark the update as seen after showing
     function markUpdateAsSeen() {
         localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
     }
@@ -127,6 +126,9 @@
             <p style="margin: 6px 0 0; color: #888; font-size: 0.95rem;">
                 <i class="fas fa-calendar-alt" style="margin-right: 6px;"></i>
                 Released: ${formattedDate}
+            </p>
+            <p style="margin: 4px 0 0; color: #aaa; font-size: 0.85rem;">
+                Version ${CURRENT_VERSION}
             </p>
         `;
 
