@@ -1,0 +1,522 @@
+/* ============================================================
+   admin.css - Exclusive Admin Panel Styles
+   ============================================================ */
+
+/* ===== ADMIN HEADER ===== */
+.admin-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #eee;
+    margin-bottom: 20px;
+}
+
+.admin-header h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--secondary-color);
+    text-align: center;
+}
+
+.admin-header .btn-logout {
+    padding: 6px 20px;
+    font-size: 0.9rem;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.admin-header .btn-logout:hover {
+    background: #ff5252;
+}
+
+#lastLoginTime {
+    font-size: 0.8rem;
+    color: #999;
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+/* Stats section with separator on top */
+#adminStats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 14px;
+    margin-top: 12px;
+    padding-top: 14px;
+    border-top: 2px solid #e8ecf1;
+    width: 100%;
+}
+
+.stat-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    background: #f0f7ff;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid #e0e8f0;
+}
+
+/* ===== ADD EXAM FORM ===== */
+.add-exam-form {
+    background: #f8f9ff;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+}
+
+.add-exam-form h5 {
+    font-size: 1rem;
+    margin-bottom: 16px;
+    color: var(--secondary-color);
+}
+
+/* কমপ্যাক্ট ফর্ম গ্রিড */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 16px;
+    margin-bottom: 16px;
+}
+
+.form-grid .form-group {
+    margin-bottom: 0;
+}
+
+.form-grid .form-group label {
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+    font-weight: 600;
+    color: #444;
+}
+
+.form-grid .form-group input,
+.form-grid .form-group select {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    width: 100%;
+    transition: 0.2s;
+}
+
+.form-grid .form-group input:focus,
+.form-grid .form-group select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(75,108,183,0.15);
+}
+
+/* গ্ৰুপ ফিল্ড আলাদা স্টাইল */
+#groupField {
+    display: none;
+}
+#groupField.form-group {
+    margin-bottom: 0;
+}
+
+/* অ্যাড বাটন */
+.btn-add-exam {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    transition: 0.3s;
+}
+.btn-add-exam:hover {
+    background: #3a5ca9;
+}
+.btn-add-exam:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===== MANAGE EXAMS ===== */
+.manage-exams {
+    background: #f8f9ff;
+    border-radius: 12px;
+    padding: 18px 20px;
+}
+
+.manage-exams h5 {
+    font-size: 1rem;
+    margin-bottom: 16px;
+    color: var(--secondary-color);
+}
+
+/* আর্কাইভ ফিল্টার */
+.archive-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.archive-filter label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #555;
+}
+
+.archive-filter select {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    font-size: 0.85rem;
+    background: white;
+    cursor: pointer;
+    min-width: 140px;
+}
+
+/* সার্চ বক্স */
+.manage-exams .search-box {
+    position: relative;
+    margin-bottom: 14px;
+}
+
+.manage-exams .search-box input {
+    width: 100%;
+    padding: 8px 12px 8px 38px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: 0.2s;
+}
+.manage-exams .search-box input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(75,108,183,0.15);
+}
+.manage-exams .search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+    font-size: 0.9rem;
+}
+
+/* সার্চ রেজাল্ট কাউন্ট */
+.search-results-count {
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: -6px;
+    margin-bottom: 10px;
+}
+
+/* ===== ADMIN EXAM CARDS ===== */
+.admin-exam-card {
+    background: white;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    border-left: 4px solid var(--primary-color);
+    transition: all 0.2s;
+    overflow: hidden;
+}
+.admin-exam-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+
+.admin-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.admin-card-subject {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--secondary-color);
+}
+
+.admin-card-body {
+    margin-bottom: 8px;
+}
+.admin-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    font-size: 0.8rem;
+    color: #666;
+    align-items: center;
+}
+.admin-card-meta .meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.admin-card-addedby {
+    font-size: 0.7rem;
+    color: #aaa;
+    margin-top: 4px;
+}
+
+.admin-card-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    border-top: 1px solid #eee;
+    padding-top: 8px;
+    flex-wrap: wrap;
+}
+.admin-card-actions button {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 0.8rem;
+    background: #f0f0f0;
+    color: #555;
+}
+.admin-card-actions button:hover {
+    transform: scale(1.05);
+}
+.admin-card-actions .btn-edit {
+    background: var(--primary-color);
+    color: white;
+}
+.admin-card-actions .btn-edit:hover { background: #3a5ca9; }
+.admin-card-actions .btn-delete {
+    background: var(--accent-color);
+    color: white;
+}
+.admin-card-actions .btn-delete:hover { background: #ff5252; }
+.admin-card-actions .btn-notify {
+    background: var(--warning-color);
+    color: white;
+}
+.admin-card-actions .btn-notify:hover { background: #e0a800; }
+.admin-card-actions .btn-copy {
+    background: #6c757d;
+    color: white;
+}
+.admin-card-actions .btn-copy:hover { background: #545b62; }
+
+/* ===== ADMIN MODAL OVERFLOW FIX ===== */
+.modal-content {
+    overflow: visible !important;
+}
+.modal-body {
+    overflow-y: auto;
+    max-height: calc(90vh - 80px);
+    padding: 20px 24px;
+}
+
+/* ===== মোবাইলে কমপ্যাক্ট ===== */
+@media (max-width: 768px) {
+    .admin-header h4 {
+        font-size: 1rem;
+    }
+    .admin-header .btn-logout {
+        font-size: 0.8rem;
+        padding: 5px 16px;
+    }
+    #lastLoginTime {
+        font-size: 0.7rem;
+    }
+    #adminStats {
+        gap: 6px 10px;
+    }
+    .stat-badge {
+        font-size: 0.7rem;
+        padding: 3px 10px;
+    }
+
+    /* ফর্ম ১ কলাম */
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .form-grid .form-group label {
+        font-size: 0.75rem;
+    }
+    .form-grid .form-group input,
+    .form-grid .form-group select {
+        font-size: 0.85rem;
+        padding: 7px 10px;
+    }
+
+    .add-exam-form {
+        padding: 14px;
+    }
+    .manage-exams {
+        padding: 14px;
+    }
+
+    .admin-exam-card {
+        padding: 12px 14px;
+        margin-bottom: 8px;
+    }
+    .admin-card-meta {
+        font-size: 0.7rem;
+        gap: 4px 8px;
+    }
+    .admin-card-actions button {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+    }
+    .admin-card-subject {
+        font-size: 0.85rem;
+    }
+
+    .archive-filter {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .archive-filter select {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .modal-body {
+        padding: 15px 16px;
+        max-height: calc(90vh - 70px);
+    }
+}
+
+/* ===== খুব ছোট ফোন (৪৮০px) ===== */
+@media (max-width: 480px) {
+    #adminStats {
+        gap: 4px 8px;
+    }
+    .stat-badge {
+        font-size: 0.6rem;
+        padding: 2px 8px;
+    }
+    .admin-card-meta {
+        font-size: 0.65rem;
+        gap: 4px 6px;
+    }
+    .admin-card-actions button {
+        width: 24px;
+        height: 24px;
+        font-size: 0.6rem;
+    }
+    .form-grid .form-group input,
+    .form-grid .form-group select {
+        font-size: 0.8rem;
+        padding: 6px 8px;
+    }
+}
+
+/* ===== এডিট মডালের জন্য ===== */
+.edit-exam-content .form-grid {
+    grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 768px) {
+    .edit-exam-content .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== নোটিফিকেশন মডাল ===== */
+.exact-notification-content {
+    max-width: 500px;
+    margin: 0 auto;
+}
+.exact-notification-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px 0;
+}
+.timing-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 10px 0;
+}
+.timing-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    background: #f8f9ff;
+    border-radius: 8px;
+}
+.timing-option input[type="radio"] {
+    accent-color: var(--primary-color);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+.timing-option label {
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+.timing-option label i {
+    color: var(--primary-color);
+    width: 18px;
+    text-align: center;
+}
+
+.countdown-info {
+    background: #f0f7ff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    margin: 8px 0;
+    font-size: 0.9rem;
+}
+.countdown-info p {
+    margin: 0;
+}
+
+.exact-notification-footer {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+.exact-notification-footer button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: 0.2s;
+}
+.btn-test-notification {
+    background: var(--warning-color);
+    color: #333;
+}
+.btn-test-notification:hover { background: #e0a800; }
+.btn-schedule-exact {
+    background: var(--success-color);
+    color: white;
+}
+.btn-schedule-exact:hover { background: #218838; }
+.btn-cancel-exact {
+    background: #6c757d;
+    color: white;
+}
+.btn-cancel-exact:hover { background: #545b62; }

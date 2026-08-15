@@ -3,7 +3,7 @@
 (function() {
     'use strict';
 
-    const CURRENT_VERSION = '4.2.0';
+    const CURRENT_VERSION = '4.3.0';
     const CURRENT_DATE = '2026-08-15';
     const STORAGE_KEY = 'examRoutineLastSeenVersion';
 
@@ -12,17 +12,27 @@
         {
             icon: 'fa-calendar-day',
             title: 'Calendar Dots Improved',
-            description: 'Exam dots on the calendar are now smaller (5px) and limited to maximum 4 dots per day. If there are more than 4 departments, the rest are shown as "+N" for a cleaner look.'
+            description: 'Exam dots on the calendar are now smaller.'
         },
         {
             icon: 'fa-mobile-alt',
             title: 'Mobile UI Improvements',
-            description: 'Mobile view is now much better! Cards are smaller, Font Awesome icons replace emojis, "Added by" is hidden on phones, and smooth scroll buttons (Up/Down) have been added for easier navigation through long exam lists.'
+            description: 'Mobile view is now much better! Cards are smaller, Font Awesome icons replace emojis.'
         },
         {
             icon: 'fa-robot',
             title: 'Chatbot Brain',
             description: 'Counter Number is Removed & Now the chatbot is smarter and more updated.'
+        },
+        {
+            icon: 'fa-user-shield',
+            title: 'Admin Panel UI',
+            description: 'Now the Admin Panel UI is more updated and optimized for every device.'
+        },
+        {
+            icon: 'fa-database',
+            title: 'Saved Filter',
+            description: 'Local Storage now saves your last filtered data automatically.'
         }
     ];
 

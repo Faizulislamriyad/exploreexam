@@ -647,7 +647,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${hour12}:${minutes} ${ampm}`;
     }
 
-    // ===== UPDATED: Clear form but KEEP department, semester, exam type, group =====
     function clearAddExamForm() {
         // Do NOT reset department, semester, exam type, group - keep them for faster addition
         // document.getElementById('newDept').value = 'Computer';
@@ -733,117 +732,83 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function displayExams(exams) {
-        if (!examList) return;
+    if (!examList) return;
+    examList.innerHTML = '';
 
-        examList.innerHTML = '';
-
-        if (exams.length === 0) {
-            examList.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="fas fa-calendar-plus"></i>
-                    </div>
-                    <h5>No Exams Found</h5>
-                    <p>${archiveFilter === 'archived' ? 'No past exams.' : 'Add your first exam using the form above'}</p>
+    if (exams.length === 0) {
+        examList.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-calendar-plus"></i>
                 </div>
-            `;
-            return;
-        }
-
-        // ===== NEW: Sort by createdAt (newest first) =====
-        exams.sort((a, b) => {
-            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            if (aTime !== bTime) return bTime - aTime;
-            return new Date(b.examDate) - new Date(a.examDate);
-        });
-
-        exams.forEach((exam, index) => {
-            const examItem = document.createElement('div');
-            examItem.className = 'exam-item';
-            examItem.style.opacity = '0';
-            examItem.style.transform = 'translateY(20px)';
-
-            // ===== NEW: Format date as dd/mm/yyyy =====
-            const formattedDate = formatDateDDMMYYYY(exam.examDate);
-
-            // Get status
-            const currentDate = window.dataFunctions ? window.dataFunctions.getCurrentDate() : new Date().toISOString().split('T')[0];
-            let status = 'upcoming';
-            if (exam.examDate < currentDate) {
-                status = 'completed';
-            } else if (exam.examDate === currentDate) {
-                status = 'today';
-            }
-
-            // Convert department name to valid CSS class
-            const deptClass = exam.department.toLowerCase().replace(/[&\s]+/g, '-');
-
-            // Group display
-            let groupDisplay = '-';
-            if (exam.examType === 'practical' && exam.group) {
-                groupDisplay = exam.group;
-            } else if (exam.examType === 'practical') {
-                groupDisplay = 'A1'; // default if missing
-            }
-
-            examItem.innerHTML = `
-                <div class="exam-info">
-                    <div class="exam-header">
-                        <h6>${exam.subject} <span class="exam-type-badge type-${exam.examType || 'written'}">${(exam.examType || 'written').toUpperCase()}</span></h6>
-                        <span class="exam-status status-${status}">${status.toUpperCase()}</span>
-                    </div>
-                    <div class="exam-meta">
-                        <span class="dept-badge dept-${deptClass}">${exam.department}</span>
-                        <span class="meta-item"><i class="fas fa-graduation-cap"></i> ${exam.semester}</span>
-                        ${exam.examType === 'practical' ? `<span class="meta-item"><i class="fas fa-users"></i> Group: ${groupDisplay}</span>` : ''}
-                        <span class="meta-item"><i class="fas fa-calendar"></i> ${formattedDate}</span>
-                        <span class="meta-item"><i class="fas fa-clock"></i> ${exam.time}</span>
-                    </div>
-                    ${exam.addedBy ? `
-                    <div class="exam-added-by">
-                        <i class="fas fa-user"></i>
-                        <small>Added by: ${exam.addedBy.split('@')[0]} on ${exam.createdAt ? new Date(exam.createdAt).toLocaleDateString() : ''}</small>
-                    </div>
-                    ` : ''}
-                </div>
-                <div class="exam-actions">
-                    <button class="btn-edit" data-id="${exam.id}" title="Edit Exam">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn-delete" data-id="${exam.id}" title="Delete Exam">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    <button class="btn-notify" data-id="${exam.id}" title="Send Notification">
-                        <i class="fas fa-bell"></i>
-                    </button>
-                    <button class="btn-copy" data-id="${exam.id}" title="Copy Exam Details">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                </div>
-            `;
-
-            // Add event listeners
-            const editBtn = examItem.querySelector('.btn-edit');
-            const deleteBtn = examItem.querySelector('.btn-delete');
-            const notifyBtn = examItem.querySelector('.btn-notify');
-            const copyBtn = examItem.querySelector('.btn-copy');
-
-            editBtn.addEventListener('click', () => editExam(exam));
-            deleteBtn.addEventListener('click', () => deleteExam(exam.id));
-            notifyBtn.addEventListener('click', () => sendExactNotification(exam));
-            copyBtn.addEventListener('click', () => copyExamDetails(exam));
-
-            examList.appendChild(examItem);
-
-            // Stagger animation
-            setTimeout(() => {
-                examItem.style.transition = 'all 0.3s ease';
-                examItem.style.opacity = '1';
-                examItem.style.transform = 'translateY(0)';
-            }, index * 50);
-        });
+                <h5>No Exams Found</h5>
+                <p>${archiveFilter === 'archived' ? 'No past exams.' : 'Add your first exam using the form above'}</p>
+            </div>
+        `;
+        return;
     }
+
+    // Sort newest first
+    exams.sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (aTime !== bTime) return bTime - aTime;
+        return new Date(b.examDate) - new Date(a.examDate);
+    });
+
+    exams.forEach((exam, index) => {
+        const card = document.createElement('div');
+        card.className = 'admin-exam-card';
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+
+        const formattedDate = formatDateDDMMYYYY(exam.examDate);
+        const currentDate = window.dataFunctions ? window.dataFunctions.getCurrentDate() : new Date().toISOString().split('T')[0];
+        let status = 'upcoming';
+        if (exam.examDate < currentDate) status = 'completed';
+        else if (exam.examDate === currentDate) status = 'today';
+        const deptClass = exam.department.toLowerCase().replace(/[&\s]+/g, '-');
+        let groupDisplay = '-';
+        if (exam.examType === 'practical' && exam.group) groupDisplay = exam.group;
+        else if (exam.examType === 'practical') groupDisplay = 'A1';
+
+        card.innerHTML = `
+            <div class="admin-card-header">
+                <span class="admin-card-subject">${exam.subject}</span>
+                <span class="exam-status status-${status}">${status.toUpperCase()}</span>
+            </div>
+            <div class="admin-card-body">
+                <div class="admin-card-meta">
+                    <span class="dept-badge dept-${deptClass}">${exam.department}</span>
+                    <span class="meta-item"><i class="fas fa-graduation-cap"></i> ${exam.semester}</span>
+                    ${exam.examType === 'practical' ? `<span class="meta-item"><i class="fas fa-users"></i> Group: ${groupDisplay}</span>` : ''}
+                    <span class="meta-item"><i class="fas fa-calendar"></i> ${formattedDate}</span>
+                    <span class="meta-item"><i class="fas fa-clock"></i> ${exam.time}</span>
+                    <span class="meta-item"><i class="fas fa-tag"></i> <span class="exam-type-badge type-${exam.examType || 'written'}">${(exam.examType || 'written').toUpperCase()}</span></span>
+                </div>
+                ${exam.addedBy ? `<div class="admin-card-addedby"><i class="fas fa-user"></i> ${exam.addedBy.split('@')[0]} ${exam.createdAt ? '· ' + new Date(exam.createdAt).toLocaleDateString() : ''}</div>` : ''}
+            </div>
+            <div class="admin-card-actions">
+                <button class="btn-edit" data-id="${exam.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                <button class="btn-delete" data-id="${exam.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                <button class="btn-notify" data-id="${exam.id}" title="Notify"><i class="fas fa-bell"></i></button>
+                <button class="btn-copy" data-id="${exam.id}" title="Copy"><i class="fas fa-copy"></i></button>
+            </div>
+        `;
+
+        card.querySelector('.btn-edit').addEventListener('click', () => editExam(exam));
+        card.querySelector('.btn-delete').addEventListener('click', () => deleteExam(exam.id));
+        card.querySelector('.btn-notify').addEventListener('click', () => sendExactNotification(exam));
+        card.querySelector('.btn-copy').addEventListener('click', () => copyExamDetails(exam));
+
+        examList.appendChild(card);
+        setTimeout(() => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 50);
+    });
+}
 
     function searchExams() {
         // ===== Use getDisplayExams() to apply archive filter and search =====

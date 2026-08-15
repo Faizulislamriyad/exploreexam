@@ -1,3 +1,5 @@
+// script.js - Complete Updated File with Fixed LocalStorage Persistence for Single Selects
+
 if (!window.showNotification) {
   window.showNotification = function (message, type = "info") {
     const existingNotification = document.querySelector(".notification");
@@ -356,7 +358,7 @@ function setDefaultFilters() {
 }
 
 // ============================================================
-// TOGGLE EVENT LISTENERS
+// TOGGLE EVENT LISTENERS (UPDATED: removed forced "all" assignment)
 // ============================================================
 
 // Semester Toggle
@@ -384,8 +386,8 @@ semesterMultipleToggle.addEventListener("change", function () {
     semesterSingleSelect.style.display = "block";
     semesterMultipleContainer.style.display = "none";
     semesterMultipleContainer.classList.remove("active");
-    // Reset single select to 'all' or keep? Better to set to 'all'
-    semesterSingleSelect.value = "all";
+    // ✅ removed: semesterSingleSelect.value = "all";
+    // Keep the current single select value intact
     document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
     updateDropdownHeader("semesterDropdown");
   }
@@ -416,7 +418,8 @@ examTypeMultipleToggle.addEventListener("change", function () {
     examTypeSingleSelect.style.display = "block";
     examTypeMultipleContainer.style.display = "none";
     examTypeMultipleContainer.classList.remove("active");
-    examTypeSingleSelect.value = "all";
+    // ✅ removed: examTypeSingleSelect.value = "all";
+    // Keep the current single select value intact
     document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
     updateDropdownHeader("examTypeDropdown");
   }
