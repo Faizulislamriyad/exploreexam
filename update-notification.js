@@ -3,36 +3,26 @@
 (function() {
     'use strict';
 
-    const CURRENT_VERSION = '4.1.0';
-    const CURRENT_DATE = '2026-08-14';
+    const CURRENT_VERSION = '4.2.0';
+    const CURRENT_DATE = '2026-08-15';
     const STORAGE_KEY = 'examRoutineLastSeenVersion';
 
     // List of new features – using Font Awesome icons (no emojis)
     const UPDATE_FEATURES = [
         {
-            icon: 'fa-save',
-            title: 'Updated Memory (Admin Panel)',
-            description: 'Your selected Department, Semester, Exam Type and Group are now saved automatically. No need to re-select them for every new exam – just fill in the subject and date!'
+            icon: 'fa-calendar-day',
+            title: 'Calendar Dots Improved',
+            description: 'Exam dots on the calendar are now smaller (5px) and limited to maximum 4 dots per day. If there are more than 4 departments, the rest are shown as "+N" for a cleaner look.'
         },
         {
-            icon: 'fa-calendar-day ',
-            title: 'New Date Format: DD/MM/YYYY',
-            description: 'Admin panel now displays exam dates in DD/MM/YYYY format for better readability. (Previously it was a longer format.)'
+            icon: 'fa-mobile-alt',
+            title: 'Mobile UI Improvements',
+            description: 'Mobile view is now much better! Cards are smaller, Font Awesome icons replace emojis, "Added by" is hidden on phones, and smooth scroll buttons (Up/Down) have been added for easier navigation through long exam lists.'
         },
         {
-            icon: 'fa-sort-amount-down',
-            title: 'Last Added Exams on Top (Admin Panel)',
-            description: 'The exam list in Manage Exams is now sorted with the most recently added exam appearing first – so you always see your latest entries right away.'
-        },
-        {
-            icon: 'fa-archive',
-            title: 'New Archive Filter (Admin Panel)',
-            description: 'Easily switch between Active (upcoming/today), Archived (past), or All exams using the new filter. Past exams are neatly separated without being deleted.'
-        },
-        {
-            icon: 'fa-clock',
-            title: 'Faster Exam Entry (Admin Panel)',
-            description: 'After adding an exam, the form keeps your previous selections (Department, Semester, Type, Group) – only the subject field is cleared, so you can add multiple exams in quick succession.'
+            icon: 'fa-robot',
+            title: 'Chatbot Brain',
+            description: 'Counter Number is Removed & Now the chatbot is smarter and more updated.'
         }
     ];
 
@@ -44,7 +34,7 @@
         localStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
     }
 
-    // Format date for display (e.g., "14 August 2026")
+    // Format date for display (e.g., "15 August 2026")
     function formatDate(dateStr) {
         const date = new Date(dateStr + 'T00:00:00');
         return date.toLocaleDateString('en-US', {

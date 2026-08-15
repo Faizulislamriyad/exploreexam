@@ -2029,19 +2029,11 @@ function shareExamInfo(exam) {
 }
 
 function highlightTodaysExams() {
-  const todayExams = examData.filter((exam) => exam.examDate === currentAppDate);
-
-  if (todayExams.length > 0) {
-    const chatbotToggle = document.getElementById("chatbotToggle");
-    if (chatbotToggle) {
-      let badge = chatbotToggle.querySelector(".notification-badge");
-      if (!badge) {
-        badge = document.createElement("span");
-        badge.className = "notification-badge";
-        chatbotToggle.appendChild(badge);
-      }
-      badge.textContent = todayExams.length;
-      badge.style.display = "block";
+  const chatbotToggle = document.getElementById("chatbotToggle");
+  if (chatbotToggle) {
+    const badge = chatbotToggle.querySelector(".notification-badge");
+    if (badge) {
+      badge.remove();
     }
   }
 }

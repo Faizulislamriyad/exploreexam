@@ -5,7 +5,7 @@
     padding: 20px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.05);
     margin-bottom: 25px;
-    overflow: visible; /* scrollbar remove */
+    overflow: visible;
 }
 
 .calendar-header {
@@ -54,7 +54,7 @@
 .calendar-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    gap: 3px;
 }
 
 .calendar-day {
@@ -63,15 +63,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
-    font-size: 0.9rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
     cursor: default;
     transition: 0.2s;
     background: #f8f9fa;
     color: var(--dark-color);
     position: relative;
     padding: 2px;
-    min-height: 40px;
+    min-height: 36px;
 }
 .calendar-day.empty {
     background: transparent;
@@ -79,7 +79,7 @@
 }
 .calendar-day .day-number {
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 /* Exam day */
@@ -111,42 +111,48 @@
     border-color: var(--warning-color);
 }
 
-/* Department dots */
+/* ===== ডিপার্টমেন্ট ডট – ছোট ও লিমিটেড ===== */
 .dept-indicators {
     display: flex;
     gap: 2px;
-    margin-top: 2px;
-    flex-wrap: wrap;
+    margin-top: 1px;
+    flex-wrap: nowrap; /* এক লাইনে রাখে */
     justify-content: center;
+    align-items: center;
+    max-width: 100%;
+    overflow: hidden;
 }
 .dept-dot {
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 5px;           /* আগে 8px ছিল, এখন 5px */
+    height: 5px;
     border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.6);
     flex-shrink: 0;
 }
+/* এক্সট্রা ডট (যেমন +2) – খুব ছোট ও আলাদা স্টাইল */
 .dept-dot.extra {
     background: #6c757d;
     color: white;
-    font-size: 6px;
-    width: 12px;
-    height: 12px;
+    font-size: 5px;
+    width: 10px;
+    height: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    font-weight: bold;
+    font-weight: 700;
+    line-height: 1;
+    border: 1px solid #ddd;
 }
 .today-label {
     position: absolute;
-    top: 2px;
-    right: 2px;
+    top: 1px;
+    right: 1px;
     background: var(--warning-color);
     color: white;
-    font-size: 0.5rem;
-    padding: 1px 4px;
+    font-size: 0.4rem;
+    padding: 1px 3px;
     border-radius: 3px;
     font-weight: 600;
     line-height: 1;
