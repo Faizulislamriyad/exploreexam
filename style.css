@@ -1703,12 +1703,12 @@ footer {
 
 .exam-details-content {
   background-color: white;
-  border-radius: 15px;
+  border-radius: 20px;
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease;
 }
 
@@ -1733,14 +1733,10 @@ footer {
 }
 
 .exam-details-header {
-  background: linear-gradient(
-    to right,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
   color: white;
-  padding: 20px;
-  border-radius: 15px 15px 0 0;
+  padding: 22px 28px;
+  border-radius: 20px 20px 0 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1748,32 +1744,43 @@ footer {
 
 .exam-details-header h3 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .btn-close-modal {
   background: none;
   border: none;
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   cursor: pointer;
   padding: 0;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
+  transition: background 0.3s;
+}
+
+.btn-close-modal:hover {
+  background: rgba(255,255,255,0.15);
 }
 
 .exam-details-body {
-  padding: 20px;
+  padding: 25px 28px;
+  background: #fafbff;
 }
 
 .detail-row {
   display: flex;
   justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  align-items: center;
 }
 
 .detail-row:last-child {
@@ -1782,88 +1789,134 @@ footer {
 
 .detail-label {
   font-weight: 600;
-  color: var(--dark-color);
+  color: #182848;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.detail-label i {
+  color: var(--primary-color);
+  width: 20px;
+  text-align: center;
 }
 
 .detail-value {
-  color: var(--gray-color);
+  color: #333;
+  font-weight: 500;
   text-align: right;
+  font-size: 0.95rem;
 }
 
-.detail-value.status-today {
-  color: var(--warning-color);
-  font-weight: bold;
+.detail-value .dept-badge {
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: white;
+  display: inline-block;
 }
 
-.detail-value.status-upcoming {
-  color: var(--success-color);
-  font-weight: bold;
+/* Technology Code Badge */
+.tech-code-badge {
+  background: #2d3436;
+  color: white;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  display: inline-block;
 }
 
-.detail-value.status-past {
-  color: #6c757d;
+.group-badge {
+  background: #f0f0f0;
+  color: #182848;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: inline-block;
+}
+
+/* Status colors */
+.status-today {
+  color: #f39c12;
+  font-weight: 700;
+}
+.status-upcoming {
+  color: #27ae60;
+  font-weight: 700;
+}
+.status-past {
+  color: #95a5a6;
+  font-weight: 500;
 }
 
 .exam-details-footer {
-  padding: 20px;
-  border-top: 1px solid #eee;
+  padding: 20px 28px;
+  background: white;
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 12px;
   justify-content: center;
-  position: relative;
-  padding-bottom: 50px;
+  border-top: 1px solid #eee;
+  border-radius: 0 0 20px 20px;
 }
 
-.btn-remind-me,
-.btn-share,
-.btn-download-exam {
-  padding: 10px 20px;
+.exam-details-footer button {
+  padding: 10px 22px;
   border: none;
-  border-radius: 5px;
+  border-radius: 30px;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: 500;
   transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: white;
+  flex: 1 1 0;
+  min-width: 100px;
+  justify-content: center;
 }
 
 .btn-remind-me {
-  background-color: var(--warning-color);
-  color: var(--dark-color);
+  background: #f39c12;
 }
-
 .btn-remind-me:hover {
-  background-color: #e0a800;
+  background: #e67e22;
+  transform: translateY(-2px);
 }
 
 .btn-share {
-  background-color: #6f42c1;
-  color: white;
+  background: #6f42c1;
 }
-
 .btn-share:hover {
-  background-color: #5a32a3;
+  background: #5a32a3;
+  transform: translateY(-2px);
 }
 
 .btn-download-exam {
-  background-color: var(--success-color);
-  color: white;
+  background: #27ae60;
 }
-
 .btn-download-exam:hover {
-  background-color: #218838;
+  background: #219653;
+  transform: translateY(-2px);
 }
 
 .explore-routine-text {
-  position: absolute;
-  bottom: 15px;
-  left: 0;
-  right: 0;
+  width: 100%;
   text-align: center;
-  color: var(--gray-color);
-  font-size: 0.9rem;
-  font-style: italic;
-  margin-top: 15px;
-  padding-top: 15px;
+  color: #aaa;
+  font-size: 0.85rem;
+  margin-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid #eee;
+  font-style: italic;
+  flex: 0 0 100%;
+  order: 10;
 }
 
 /* ===== EDIT EXAM MODAL ===== */
@@ -2341,4 +2394,89 @@ footer {
 }
 .update-modal-content::-webkit-scrollbar-thumb:hover {
     background: #a1a1a1;
+}
+
+/* ============================================================
+   GLOBAL SCROLLBAR STYLES (NEW)
+   ============================================================ */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+    transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Firefox scrollbar */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+/* ===== SIDEBAR SPECIFIC SCROLLBAR ===== */
+.sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 5px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #f5f5f5;
+    border-radius: 8px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #b0b0b0;
+    border-radius: 8px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #8a8a8a;
+}
+
+/* ===== ROUTINE LIST SCROLLBAR ===== */
+.routine-list::-webkit-scrollbar {
+    width: 6px;
+}
+.routine-list::-webkit-scrollbar-track {
+    background: #f5f5f5;
+    border-radius: 8px;
+}
+.routine-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 8px;
+}
+.routine-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* ===== EXAM LIST (admin panel) SCROLLBAR ===== */
+.exam-list::-webkit-scrollbar {
+    width: 5px;
+}
+.exam-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+.exam-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+.exam-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }

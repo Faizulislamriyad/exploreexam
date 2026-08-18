@@ -1,4 +1,5 @@
-// script.js - Complete Updated File with Fixed LocalStorage Persistence for Single Selects
+// script.js - Complete Updated File with New Quick Filters (Today, Tomorrow, 2D Left, Practical, Written, Referred)
+// Quick filters do NOT affect department selection – they only add date or exam‑type conditions on top of current filters.
 
 if (!window.showNotification) {
   window.showNotification = function (message, type = "info") {
@@ -41,6 +42,9 @@ if (!window.showNotification) {
 // ফিল্টার স্টেট সংরক্ষণের জন্য ভেরিয়েবল
 let _savingFilterState = false;
 const FILTER_STATE_KEY = "examFilterState";
+
+// Global variable to track active quick filter
+let activeQuickFilter = null; // possible values: 'today', 'tomorrow', '2day', 'practical', 'written', 'referred', or null
 
 // DOM Elements
 const deptSelect = document.getElementById("deptSelect");
@@ -93,6 +97,7 @@ function saveFilterState() {
       examTypeMultipleToggle: examTypeMultipleToggle ? examTypeMultipleToggle.checked : false,
       examTypeMultipleValues: getSelectedExamTypeValues(),
       dateFilter: dateFilter ? dateFilter.value : "upcoming",
+      activeQuickFilter: activeQuickFilter, // save the quick filter state
     };
     localStorage.setItem(FILTER_STATE_KEY, JSON.stringify(state));
   } catch (e) {
@@ -153,6 +158,20 @@ function applyFilterState(state) {
   // Apply date filter
   if (dateFilter && state.dateFilter) {
     dateFilter.value = state.dateFilter;
+  }
+
+  // Restore active quick filter
+  if (state.activeQuickFilter) {
+    activeQuickFilter = state.activeQuickFilter;
+    // Set active class on the corresponding quick filter button
+    document.querySelectorAll('.btn-quick-filter').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === activeQuickFilter);
+    });
+  } else {
+    activeQuickFilter = null;
+    // Ensure "All" is active
+    const allBtn = document.querySelector('.btn-quick-filter[data-filter="all"]');
+    if (allBtn) allBtn.classList.add('active');
   }
 
   // Now apply filters - but we must avoid saving again
@@ -660,15 +679,16 @@ function clearAllFilters() {
   examTypeMultipleContainer.style.display = "none";
   examTypeMultipleContainer.classList.remove("active");
 
-  // Hide clear button
-  document.getElementById("clearFiltersBtn").style.display = "none";
-
-  // Remove active class from quick filters
+  // Reset quick filter
+  activeQuickFilter = null;
   document.querySelectorAll(".btn-quick-filter").forEach((btn) => {
     btn.classList.remove("active");
   });
   const allBtn = document.querySelector('.btn-quick-filter[data-filter="all"]');
   if (allBtn) allBtn.classList.add("active");
+
+  // Hide clear button
+  document.getElementById("clearFiltersBtn").style.display = "none";
 
   // Apply filters
   handleFilterChange();
@@ -690,8 +710,17 @@ function setupEventListeners() {
   // Department dropdown
   if (deptSelect) deptSelect.addEventListener("change", debouncedFilterChange);
 
-  // Date filter
-  if (dateFilter) dateFilter.addEventListener("change", debouncedFilterChange);
+  // Date filter – when user changes it, clear quick filter
+  if (dateFilter) {
+    dateFilter.addEventListener("change", function () {
+      // Clear any active quick filter
+      activeQuickFilter = null;
+      document.querySelectorAll(".btn-quick-filter").forEach((btn) => btn.classList.remove("active"));
+      const allBtn = document.querySelector('.btn-quick-filter[data-filter="all"]');
+      if (allBtn) allBtn.classList.add("active");
+      debouncedFilterChange();
+    });
+  }
 
   // Semester single select
   if (semesterSingleSelect) semesterSingleSelect.addEventListener("change", debouncedFilterChange);
@@ -726,9 +755,8 @@ function setupQuickFilters() {
             <div class="quick-filter-buttons">
                 <button class="btn-quick-filter active" data-filter="all">All</button>
                 <button class="btn-quick-filter" data-filter="today">Today</button>
-                <button class="btn-quick-filter" data-filter="upcoming">Upcoming</button>
-                <button class="btn-quick-filter" data-filter="computer">Computer</button>
-                <button class="btn-quick-filter" data-filter="civil">Civil</button>
+                <button class="btn-quick-filter" data-filter="tomorrow">Tomorrow</button>
+                <button class="btn-quick-filter" data-filter="2day">2D Left</button>
                 <button class="btn-quick-filter" data-filter="practical">Practical</button>
                 <button class="btn-quick-filter" data-filter="written">Written</button>
                 <button class="btn-quick-filter" data-filter="referred">Referred</button>
@@ -744,9 +772,7 @@ function setupQuickFilters() {
           document.querySelectorAll(".btn-quick-filter").forEach((b) => {
             b.classList.remove("active");
           });
-
           this.classList.add("active");
-
           applyQuickFilter(this.dataset.filter);
         });
       });
@@ -758,219 +784,67 @@ function setupQuickFilters() {
 function applyQuickFilter(filter) {
   const clearBtn = document.getElementById("clearFiltersBtn");
 
-  switch (filter) {
-    case "today":
-      deptSelect.value = "all";
-      dateFilter.value = "upcoming";
-      semesterSingleSelect.value = "all";
-      examTypeSingleSelect.value = "all";
-      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      updateDropdownHeader("semesterDropdown");
-      updateDropdownHeader("examTypeDropdown");
-      // Toggles OFF
-      semesterMultipleToggle.checked = false;
-      examTypeMultipleToggle.checked = false;
-      document.getElementById("semesterToggleStatus").textContent = "OFF";
-      document.getElementById("examTypeToggleStatus").textContent = "OFF";
-      semesterSingleSelect.style.display = "block";
-      semesterMultipleContainer.style.display = "none";
-      semesterMultipleContainer.classList.remove("active");
-      examTypeSingleSelect.style.display = "block";
-      examTypeMultipleContainer.style.display = "none";
-      examTypeMultipleContainer.classList.remove("active");
-
-      applyFilters("all", ["all"], ["all"], "upcoming");
-
-      const todayExams = examData.filter((exam) => exam.examDate === currentAppDate);
-      filteredExamRoutine = todayExams;
-      window.filteredExamRoutine = filteredExamRoutine;
-      filteredExamRoutine.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
-      updateRoutineDisplay();
-      updateStatistics();
-      updateNextExam();
-      updateUpcomingList();
-      if (clearBtn) clearBtn.style.display = "flex";
-      break;
-
-    case "upcoming":
-      deptSelect.value = "all";
-      dateFilter.value = "upcoming";
-      semesterSingleSelect.value = "all";
-      examTypeSingleSelect.value = "all";
-      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      updateDropdownHeader("semesterDropdown");
-      updateDropdownHeader("examTypeDropdown");
-      semesterMultipleToggle.checked = false;
-      examTypeMultipleToggle.checked = false;
-      document.getElementById("semesterToggleStatus").textContent = "OFF";
-      document.getElementById("examTypeToggleStatus").textContent = "OFF";
-      semesterSingleSelect.style.display = "block";
-      semesterMultipleContainer.style.display = "none";
-      semesterMultipleContainer.classList.remove("active");
-      examTypeSingleSelect.style.display = "block";
-      examTypeMultipleContainer.style.display = "none";
-      examTypeMultipleContainer.classList.remove("active");
-
-      applyFilters("all", ["all"], ["all"], "upcoming");
-      if (clearBtn) clearBtn.style.display = "flex";
-      break;
-
-    case "computer":
-      deptSelect.value = "Computer";
-      dateFilter.value = "upcoming";
-      semesterSingleSelect.value = "all";
-      examTypeSingleSelect.value = "all";
-      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      updateDropdownHeader("semesterDropdown");
-      updateDropdownHeader("examTypeDropdown");
-      semesterMultipleToggle.checked = false;
-      examTypeMultipleToggle.checked = false;
-      document.getElementById("semesterToggleStatus").textContent = "OFF";
-      document.getElementById("examTypeToggleStatus").textContent = "OFF";
-      semesterSingleSelect.style.display = "block";
-      semesterMultipleContainer.style.display = "none";
-      semesterMultipleContainer.classList.remove("active");
-      examTypeSingleSelect.style.display = "block";
-      examTypeMultipleContainer.style.display = "none";
-      examTypeMultipleContainer.classList.remove("active");
-
-      applyFilters("Computer", ["all"], ["all"], "upcoming");
-      if (clearBtn) clearBtn.style.display = "flex";
-      break;
-
-    case "civil":
-      deptSelect.value = "Civil";
-      dateFilter.value = "upcoming";
-      semesterSingleSelect.value = "all";
-      examTypeSingleSelect.value = "all";
-      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      updateDropdownHeader("semesterDropdown");
-      updateDropdownHeader("examTypeDropdown");
-      semesterMultipleToggle.checked = false;
-      examTypeMultipleToggle.checked = false;
-      document.getElementById("semesterToggleStatus").textContent = "OFF";
-      document.getElementById("examTypeToggleStatus").textContent = "OFF";
-      semesterSingleSelect.style.display = "block";
-      semesterMultipleContainer.style.display = "none";
-      semesterMultipleContainer.classList.remove("active");
-      examTypeSingleSelect.style.display = "block";
-      examTypeMultipleContainer.style.display = "none";
-      examTypeMultipleContainer.classList.remove("active");
-
-      applyFilters("Civil", ["all"], ["all"], "upcoming");
-      if (clearBtn) clearBtn.style.display = "flex";
-      break;
-
-    case "practical":
-      deptSelect.value = "all";
-      dateFilter.value = "upcoming";
-      semesterSingleSelect.value = "all";
-      examTypeSingleSelect.value = "all";
-      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      // Check practical in multiple
-      document.querySelector('#examTypeDropdown input[value="practical"]').checked = true;
-      updateDropdownHeader("semesterDropdown");
-      updateDropdownHeader("examTypeDropdown");
-      // Toggle ON for exam type (to show multiple)
-      examTypeMultipleToggle.checked = true;
-      document.getElementById("examTypeToggleStatus").textContent = "ON";
-      examTypeSingleSelect.style.display = "none";
-      examTypeMultipleContainer.style.display = "block";
-      examTypeMultipleContainer.classList.add("active");
-
-      semesterMultipleToggle.checked = false;
-      document.getElementById("semesterToggleStatus").textContent = "OFF";
-      semesterSingleSelect.style.display = "block";
-      semesterMultipleContainer.style.display = "none";
-      semesterMultipleContainer.classList.remove("active");
-
-      applyFilters("all", ["all"], ["practical"], "upcoming");
-      if (clearBtn) clearBtn.style.display = "flex";
-      break;
-
-    case "written":
-      deptSelect.value = "all";
-      dateFilter.value = "upcoming";
-      semesterSingleSelect.value = "all";
-      examTypeSingleSelect.value = "all";
-      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      document.querySelector('#examTypeDropdown input[value="written"]').checked = true;
-      updateDropdownHeader("semesterDropdown");
-      updateDropdownHeader("examTypeDropdown");
-      examTypeMultipleToggle.checked = true;
-      document.getElementById("examTypeToggleStatus").textContent = "ON";
-      examTypeSingleSelect.style.display = "none";
-      examTypeMultipleContainer.style.display = "block";
-      examTypeMultipleContainer.classList.add("active");
-
-      semesterMultipleToggle.checked = false;
-      document.getElementById("semesterToggleStatus").textContent = "OFF";
-      semesterSingleSelect.style.display = "block";
-      semesterMultipleContainer.style.display = "none";
-      semesterMultipleContainer.classList.remove("active");
-
-      applyFilters("all", ["all"], ["written"], "upcoming");
-      if (clearBtn) clearBtn.style.display = "flex";
-      break;
-
-    case "referred":
-      deptSelect.value = "all";
-      dateFilter.value = "upcoming";
-      semesterSingleSelect.value = "all";
-      examTypeSingleSelect.value = "all";
-      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      document.querySelector('#examTypeDropdown input[value="referred"]').checked = true;
-      updateDropdownHeader("semesterDropdown");
-      updateDropdownHeader("examTypeDropdown");
-      examTypeMultipleToggle.checked = true;
-      document.getElementById("examTypeToggleStatus").textContent = "ON";
-      examTypeSingleSelect.style.display = "none";
-      examTypeMultipleContainer.style.display = "block";
-      examTypeMultipleContainer.classList.add("active");
-
-      semesterMultipleToggle.checked = false;
-      document.getElementById("semesterToggleStatus").textContent = "OFF";
-      semesterSingleSelect.style.display = "block";
-      semesterMultipleContainer.style.display = "none";
-      semesterMultipleContainer.classList.remove("active");
-
-      applyFilters("all", ["all"], ["referred"], "upcoming");
-      if (clearBtn) clearBtn.style.display = "flex";
-      break;
-
-    default:
-      deptSelect.value = "all";
-      dateFilter.value = "upcoming";
-      semesterSingleSelect.value = "all";
-      examTypeSingleSelect.value = "all";
-      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
-      updateDropdownHeader("semesterDropdown");
-      updateDropdownHeader("examTypeDropdown");
-      semesterMultipleToggle.checked = false;
-      examTypeMultipleToggle.checked = false;
-      document.getElementById("semesterToggleStatus").textContent = "OFF";
-      document.getElementById("examTypeToggleStatus").textContent = "OFF";
-      semesterSingleSelect.style.display = "block";
-      semesterMultipleContainer.style.display = "none";
-      semesterMultipleContainer.classList.remove("active");
-      examTypeSingleSelect.style.display = "block";
-      examTypeMultipleContainer.style.display = "none";
-      examTypeMultipleContainer.classList.remove("active");
-
-      applyFilters("all", ["all"], ["all"], "upcoming");
-      if (clearBtn) clearBtn.style.display = "none";
+  // For date-based quick filters (today, tomorrow, 2day)
+  if (["today", "tomorrow", "2day"].includes(filter)) {
+    activeQuickFilter = filter;
+    // Keep existing department, semester, exam type – do NOT change them
+    const dept = deptSelect.value;
+    const semesters = getSelectedSemesterValues();
+    const examTypes = getSelectedExamTypeValues();
+    // Call applyFilters with the quick filter override
+    applyFilters(dept, semesters, examTypes, null, filter);
+    // Optionally, set dateFilter to 'upcoming' to avoid confusion (but we keep it as is)
+    // Actually we can leave it, but we set it to 'upcoming' because quick filter overrides it.
+    dateFilter.value = "upcoming";
+    // Show clear button if any filter is active
+    if (clearBtn) clearBtn.style.display = "flex";
+    return;
   }
 
-  // Save filter state after quick filter
-  saveFilterState();
+  // For exam-type quick filters (practical, written, referred)
+  if (["practical", "written", "referred"].includes(filter)) {
+    activeQuickFilter = null; // clear date quick filter
+    // Set the exam type single select (and turn off multiple mode)
+    examTypeSingleSelect.value = filter;
+    examTypeMultipleToggle.checked = false;
+    document.getElementById("examTypeToggleStatus").textContent = "OFF";
+    examTypeSingleSelect.style.display = "block";
+    examTypeMultipleContainer.style.display = "none";
+    examTypeMultipleContainer.classList.remove("active");
+    // Uncheck all checkboxes in the multiple dropdown
+    document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+    updateDropdownHeader("examTypeDropdown");
+    // Now trigger a normal filter change (which will use the new exam type)
+    // But we must NOT reset department, semester.
+    const dept = deptSelect.value;
+    const semesters = getSelectedSemesterValues();
+    const dateFilterValue = dateFilter.value;
+    // We already set examType via single select, so getSelectedExamTypeValues() will return [filter]
+    const examTypes = getSelectedExamTypeValues();
+    applyFilters(dept, semesters, examTypes, dateFilterValue, null);
+    if (clearBtn) clearBtn.style.display = "flex";
+    return;
+  }
+
+  // For 'All' – reset all quick filters and use the dropdown values
+  if (filter === "all") {
+    activeQuickFilter = null;
+    // Reset date filter to 'upcoming'
+    dateFilter.value = "upcoming";
+    // Reset exam type to 'all' (single select) and turn off multiple
+    examTypeSingleSelect.value = "all";
+    examTypeMultipleToggle.checked = false;
+    document.getElementById("examTypeToggleStatus").textContent = "OFF";
+    examTypeSingleSelect.style.display = "block";
+    examTypeMultipleContainer.style.display = "none";
+    examTypeMultipleContainer.classList.remove("active");
+    document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
+    updateDropdownHeader("examTypeDropdown");
+    // Do NOT reset department or semester.
+    // Call handleFilterChange to apply all current filters (with date='upcoming', examType='all')
+    handleFilterChange();
+    if (clearBtn) clearBtn.style.display = "none";
+  }
 }
 
 // Initialize UI elements
@@ -991,9 +865,9 @@ function updateRoutineTitle(selectedDept, selectedSemester) {
 
   let titleText = '<i class="fas fa-list-alt"></i> Exam Routine';
 
+  // Add department/semester info
   if (selectedDept !== "all" || selectedSemester !== "all") {
     titleText += " - ";
-
     if (selectedDept !== "all" && selectedSemester !== "all") {
       titleText += `${selectedDept} Department, ${selectedSemester} Semester`;
     } else if (selectedDept !== "all") {
@@ -1003,12 +877,28 @@ function updateRoutineTitle(selectedDept, selectedSemester) {
     }
   }
 
-  const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
-  if (dateFilterValue === "upcoming") {
-    titleText += " (Upcoming)";
-  } else if (dateFilterValue === "past") {
-    titleText += " (Past)";
+  // Add quick filter info if active
+  if (activeQuickFilter) {
+    let filterLabel = "";
+    switch (activeQuickFilter) {
+      case "today": filterLabel = "Today's Exams"; break;
+      case "tomorrow": filterLabel = "Tomorrow's Exams"; break;
+      case "2day": filterLabel = "2D Left"; break;
+      default: filterLabel = "";
+    }
+    if (filterLabel) {
+      titleText += ` (${filterLabel})`;
+    }
+  } else {
+    // Otherwise show date filter type
+    const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
+    if (dateFilterValue === "upcoming") {
+      titleText += " (Upcoming)";
+    } else if (dateFilterValue === "past") {
+      titleText += " (Past)";
+    }
   }
+
   routineTitle.innerHTML = titleText;
 }
 
@@ -1159,9 +1049,10 @@ function handleFilterChange() {
     semesterValues,
     examTypeValues,
     dateFilterValue,
+    activeQuickFilter,
   });
 
-  applyFilters(dept, semesterValues, examTypeValues, dateFilterValue);
+  applyFilters(dept, semesterValues, examTypeValues, dateFilterValue, activeQuickFilter);
 
   isFilterChanging = false;
 
@@ -1172,9 +1063,9 @@ function handleFilterChange() {
 }
 
 // ============================================================
-// APPLY FILTERS - Updated with Toggle Support
+// APPLY FILTERS - Updated with Toggle Support + Quick Filter
 // ============================================================
-function applyFilters(dept, semesters, examTypes, dateFilterValue = null) {
+function applyFilters(dept, semesters, examTypes, dateFilterValue = null, quickFilter = null) {
   const clearBtn = document.getElementById("clearFiltersBtn");
 
   // Check if any filter is active
@@ -1182,7 +1073,8 @@ function applyFilters(dept, semesters, examTypes, dateFilterValue = null) {
     dept !== "all" ||
     (semesters && !semesters.includes("all") && semesters.length > 0) ||
     (examTypes && !examTypes.includes("all") && examTypes.length > 0) ||
-    (dateFilterValue && dateFilterValue === "past");
+    (dateFilterValue && dateFilterValue === "past") ||
+    (quickFilter && quickFilter !== "all");
 
   if (clearBtn) {
     clearBtn.style.display = isFilterActive ? "flex" : "none";
@@ -1208,19 +1100,32 @@ function applyFilters(dept, semesters, examTypes, dateFilterValue = null) {
     });
   }
 
-  // Date filter
-  const filterVal = dateFilterValue !== null ? dateFilterValue : dateFilter ? dateFilter.value : "upcoming";
+  // Date filter: priority: quickFilter > dateFilterValue > default "upcoming"
+  const filterVal = quickFilter !== null ? quickFilter : (dateFilterValue !== null ? dateFilterValue : dateFilter.value);
 
   if (filterVal === "past") {
     tempFiltered = tempFiltered.filter((exam) => exam.examDate < currentAppDate);
   } else if (filterVal === "upcoming") {
     tempFiltered = tempFiltered.filter((exam) => exam.examDate >= currentAppDate);
+  } else if (filterVal === "today") {
+    tempFiltered = tempFiltered.filter((exam) => exam.examDate === currentAppDate);
+  } else if (filterVal === "tomorrow") {
+    const tomorrow = new Date(currentAppDate);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    tempFiltered = tempFiltered.filter((exam) => exam.examDate === tomorrowStr);
+  } else if (filterVal === "2day") {
+    const twoDays = new Date(currentAppDate);
+    twoDays.setDate(twoDays.getDate() + 2);
+    const twoDaysStr = twoDays.toISOString().split('T')[0];
+    tempFiltered = tempFiltered.filter((exam) => exam.examDate === twoDaysStr);
   }
+  // If filterVal is 'all' or null, we do not apply date filtering
 
   filteredExamRoutine = tempFiltered;
   window.filteredExamRoutine = filteredExamRoutine;
 
-  console.log(`Filtered ${examData.length} exams down to ${filteredExamRoutine.length} exams (${filterVal})`);
+  console.log(`Filtered ${examData.length} exams down to ${filteredExamRoutine.length} exams (filter: ${filterVal})`);
 
   filteredExamRoutine.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
 
@@ -1271,7 +1176,7 @@ async function refreshRoutine() {
     const examTypes = getSelectedExamTypeValues();
     const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
 
-    applyFilters(dept, semesters, examTypes, dateFilterValue);
+    applyFilters(dept, semesters, examTypes, dateFilterValue, activeQuickFilter);
 
     updateDepartmentOptions();
 
@@ -1728,141 +1633,203 @@ function sendTestNotificationNow(exam) {
 // EXAM DETAILS FUNCTIONS
 // ============================================================
 
+// Department → Technology Code mapping
+const TECH_CODES = {
+    'Computer': '85',
+    'Mechanical': '70',
+    'Civil': '64',
+    'Electrical': '67',
+    'Power': '71',
+    'Electronics': '68',
+    'Electro-Medical': '86',
+    'Tourism & Hospitality Management': '99',
+    'Tourism': '99' // fallback
+};
+
+// Helper to get email prefix
+function getEmailPrefix(email) {
+    if (!email) return '';
+    return email.split('@')[0];
+}
+
 function showExamDetails(exam) {
-  const daysLeft = window.dataFunctions.getDayDifference(currentAppDate, exam.examDate);
-  let statusText = "";
-  let statusClass = "";
+    const daysLeft = window.dataFunctions.getDayDifference(currentAppDate, exam.examDate);
+    let statusText = "";
+    let statusClass = "";
 
-  if (exam.examDate < currentAppDate) {
-    statusText = "This exam has already taken place.";
-    statusClass = "past";
-  } else if (exam.examDate === currentAppDate) {
-    statusText = "This exam is scheduled for today!";
-    statusClass = "today";
-  } else {
-    statusText = `This exam is in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}.`;
-    statusClass = "upcoming";
-  }
+    if (exam.examDate < currentAppDate) {
+        statusText = "Completed";
+        statusClass = "past";
+    } else if (exam.examDate === currentAppDate) {
+        statusText = "Today";
+        statusClass = "today";
+    } else {
+        statusText = `${daysLeft} Day${daysLeft > 1 ? 's' : ''} Left`;
+        statusClass = "upcoming";
+    }
 
-  const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
+    const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
+    const examType = exam.examType || "written";
+    const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
 
-  const examType = exam.examType || "written";
-  const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
+    // Group info
+    let groupDisplay = "-";
+    if (examType === "practical" && exam.group) {
+        groupDisplay = exam.group;
+    } else if (examType === "practical") {
+        groupDisplay = "A1"; // default if missing
+    }
 
-  // Group info
-  let groupDisplay = "-";
-  if (examType === "practical" && exam.group) {
-    groupDisplay = exam.group;
-  } else if (examType === "practical") {
-    groupDisplay = "A1";
-  }
+    // Technology Code
+    const techCode = TECH_CODES[exam.department] || "N/A";
 
-  const modal = document.createElement("div");
-  modal.className = "exam-details-modal";
-  modal.innerHTML = `
+    // Added by – only email prefix
+    const addedByPrefix = exam.addedBy ? getEmailPrefix(exam.addedBy) : '';
+
+    const modal = document.createElement("div");
+    modal.className = "exam-details-modal";
+    modal.innerHTML = `
         <div class="exam-details-content">
             <div class="exam-details-header">
-                <h3>${exam.subject} Exam Details</h3>
+                <h3><i class="fas fa-info-circle"></i> ${exam.subject} Exam Details</h3>
                 <button class="btn-close-modal">&times;</button>
             </div>
             <div class="exam-details-body">
                 <div class="detail-row">
-                    <span class="detail-label">Department:</span>
+                    <span class="detail-label"><i class="fas fa-university"></i> Department:</span>
                     <span class="detail-value dept-badge dept-${exam.department.toLowerCase()}">${exam.department}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Semester:</span>
+                    <span class="detail-label"><i class="fas fa-qrcode"></i> Technology Code:</span>
+                    <span class="detail-value tech-code-badge">${techCode}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label"><i class="fas fa-layer-group"></i> Semester:</span>
                     <span class="detail-value">${exam.semester}</span>
                 </div>
                 ${examType === "practical" ? `
                 <div class="detail-row">
-                    <span class="detail-label">Group:</span>
+                    <span class="detail-label"><i class="fas fa-users"></i> Group:</span>
                     <span class="detail-value group-badge">${groupDisplay}</span>
                 </div>
                 ` : ""}
                 <div class="detail-row">
-                    <span class="detail-label">Exam Type:</span>
+                    <span class="detail-label"><i class="fas fa-tag"></i> Exam Type:</span>
                     <span class="detail-value exam-type-badge type-${examType}">${typeText}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Exam Date:</span>
+                    <span class="detail-label"><i class="fas fa-calendar-alt"></i> Exam Date:</span>
                     <span class="detail-value">${dateDisplay}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Time:</span>
+                    <span class="detail-label"><i class="fas fa-clock"></i> Time:</span>
                     <span class="detail-value">${exam.time}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Room:</span>
+                    <span class="detail-label"><i class="fas fa-door-open"></i> Room:</span>
                     <span class="detail-value">${exam.room}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Status:</span>
+                    <span class="detail-label"><i class="fas fa-info-circle"></i> Status:</span>
                     <span class="detail-value status-${statusClass}">${statusText}</span>
                 </div>
-                ${exam.addedBy ? `
+                ${addedByPrefix ? `
                 <div class="detail-row">
-                    <span class="detail-label">Added by:</span>
-                    <span class="detail-value">${exam.addedBy}</span>
+                    <span class="detail-label"><i class="fas fa-user-plus"></i> Added by:</span>
+                    <span class="detail-value">${addedByPrefix}</span>
                 </div>
                 ` : ""}
             </div>
             <div class="exam-details-footer">
-                <button class="btn-remind-me" data-exam-id="${exam.id}">
-                    <i class="fas fa-bell"></i> Set Reminder
+                <button class="btn-remind-me" data-exam-id="${exam.id}" title="Set Reminder">
+                    <i class="fas fa-bell"></i>
                 </button>
-                <button class="btn-share">
-                    <i class="fas fa-share-alt"></i> Share
+                <button class="btn-share" title="Share">
+                    <i class="fas fa-share-alt"></i>
                 </button>
-                <button class="btn-download-exam">
-                    <i class="fas fa-download"></i> Download as JPG
+                <button class="btn-download-exam" title="Download as JPG">
+                    <i class="fas fa-download"></i>
                 </button>
                 <div class="explore-routine-text">
-                    Explore routine 2026
+                    Explore Routine 2026
                 </div>
             </div>
         </div>
     `;
 
-  document.body.appendChild(modal);
+    document.body.appendChild(modal);
 
-  const closeModalBtn = modal.querySelector(".btn-close-modal");
-  const shareBtn = modal.querySelector(".btn-share");
-  const remindBtn = modal.querySelector(".btn-remind-me");
-  const downloadBtn = modal.querySelector(".btn-download-exam");
+    // Event listeners
+    const closeModalBtn = modal.querySelector(".btn-close-modal");
+    const shareBtn = modal.querySelector(".btn-share");
+    const remindBtn = modal.querySelector(".btn-remind-me");
+    const downloadBtn = modal.querySelector(".btn-download-exam");
 
-  if (closeModalBtn) {
-    closeModalBtn.addEventListener("click", () => {
-      modal.remove();
-    });
-  }
-
-  if (remindBtn) {
-    remindBtn.addEventListener("click", function () {
-      showNotificationOptions(exam);
-      modal.remove();
-    });
-  }
-
-  if (shareBtn) {
-    shareBtn.addEventListener("click", () => {
-      shareExamInfo(exam);
-    });
-  }
-
-  if (downloadBtn) {
-    downloadBtn.addEventListener("click", () => {
-      downloadExamAsJPG(exam);
-    });
-  }
-
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) {
-      modal.remove();
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener("click", () => {
+            modal.remove();
+        });
     }
-  });
+
+    if (remindBtn) {
+        remindBtn.addEventListener("click", function () {
+            showNotificationOptions(exam);
+            modal.remove();
+        });
+    }
+
+    if (shareBtn) {
+        shareBtn.addEventListener("click", () => {
+            shareExamInfo(exam);
+        });
+    }
+
+    if (downloadBtn) {
+        downloadBtn.addEventListener("click", () => {
+            downloadExamAsJPG(exam);
+        });
+    }
+
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
 }
 
+function shareExamInfo(exam) {
+  const examType = exam.examType || "written";
+  const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
+  const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
+  let shareText = `${exam.subject} Exam\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nType: ${typeText}\nDate: ${dateDisplay}\nTime: ${exam.time}\nRoom: ${exam.room}`;
+
+  // Include group if practical
+  if (examType === "practical") {
+    const group = exam.group || "A1";
+    shareText += `\nGroup: ${group}`;
+  }
+
+  if (navigator.share) {
+    navigator.share({
+      title: `${exam.subject} Exam Details`,
+      text: shareText,
+      url: window.location.href,
+    });
+  } else {
+    navigator.clipboard
+      .writeText(shareText)
+      .then(() => {
+        showNotification("Exam details copied to clipboard!", "success");
+      })
+      .catch(() => {
+        showNotification("Failed to copy details", "error");
+      });
+  }
+}
+
+// ============================================================
+// DOWNLOAD EXAM AS JPG (UPDATED: Group always shown, "N/A" for non-practical, practical defaults to "A1" if missing)
+// ============================================================
 async function downloadExamAsJPG(exam) {
   try {
     showNotification("Generating JPG image...", "info");
@@ -1873,97 +1840,99 @@ async function downloadExamAsJPG(exam) {
 
     html2canvasScript.onload = async () => {
       try {
-        const tempDiv = document.createElement("div");
-        tempDiv.style.cssText = `
-                    position: fixed;
-                    top: -10000px;
-                    left: -10000px;
-                    width: 800px;
-                    padding: 40px;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    border-radius: 20px;
-                    font-family: 'Poppins', sans-serif;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                `;
-
-        const currentDate = window.dataFunctions.formatDateShort(window.dataFunctions.getCurrentDate());
-        const status =
-          exam.examDate < currentAppDate
-            ? "Completed"
-            : exam.examDate === currentAppDate
-              ? "Today"
-              : "Upcoming";
-
+        const techCode = TECH_CODES[exam.department] || "N/A";
         const examType = exam.examType || "written";
         const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
-        const groupDisplay = examType === "practical" ? exam.group || "A1" : "-";
+        // Group logic: for practical, use group or default "A1"; for others, show "N/A"
+        let groupDisplay;
+        if (examType === "practical") {
+          groupDisplay = exam.group ? exam.group : "A1";
+        } else {
+          groupDisplay = "N/A";
+        }
+        const addedByPrefix = exam.addedBy ? getEmailPrefix(exam.addedBy) : '';
+
+        const tempDiv = document.createElement("div");
+        tempDiv.style.cssText = `
+          position: fixed;
+          top: -10000px;
+          left: -10000px;
+          width: 800px;
+          padding: 40px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border-radius: 20px;
+          font-family: 'Poppins', sans-serif;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        `;
+
+        const currentDate = window.dataFunctions.formatDateShort(window.dataFunctions.getCurrentDate());
+        const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
 
         tempDiv.innerHTML = `
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <h1 style="font-size: 36px; margin-bottom: 10px; color: white;">Exam Details</h1>
-                        <h2 style="font-size: 28px; margin-bottom: 20px; color: #ffd700;">${exam.subject}</h2>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px;">
-                        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
-                            <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Department</div>
-                            <div style="font-size: 24px; font-weight: bold;">${exam.department}</div>
-                        </div>
-                        
-                        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
-                            <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Semester</div>
-                            <div style="font-size: 24px; font-weight: bold;">${exam.semester}</div>
-                        </div>
-                        
-                        ${examType === "practical" ? `
-                        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
-                            <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Group</div>
-                            <div style="font-size: 24px; font-weight: bold;">${groupDisplay}</div>
-                        </div>
-                        ` : ""}
-                        
-                        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
-                            <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Exam Date</div>
-                            <div style="font-size: 24px; font-weight: bold;">${window.dataFunctions.formatDateShort(exam.examDate)}</div>
-                        </div>
-                        
-                        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
-                            <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Time</div>
-                            <div style="font-size: 24px; font-weight: bold;">${exam.time}</div>
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 40px;">
-                        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
-                            <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Exam Type</div>
-                            <div style="font-size: 24px; font-weight: bold; color: ${examType === "practical" ? "#ffffff" : "#ffffff"}">${typeText}</div>
-                        </div>
-                        
-                        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
-                            <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Status</div>
-                            <div style="font-size: 24px; font-weight: bold; color: ${status === "Today" ? "#ffd700" : status === "Upcoming" ? "#ffe600" : "#f44336"}">${status}</div>
-                        </div>
-                    </div>
-                    
-                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 30px;">
-                        <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Room Allocation</div>
-                        <div style="font-size: 18px;">${exam.room}</div>
-                    </div>
-                    
-                    ${exam.addedBy ? `
-                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 30px;">
-                        <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Added by</div>
-                        <div style="font-size: 18px;">${exam.addedBy}</div>
-                    </div>
-                    ` : ""}
-                    
-                    <div style="text-align: center; margin-top: 30px; padding-top: 30px; border-top: 2px solid rgba(255,255,255,0.2);">
-                        <div style="font-size: 22px; font-weight: bold; margin-bottom: 10px; color: #ffd700;">Explore Routine 2026</div>
-                        <div style="font-size: 16px; color: rgba(255,255,255,0.8);">Generated on ${currentDate}</div>
-                        <div style="font-size: 14px; color: rgba(255,255,255,0.6); margin-top: 10px;">Download from exploreex.vercel.app</div>
-                    </div>
-                `;
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="font-size: 36px; margin-bottom: 10px; color: white;">Exam Details</h1>
+            <h2 style="font-size: 28px; margin-bottom: 20px; color: #ffd700;">${exam.subject}</h2>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px;">
+            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+              <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Department</div>
+              <div style="font-size: 24px; font-weight: bold;">${exam.department}</div>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+              <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Technology Code</div>
+              <div style="font-size: 24px; font-weight: bold; color: #ffd700;">${techCode}</div>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+              <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Semester</div>
+              <div style="font-size: 24px; font-weight: bold;">${exam.semester}</div>
+            </div>
+            
+            <!-- Group always shown, for practical shows group or "A1", for others "N/A" -->
+            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+              <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Group</div>
+              <div style="font-size: 24px; font-weight: bold;">${groupDisplay}</div>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+              <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Exam Date</div>
+              <div style="font-size: 24px; font-weight: bold;">${dateDisplay}</div>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+              <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Time</div>
+              <div style="font-size: 24px; font-weight: bold;">${exam.time}</div>
+            </div>
+          </div>
+          
+          <!-- Exam Type and Room (Status removed) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 40px;">
+            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+              <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Exam Type</div>
+              <div style="font-size: 24px; font-weight: bold;">${typeText}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+              <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Room</div>
+              <div style="font-size: 24px; font-weight: bold;">${exam.room}</div>
+            </div>
+          </div>
+          
+          ${addedByPrefix ? `
+          <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 30px;">
+            <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Added by</div>
+            <div style="font-size: 18px;">${addedByPrefix}</div>
+          </div>
+          ` : ""}
+          
+          <div style="text-align: center; margin-top: 30px; padding-top: 30px; border-top: 2px solid rgba(255,255,255,0.2);">
+            <div style="font-size: 22px; font-weight: bold; margin-bottom: 10px; color: #ffd700;">Explore Routine 2026</div>
+            <div style="font-size: 16px; color: rgba(255,255,255,0.8);">Generated on ${currentDate}</div>
+            <div style="font-size: 14px; color: rgba(255,255,255,0.6); margin-top: 10px;">Download from exploreex.vercel.app</div>
+          </div>
+        `;
 
         document.body.appendChild(tempDiv);
 
@@ -1998,36 +1967,6 @@ async function downloadExamAsJPG(exam) {
   } catch (error) {
     console.error("Error in download process:", error);
     showNotification("Download failed: " + error.message, "error");
-  }
-}
-
-function shareExamInfo(exam) {
-  const examType = exam.examType || "written";
-  const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
-  const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
-  let shareText = `${exam.subject} Exam\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nType: ${typeText}\nDate: ${dateDisplay}\nTime: ${exam.time}\nRoom: ${exam.room}`;
-
-  // Include group if practical
-  if (examType === "practical") {
-    const group = exam.group || "A1";
-    shareText += `\nGroup: ${group}`;
-  }
-
-  if (navigator.share) {
-    navigator.share({
-      title: `${exam.subject} Exam Details`,
-      text: shareText,
-      url: window.location.href,
-    });
-  } else {
-    navigator.clipboard
-      .writeText(shareText)
-      .then(() => {
-        showNotification("Exam details copied to clipboard!", "success");
-      })
-      .catch(() => {
-        showNotification("Failed to copy details", "error");
-      });
   }
 }
 

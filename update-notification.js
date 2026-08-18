@@ -3,7 +3,7 @@
 (function() {
     'use strict';
 
-    const CURRENT_VERSION = '4.3.0';
+    const CURRENT_VERSION = '4.4.0';
     const CURRENT_DATE = '2026-08-15';
     const STORAGE_KEY = 'examRoutineLastSeenVersion';
 
@@ -33,6 +33,16 @@
             icon: 'fa-database',
             title: 'Saved Filter',
             description: 'Local Storage now saves your last filtered data automatically.'
+        },
+        {
+            icon: 'fa-filter',
+            title: 'Quiqe Filter',
+            description: 'New quick filters added: "Today, Tomorrow, 2D Left".'
+        },
+        {
+            icon: 'fa-layer-group',
+            title: 'Routine Card',
+            description: 'New UI update for separate exam details cards.'
         }
     ];
 
