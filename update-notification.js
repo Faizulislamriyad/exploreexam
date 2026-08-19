@@ -3,8 +3,8 @@
 (function() {
     'use strict';
 
-    const CURRENT_VERSION = '4.4.0';
-    const CURRENT_DATE = '2026-08-15';
+    const CURRENT_VERSION = '4.5.0';
+    const CURRENT_DATE = '2026-08-19';
     const STORAGE_KEY = 'examRoutineLastSeenVersion';
 
     // List of new features – using Font Awesome icons (no emojis)
@@ -43,7 +43,12 @@
             icon: 'fa-layer-group',
             title: 'Routine Card',
             description: 'New UI update for separate exam details cards.'
-        }
+        },
+        {
+            icon: 'fa-chart-line',
+            title: 'New Exam Status',
+            description: 'Routine now updates in real time with live exam status, including the new "Running" status.'
+        },
     ];
 
     function shouldShowUpdate() {

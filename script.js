@@ -1,5 +1,5 @@
-// script.js - Complete Updated File with New Quick Filters (Today, Tomorrow, 2D Left, Practical, Written, Referred)
-// Quick filters do NOT affect department selection – they only add date or exam‑type conditions on top of current filters.
+// script.js - Time-Based Status (Today/Running/Completed) with Past filter by Date only
+// Fixed date parsing for DD-MM-YYYY format
 
 if (!window.showNotification) {
   window.showNotification = function (message, type = "info") {
@@ -39,12 +39,12 @@ if (!window.showNotification) {
   };
 }
 
-// ফিল্টার স্টেট সংরক্ষণের জন্য ভেরিয়েবল
+// ------------------------------------------------------------------
+// ফিল্টার স্টেট সংরক্ষণ ও ট্র্যাকিং
+// ------------------------------------------------------------------
 let _savingFilterState = false;
 const FILTER_STATE_KEY = "examFilterState";
-
-// Global variable to track active quick filter
-let activeQuickFilter = null; // possible values: 'today', 'tomorrow', '2day', 'practical', 'written', 'referred', or null
+let activeQuickFilter = null;
 
 // DOM Elements
 const deptSelect = document.getElementById("deptSelect");
@@ -59,7 +59,6 @@ const upcomingList = document.getElementById("upcomingList");
 const currentDateEl = document.getElementById("currentDate");
 const nextExamInfo = document.getElementById("nextExamInfo");
 
-// Toggle Elements
 const semesterMultipleToggle = document.getElementById("semesterMultipleToggle");
 const semesterSingleSelect = document.getElementById("semesterSingleSelect");
 const semesterMultipleContainer = document.getElementById("semesterMultipleContainer");
@@ -70,20 +69,107 @@ const examTypeMultipleContainer = document.getElementById("examTypeMultipleConta
 
 // Global variables
 let filteredExamRoutine = [];
-let currentAppDate = "";
+let currentAppDate = ""; // YYYY-MM-DD
 let examData = [];
 let isLoading = false;
 let isFilterChanging = false;
 
-// Global reference for filtered exams (used by download.js)
 window.filteredExamRoutine = filteredExamRoutine;
-
-// Global reference for all exams (used by download.js)
 window.examData = examData;
 
-// ============================================================
-// ফিল্টার স্টেট সংরক্ষণ ও পুনরুদ্ধার ফাংশন
-// ============================================================
+// ------------------------------------------------------------------
+// সময়-ভিত্তিক স্ট্যাটাসের জন্য হেলপার ফাংশন
+// ------------------------------------------------------------------
+const EXAM_DURATION_MS = 3 * 60 * 60 * 1000; // 3 hours
+
+// Convert DD-MM-YYYY to YYYY-MM-DD for comparison
+function convertToStandardDate(dateStr) {
+    if (!dateStr) return null;
+    // If already in YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return dateStr;
+    }
+    // Handle DD-MM-YYYY or D-M-YYYY
+    let parts = dateStr.split('-');
+    if (parts.length === 3) {
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[2];
+        return `${year}-${month}-${day}`;
+    }
+    // Handle DD/MM/YYYY or D/M/YYYY
+    parts = dateStr.split('/');
+    if (parts.length === 3) {
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[2];
+        return `${year}-${month}-${day}`;
+    }
+    return dateStr; // fallback
+}
+
+function parseExamDateTime(exam) {
+  const standardDate = convertToStandardDate(exam.examDate);
+  if (!standardDate) return new Date(0);
+  
+  const parts = standardDate.split('-');
+  const year = parseInt(parts[0]);
+  const month = parseInt(parts[1]) - 1;
+  const day = parseInt(parts[2]);
+
+  let hours = 0, minutes = 0;
+  const timeStr = exam.time || "10:00 AM";
+  if (timeStr.includes('AM') || timeStr.includes('PM')) {
+    const [time, modifier] = timeStr.split(' ');
+    let [h, m] = time.split(':').map(Number);
+    if (modifier === 'PM' && h !== 12) h += 12;
+    if (modifier === 'AM' && h === 12) h = 0;
+    hours = h;
+    minutes = m || 0;
+  } else {
+    const [h, m] = timeStr.split(':').map(Number);
+    hours = h;
+    minutes = m || 0;
+  }
+  return new Date(year, month, day, hours, minutes, 0);
+}
+
+function getExamStatusWithTime(exam) {
+  const now = new Date();
+  const start = parseExamDateTime(exam);
+  const end = new Date(start.getTime() + EXAM_DURATION_MS);
+  
+  const examDateStandard = convertToStandardDate(exam.examDate);
+  const todayStandard = currentAppDate;
+
+  if (examDateStandard < todayStandard) {
+    return { text: "Completed", class: "status-completed", isRunning: false, isToday: false };
+  }
+
+  if (examDateStandard === todayStandard) {
+    if (now < start) {
+      return { text: "Today", class: "status-today", isRunning: false, isToday: true };
+    } else if (now >= start && now <= end) {
+      return { text: "Running", class: "status-running", isRunning: true, isToday: true };
+    } else {
+      return { text: "Completed", class: "status-completed", isRunning: false, isToday: true };
+    }
+  }
+
+  const daysLeft = window.dataFunctions.getDayDifference(todayStandard, examDateStandard);
+  return { text: `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`, class: "status-upcoming", isRunning: false, isToday: false };
+}
+
+function isExamCompleted(exam) {
+  const now = new Date();
+  const start = parseExamDateTime(exam);
+  const end = new Date(start.getTime() + EXAM_DURATION_MS);
+  return now > end;
+}
+
+// ------------------------------------------------------------------
+// ফিল্টার স্টেট সেভ/লোড
+// ------------------------------------------------------------------
 function saveFilterState() {
   if (_savingFilterState) return;
   _savingFilterState = true;
@@ -97,7 +183,7 @@ function saveFilterState() {
       examTypeMultipleToggle: examTypeMultipleToggle ? examTypeMultipleToggle.checked : false,
       examTypeMultipleValues: getSelectedExamTypeValues(),
       dateFilter: dateFilter ? dateFilter.value : "upcoming",
-      activeQuickFilter: activeQuickFilter, // save the quick filter state
+      activeQuickFilter: activeQuickFilter,
     };
     localStorage.setItem(FILTER_STATE_KEY, JSON.stringify(state));
   } catch (e) {
@@ -120,71 +206,56 @@ function loadFilterState() {
 function applyFilterState(state) {
   if (!state) return false;
 
-  // Apply department
   if (deptSelect && state.dept) deptSelect.value = state.dept;
-
-  // Apply semester
   if (semesterSingleSelect && state.semesterSingle) {
     semesterSingleSelect.value = state.semesterSingle;
   }
   if (semesterMultipleToggle && state.semesterMultipleToggle !== undefined) {
     semesterMultipleToggle.checked = state.semesterMultipleToggle;
-    const event = new Event("change");
-    semesterMultipleToggle.dispatchEvent(event);
+    semesterMultipleToggle.dispatchEvent(new Event("change"));
   }
   if (state.semesterMultipleValues) {
-    document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => {
+    document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => {
       cb.checked = state.semesterMultipleValues.includes(cb.value);
     });
     updateDropdownHeader("semesterDropdown");
   }
-
-  // Apply exam type
   if (examTypeSingleSelect && state.examTypeSingle) {
     examTypeSingleSelect.value = state.examTypeSingle;
   }
   if (examTypeMultipleToggle && state.examTypeMultipleToggle !== undefined) {
     examTypeMultipleToggle.checked = state.examTypeMultipleToggle;
-    const event = new Event("change");
-    examTypeMultipleToggle.dispatchEvent(event);
+    examTypeMultipleToggle.dispatchEvent(new Event("change"));
   }
   if (state.examTypeMultipleValues) {
-    document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => {
+    document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => {
       cb.checked = state.examTypeMultipleValues.includes(cb.value);
     });
     updateDropdownHeader("examTypeDropdown");
   }
-
-  // Apply date filter
   if (dateFilter && state.dateFilter) {
     dateFilter.value = state.dateFilter;
   }
-
-  // Restore active quick filter
   if (state.activeQuickFilter) {
     activeQuickFilter = state.activeQuickFilter;
-    // Set active class on the corresponding quick filter button
     document.querySelectorAll('.btn-quick-filter').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.filter === activeQuickFilter);
     });
   } else {
     activeQuickFilter = null;
-    // Ensure "All" is active
     const allBtn = document.querySelector('.btn-quick-filter[data-filter="all"]');
     if (allBtn) allBtn.classList.add('active');
   }
 
-  // Now apply filters - but we must avoid saving again
   _savingFilterState = true;
   handleFilterChange();
   _savingFilterState = false;
-
   return true;
 }
 
-// ============================================================
+// ------------------------------------------------------------------
 // ইনিশিয়ালাইজেশন
-// ============================================================
+// ------------------------------------------------------------------
 async function init() {
   if (!window.dataFunctions) {
     console.log("Waiting for dataFunctions...");
@@ -208,7 +279,6 @@ async function init() {
 
   initializeUI();
 
-  // ফিল্টার স্টেট লোড করুন অথবা ডিফল্ট সেট করুন
   const filterState = loadFilterState();
   if (filterState) {
     applyFilterState(filterState);
@@ -222,25 +292,16 @@ async function init() {
 
   checkStudentScheduledNotifications();
 
-  // Initialize custom dropdowns
   initDropdowns();
-
-  // Toggle default state (OFF) - but if we loaded state, it will be overridden
-  // setDefaultToggleStates(); // এইটা এখন আর লাগবে না, কারণ applyFilterState টগল সেট করবে
 }
 
-// ============================================================
-// DEFAULT TOGGLE STATES (OFF) - শুধুমাত্র প্রথমবার বা ক্লিয়ার করার সময়
-// ============================================================
 function setDefaultToggleStates() {
-  // Semester toggle OFF
   semesterMultipleToggle.checked = false;
   document.getElementById("semesterToggleStatus").textContent = "OFF";
   semesterSingleSelect.style.display = "block";
   semesterMultipleContainer.style.display = "none";
   semesterMultipleContainer.classList.remove("active");
 
-  // Exam Type toggle OFF
   examTypeMultipleToggle.checked = false;
   document.getElementById("examTypeToggleStatus").textContent = "OFF";
   examTypeSingleSelect.style.display = "block";
@@ -248,31 +309,26 @@ function setDefaultToggleStates() {
   examTypeMultipleContainer.classList.remove("active");
 }
 
-// ============================================================
-// DROPDOWN WITH CHECKBOX FUNCTIONS
-// ============================================================
-
-// Initialize dropdowns
+// ------------------------------------------------------------------
+// ড্রপডাউন ফাংশন
+// ------------------------------------------------------------------
 function initDropdowns() {
-  // Close dropdown when clicking outside
   document.addEventListener("click", function (e) {
     if (!e.target.closest(".custom-dropdown")) {
-      document.querySelectorAll(".dropdown-body").forEach((b) => b.classList.remove("open"));
-      document.querySelectorAll(".dropdown-header").forEach((h) => h.classList.remove("active"));
+      document.querySelectorAll(".dropdown-body").forEach(b => b.classList.remove("open"));
+      document.querySelectorAll(".dropdown-header").forEach(h => h.classList.remove("active"));
     }
   });
 
-  // Toggle dropdown on header click
-  document.querySelectorAll(".dropdown-header").forEach((header) => {
+  document.querySelectorAll(".dropdown-header").forEach(header => {
     header.addEventListener("click", function (e) {
       e.stopPropagation();
       const dropdown = this.closest(".custom-dropdown");
       const body = dropdown.querySelector(".dropdown-body");
       const isOpen = body.classList.contains("open");
 
-      // Close all other dropdowns
-      document.querySelectorAll(".dropdown-body").forEach((b) => b.classList.remove("open"));
-      document.querySelectorAll(".dropdown-header").forEach((h) => h.classList.remove("active"));
+      document.querySelectorAll(".dropdown-body").forEach(b => b.classList.remove("open"));
+      document.querySelectorAll(".dropdown-header").forEach(h => h.classList.remove("active"));
 
       if (!isOpen) {
         body.classList.add("open");
@@ -281,55 +337,37 @@ function initDropdowns() {
     });
   });
 
-  // Update header text when checkbox changes
-  document.querySelectorAll('.custom-dropdown input[type="checkbox"]').forEach((cb) => {
+  document.querySelectorAll('.custom-dropdown input[type="checkbox"]').forEach(cb => {
     cb.addEventListener("change", function () {
-      const dropdown = this.closest(".custom-dropdown");
-      updateDropdownHeader(dropdown.id);
+      updateDropdownHeader(this.closest(".custom-dropdown").id);
     });
   });
 
-  // Set initial header text
   updateDropdownHeader("semesterDropdown");
   updateDropdownHeader("examTypeDropdown");
 }
 
-// Get selected values from dropdown
-function getSelectedDropdownValues(dropdownId) {
-  const checkboxes = document.querySelectorAll(`#${dropdownId} input[type="checkbox"]:checked`);
-  const values = Array.from(checkboxes).map((cb) => cb.value);
-  return values;
-}
-
-// Update dropdown header text
 function updateDropdownHeader(dropdownId) {
   const dropdown = document.getElementById(dropdownId);
   if (!dropdown) return;
-
   const headerText = dropdown.querySelector(".dropdown-selected-text");
   const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
   const checked = dropdown.querySelectorAll('input[type="checkbox"]:checked');
 
-  if (checked.length === 0) {
-    headerText.textContent = "None";
-  } else if (checked.length === checkboxes.length) {
-    headerText.textContent = "All";
-  } else if (checked.length <= 2) {
-    const values = Array.from(checked).map((cb) => cb.value);
+  if (checked.length === 0) headerText.textContent = "None";
+  else if (checked.length === checkboxes.length) headerText.textContent = "All";
+  else if (checked.length <= 2) {
+    const values = Array.from(checked).map(cb => cb.value);
     headerText.textContent = values.join(", ");
   } else {
     headerText.textContent = `${checked.length} selected`;
   }
 }
 
-// ============================================================
-// GET SELECTED VALUES BASED ON TOGGLE STATE
-// ============================================================
-
 function getSelectedSemesterValues() {
   if (semesterMultipleToggle.checked) {
     const checked = document.querySelectorAll('#semesterDropdown input[type="checkbox"]:checked');
-    const values = Array.from(checked).map((cb) => cb.value);
+    const values = Array.from(checked).map(cb => cb.value);
     return values.length ? values : ["all"];
   } else {
     const val = semesterSingleSelect.value;
@@ -340,7 +378,7 @@ function getSelectedSemesterValues() {
 function getSelectedExamTypeValues() {
   if (examTypeMultipleToggle.checked) {
     const checked = document.querySelectorAll('#examTypeDropdown input[type="checkbox"]:checked');
-    const values = Array.from(checked).map((cb) => cb.value);
+    const values = Array.from(checked).map(cb => cb.value);
     return values.length ? values : ["all"];
   } else {
     const val = examTypeSingleSelect.value;
@@ -348,39 +386,28 @@ function getSelectedExamTypeValues() {
   }
 }
 
-// ============================================================
-// DEFAULT FILTERS: 1st Semester & Written
-// ============================================================
 function setDefaultFilters() {
-  // Semester: set "1st" (using single select since toggle is OFF)
   semesterSingleSelect.value = "1st";
-
-  // Exam Type: set "written"
   examTypeSingleSelect.value = "written";
 
-  // Also check in multiple containers (for when toggle is ON)
-  document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => {
+  document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => {
     cb.checked = cb.value === "1st";
   });
-  document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => {
+  document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => {
     cb.checked = cb.value === "written";
   });
 
   updateDropdownHeader("semesterDropdown");
   updateDropdownHeader("examTypeDropdown");
 
-  // Toggle states OFF
   setDefaultToggleStates();
 
-  // Apply filters
   handleFilterChange();
 }
 
-// ============================================================
-// TOGGLE EVENT LISTENERS (UPDATED: removed forced "all" assignment)
-// ============================================================
-
-// Semester Toggle
+// ------------------------------------------------------------------
+// টগল ইভেন্ট
+// ------------------------------------------------------------------
 semesterMultipleToggle.addEventListener("change", function () {
   const isOn = this.checked;
   document.getElementById("semesterToggleStatus").textContent = isOn ? "ON" : "OFF";
@@ -389,31 +416,25 @@ semesterMultipleToggle.addEventListener("change", function () {
     semesterSingleSelect.style.display = "none";
     semesterMultipleContainer.style.display = "block";
     semesterMultipleContainer.classList.add("active");
-    // Sync: if single select has a value, check corresponding checkbox
     const singleVal = semesterSingleSelect.value;
     if (singleVal !== "all") {
-      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => {
+      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => {
         cb.checked = cb.value === singleVal;
       });
     } else {
-      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => {
-        cb.checked = false;
-      });
+      document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
     }
     updateDropdownHeader("semesterDropdown");
   } else {
     semesterSingleSelect.style.display = "block";
     semesterMultipleContainer.style.display = "none";
     semesterMultipleContainer.classList.remove("active");
-    // ✅ removed: semesterSingleSelect.value = "all";
-    // Keep the current single select value intact
-    document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
+    document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
     updateDropdownHeader("semesterDropdown");
   }
   handleFilterChange();
 });
 
-// Exam Type Toggle
 examTypeMultipleToggle.addEventListener("change", function () {
   const isOn = this.checked;
   document.getElementById("examTypeToggleStatus").textContent = isOn ? "ON" : "OFF";
@@ -424,30 +445,26 @@ examTypeMultipleToggle.addEventListener("change", function () {
     examTypeMultipleContainer.classList.add("active");
     const singleVal = examTypeSingleSelect.value;
     if (singleVal !== "all") {
-      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => {
+      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => {
         cb.checked = cb.value === singleVal;
       });
     } else {
-      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => {
-        cb.checked = false;
-      });
+      document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
     }
     updateDropdownHeader("examTypeDropdown");
   } else {
     examTypeSingleSelect.style.display = "block";
     examTypeMultipleContainer.style.display = "none";
     examTypeMultipleContainer.classList.remove("active");
-    // ✅ removed: examTypeSingleSelect.value = "all";
-    // Keep the current single select value intact
-    document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
+    document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
     updateDropdownHeader("examTypeDropdown");
   }
   handleFilterChange();
 });
 
-// ============================================================
-// SETUP FIREBASE LISTENER
-// ============================================================
+// ------------------------------------------------------------------
+// Firebase লিসেনার
+// ------------------------------------------------------------------
 function setupFirebaseListener() {
   if (!window.firebase || !window.firebase.db) {
     console.log("Firebase not available for realtime updates");
@@ -474,7 +491,9 @@ function setupFirebaseListener() {
   }
 }
 
-// Check for student scheduled notifications
+// ------------------------------------------------------------------
+// নোটিফিকেশন চেক
+// ------------------------------------------------------------------
 function checkStudentScheduledNotifications() {
   const notifications = JSON.parse(localStorage.getItem("studentNotifications") || "[]");
   const now = new Date();
@@ -516,7 +535,9 @@ function checkStudentScheduledNotifications() {
   });
 }
 
-// Animate date update
+// ------------------------------------------------------------------
+// তারিখ অ্যানিমেশন
+// ------------------------------------------------------------------
 function animateDateUpdate() {
   if (!currentDateEl) return;
 
@@ -529,21 +550,25 @@ function animateDateUpdate() {
   }, 100);
 }
 
-// Load initial data with loading states
+// ------------------------------------------------------------------
+// ডেটা লোড
+// ------------------------------------------------------------------
 async function loadInitialData() {
   showLoadingStates();
 
   try {
     examData = await window.dataFunctions.loadExamsFromFirebase();
-    // Update global references
     window.examData = examData;
 
     filteredExamRoutine = [...examData];
     window.filteredExamRoutine = filteredExamRoutine;
 
-    filteredExamRoutine.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
+    filteredExamRoutine.sort((a, b) => {
+      const aStd = convertToStandardDate(a.examDate);
+      const bStd = convertToStandardDate(b.examDate);
+      return aStd.localeCompare(bStd);
+    });
 
-    // 🔥 Update Calendar with all exam data
     if (window.calendar && window.calendar.update) {
       window.calendar.update(examData);
     }
@@ -566,7 +591,6 @@ async function loadInitialData() {
   }
 }
 
-// Show loading states
 function showLoadingStates() {
   isLoading = true;
 
@@ -589,12 +613,10 @@ function showLoadingStates() {
   }
 }
 
-// Hide loading states
 function hideLoadingStates() {
   isLoading = false;
 }
 
-// Show error state
 function showErrorState() {
   if (routineList) {
     routineList.innerHTML = `
@@ -612,16 +634,15 @@ function showErrorState() {
   }
 }
 
-// ============================================================
-// CLEAR FILTERS BUTTON (Position: Below filter boxes)
-// ============================================================
+// ------------------------------------------------------------------
+// ক্লিয়ার ফিল্টার বাটন
+// ------------------------------------------------------------------
 function addClearFiltersButton() {
   if (document.getElementById("clearFiltersBtn")) return;
 
   const controls = document.querySelector(".controls");
   if (!controls) return;
 
-  // Create container for clear button
   const clearContainer = document.createElement("div");
   clearContainer.className = "clear-filters-container";
   clearContainer.style.cssText = "display: flex; justify-content: flex-end; margin-top: 10px;";
@@ -634,7 +655,6 @@ function addClearFiltersButton() {
 
   clearContainer.appendChild(clearBtn);
 
-  // Insert after filter-controls
   const filterControls = document.querySelector(".filter-controls");
   if (filterControls && filterControls.parentNode) {
     filterControls.parentNode.insertBefore(clearContainer, filterControls.nextSibling);
@@ -646,31 +666,23 @@ function addClearFiltersButton() {
 }
 
 function clearAllFilters() {
-  // Department
   deptSelect.value = "all";
 
-  // Semester - Single
   semesterSingleSelect.value = "all";
-  // Semester - Multiple (uncheck all)
-  document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
+  document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
   updateDropdownHeader("semesterDropdown");
 
-  // Exam Type - Single
   examTypeSingleSelect.value = "all";
-  // Exam Type - Multiple (uncheck all)
-  document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => (cb.checked = false));
+  document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
   updateDropdownHeader("examTypeDropdown");
 
-  // Date Filter
   dateFilter.value = "upcoming";
 
-  // Toggles OFF
   semesterMultipleToggle.checked = false;
   examTypeMultipleToggle.checked = false;
   document.getElementById("semesterToggleStatus").textContent = "OFF";
   document.getElementById("examTypeToggleStatus").textContent = "OFF";
 
-  // Show single selects, hide multiple containers
   semesterSingleSelect.style.display = "block";
   semesterMultipleContainer.style.display = "none";
   semesterMultipleContainer.classList.remove("active");
@@ -679,27 +691,23 @@ function clearAllFilters() {
   examTypeMultipleContainer.style.display = "none";
   examTypeMultipleContainer.classList.remove("active");
 
-  // Reset quick filter
   activeQuickFilter = null;
-  document.querySelectorAll(".btn-quick-filter").forEach((btn) => {
-    btn.classList.remove("active");
-  });
+  document.querySelectorAll(".btn-quick-filter").forEach(btn => btn.classList.remove("active"));
   const allBtn = document.querySelector('.btn-quick-filter[data-filter="all"]');
   if (allBtn) allBtn.classList.add("active");
 
-  // Hide clear button
   document.getElementById("clearFiltersBtn").style.display = "none";
 
-  // Apply filters
   handleFilterChange();
 
-  // Save the cleared state
   saveFilterState();
 
   showNotification("All filters cleared", "info");
 }
 
-// Setup event listeners with debouncing
+// ------------------------------------------------------------------
+// ইভেন্ট লিসেনার
+// ------------------------------------------------------------------
 function setupEventListeners() {
   const debouncedFilterChange = debounce(() => {
     if (!isFilterChanging) {
@@ -707,34 +715,27 @@ function setupEventListeners() {
     }
   }, 300);
 
-  // Department dropdown
   if (deptSelect) deptSelect.addEventListener("change", debouncedFilterChange);
 
-  // Date filter – when user changes it, clear quick filter
   if (dateFilter) {
     dateFilter.addEventListener("change", function () {
-      // Clear any active quick filter
       activeQuickFilter = null;
-      document.querySelectorAll(".btn-quick-filter").forEach((btn) => btn.classList.remove("active"));
+      document.querySelectorAll(".btn-quick-filter").forEach(btn => btn.classList.remove("active"));
       const allBtn = document.querySelector('.btn-quick-filter[data-filter="all"]');
       if (allBtn) allBtn.classList.add("active");
       debouncedFilterChange();
     });
   }
 
-  // Semester single select
   if (semesterSingleSelect) semesterSingleSelect.addEventListener("change", debouncedFilterChange);
 
-  // Exam Type single select
   if (examTypeSingleSelect) examTypeSingleSelect.addEventListener("change", debouncedFilterChange);
 
-  // Semester dropdown checkboxes (already added in initDropdowns, but we need to trigger filter change)
-  document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach((cb) => {
+  document.querySelectorAll('#semesterDropdown input[type="checkbox"]').forEach(cb => {
     cb.addEventListener("change", debouncedFilterChange);
   });
 
-  // Exam Type dropdown checkboxes
-  document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach((cb) => {
+  document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => {
     cb.addEventListener("change", debouncedFilterChange);
   });
 
@@ -743,7 +744,9 @@ function setupEventListeners() {
   setupQuickFilters();
 }
 
-// Setup quick filter buttons
+// ------------------------------------------------------------------
+// কুইক ফিল্টার
+// ------------------------------------------------------------------
 function setupQuickFilters() {
   if (!document.querySelector(".quick-filters")) {
     const controls = document.querySelector(".controls");
@@ -769,9 +772,7 @@ function setupQuickFilters() {
 
       document.querySelectorAll(".btn-quick-filter").forEach((btn) => {
         btn.addEventListener("click", function () {
-          document.querySelectorAll(".btn-quick-filter").forEach((b) => {
-            b.classList.remove("active");
-          });
+          document.querySelectorAll(".btn-quick-filter").forEach(b => b.classList.remove("active"));
           this.classList.add("active");
           applyQuickFilter(this.dataset.filter);
         });
@@ -780,58 +781,42 @@ function setupQuickFilters() {
   }
 }
 
-// Apply quick filter
 function applyQuickFilter(filter) {
   const clearBtn = document.getElementById("clearFiltersBtn");
 
-  // For date-based quick filters (today, tomorrow, 2day)
   if (["today", "tomorrow", "2day"].includes(filter)) {
     activeQuickFilter = filter;
-    // Keep existing department, semester, exam type – do NOT change them
     const dept = deptSelect.value;
     const semesters = getSelectedSemesterValues();
     const examTypes = getSelectedExamTypeValues();
-    // Call applyFilters with the quick filter override
     applyFilters(dept, semesters, examTypes, null, filter);
-    // Optionally, set dateFilter to 'upcoming' to avoid confusion (but we keep it as is)
-    // Actually we can leave it, but we set it to 'upcoming' because quick filter overrides it.
     dateFilter.value = "upcoming";
-    // Show clear button if any filter is active
     if (clearBtn) clearBtn.style.display = "flex";
     return;
   }
 
-  // For exam-type quick filters (practical, written, referred)
   if (["practical", "written", "referred"].includes(filter)) {
-    activeQuickFilter = null; // clear date quick filter
-    // Set the exam type single select (and turn off multiple mode)
+    activeQuickFilter = null;
     examTypeSingleSelect.value = filter;
     examTypeMultipleToggle.checked = false;
     document.getElementById("examTypeToggleStatus").textContent = "OFF";
     examTypeSingleSelect.style.display = "block";
     examTypeMultipleContainer.style.display = "none";
     examTypeMultipleContainer.classList.remove("active");
-    // Uncheck all checkboxes in the multiple dropdown
     document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
     updateDropdownHeader("examTypeDropdown");
-    // Now trigger a normal filter change (which will use the new exam type)
-    // But we must NOT reset department, semester.
     const dept = deptSelect.value;
     const semesters = getSelectedSemesterValues();
     const dateFilterValue = dateFilter.value;
-    // We already set examType via single select, so getSelectedExamTypeValues() will return [filter]
     const examTypes = getSelectedExamTypeValues();
     applyFilters(dept, semesters, examTypes, dateFilterValue, null);
     if (clearBtn) clearBtn.style.display = "flex";
     return;
   }
 
-  // For 'All' – reset all quick filters and use the dropdown values
   if (filter === "all") {
     activeQuickFilter = null;
-    // Reset date filter to 'upcoming'
     dateFilter.value = "upcoming";
-    // Reset exam type to 'all' (single select) and turn off multiple
     examTypeSingleSelect.value = "all";
     examTypeMultipleToggle.checked = false;
     document.getElementById("examTypeToggleStatus").textContent = "OFF";
@@ -840,14 +825,14 @@ function applyQuickFilter(filter) {
     examTypeMultipleContainer.classList.remove("active");
     document.querySelectorAll('#examTypeDropdown input[type="checkbox"]').forEach(cb => cb.checked = false);
     updateDropdownHeader("examTypeDropdown");
-    // Do NOT reset department or semester.
-    // Call handleFilterChange to apply all current filters (with date='upcoming', examType='all')
     handleFilterChange();
     if (clearBtn) clearBtn.style.display = "none";
   }
 }
 
-// Initialize UI elements
+// ------------------------------------------------------------------
+// UI ইনিশিয়ালাইজেশন
+// ------------------------------------------------------------------
 function initializeUI() {
   if (currentDateEl) {
     currentDateEl.textContent = window.dataFunctions.formatDateShort(currentAppDate);
@@ -858,14 +843,12 @@ function initializeUI() {
   addSearchFunctionality();
 }
 
-// Update routine title based on filters
 function updateRoutineTitle(selectedDept, selectedSemester) {
   const routineTitle = document.querySelector(".routine-container h2");
   if (!routineTitle) return;
 
   let titleText = '<i class="fas fa-list-alt"></i> Exam Routine';
 
-  // Add department/semester info
   if (selectedDept !== "all" || selectedSemester !== "all") {
     titleText += " - ";
     if (selectedDept !== "all" && selectedSemester !== "all") {
@@ -877,7 +860,6 @@ function updateRoutineTitle(selectedDept, selectedSemester) {
     }
   }
 
-  // Add quick filter info if active
   if (activeQuickFilter) {
     let filterLabel = "";
     switch (activeQuickFilter) {
@@ -890,7 +872,6 @@ function updateRoutineTitle(selectedDept, selectedSemester) {
       titleText += ` (${filterLabel})`;
     }
   } else {
-    // Otherwise show date filter type
     const dateFilterValue = dateFilter ? dateFilter.value : "upcoming";
     if (dateFilterValue === "upcoming") {
       titleText += " (Upcoming)";
@@ -902,7 +883,6 @@ function updateRoutineTitle(selectedDept, selectedSemester) {
   routineTitle.innerHTML = titleText;
 }
 
-// Update department options dynamically
 function updateDepartmentOptions() {
   if (!deptSelect) return;
 
@@ -928,7 +908,9 @@ function updateDepartmentOptions() {
   }
 }
 
-// Add search functionality
+// ------------------------------------------------------------------
+// সার্চ ফাংশনালিটি
+// ------------------------------------------------------------------
 function addSearchFunctionality() {
   if (!document.getElementById("searchInput")) {
     const routineContainer = document.querySelector(".routine-container");
@@ -960,7 +942,6 @@ function addSearchFunctionality() {
   }
 }
 
-// Handle search
 function handleSearch() {
   const searchInput = document.getElementById("searchInput");
   const clearSearchBtn = document.getElementById("clearSearch");
@@ -993,7 +974,11 @@ function handleSearch() {
   filteredExamRoutine = searchResults;
   window.filteredExamRoutine = filteredExamRoutine;
 
-  filteredExamRoutine.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
+  filteredExamRoutine.sort((a, b) => {
+    const aStd = convertToStandardDate(a.examDate);
+    const bStd = convertToStandardDate(b.examDate);
+    return aStd.localeCompare(bStd);
+  });
 
   displayExams(filteredExamRoutine);
 
@@ -1007,11 +992,10 @@ function handleSearch() {
     routineTitle.innerHTML = `<i class="fas fa-search"></i> Search Results for "${searchTerm}"`;
   }
 
-  const currentDate = window.dataFunctions.getCurrentDate();
   const total = searchResults.length;
-  const upcoming = searchResults.filter((exam) => exam.examDate >= currentDate).length;
-  const today = searchResults.filter((exam) => exam.examDate === currentDate).length;
-  const completed = searchResults.filter((exam) => exam.examDate < currentDate).length;
+  const upcoming = searchResults.filter((exam) => convertToStandardDate(exam.examDate) >= currentAppDate).length;
+  const today = searchResults.filter((exam) => convertToStandardDate(exam.examDate) === currentAppDate).length;
+  const completed = searchResults.filter((exam) => convertToStandardDate(exam.examDate) < currentAppDate).length;
 
   if (totalExamsEl) totalExamsEl.textContent = total;
   if (upcomingExamsEl) upcomingExamsEl.textContent = upcoming;
@@ -1019,7 +1003,6 @@ function handleSearch() {
   if (completedExamsEl) completedExamsEl.textContent = completed;
 }
 
-// Clear search
 function clearSearch() {
   const searchInput = document.getElementById("searchInput");
   const clearSearchBtn = document.getElementById("clearSearch");
@@ -1031,7 +1014,9 @@ function clearSearch() {
   handleFilterChange();
 }
 
-// Main filter handler
+// ------------------------------------------------------------------
+// ফিল্টার হ্যান্ডলার
+// ------------------------------------------------------------------
 function handleFilterChange() {
   if (isLoading || isFilterChanging) return;
 
@@ -1056,19 +1041,16 @@ function handleFilterChange() {
 
   isFilterChanging = false;
 
-  // সংরক্ষণ করুন (যদি লোডিং অবস্থায় না থাকে)
   if (!_savingFilterState) {
     saveFilterState();
   }
 }
 
-// ============================================================
-// APPLY FILTERS - Updated with Toggle Support + Quick Filter
-// ============================================================
+// ------------------------------------------------------------------
+// মূল ফিল্টার প্রয়োগ (Past শুধু তারিখ অনুযায়ী)
 function applyFilters(dept, semesters, examTypes, dateFilterValue = null, quickFilter = null) {
   const clearBtn = document.getElementById("clearFiltersBtn");
 
-  // Check if any filter is active
   const isFilterActive =
     dept !== "all" ||
     (semesters && !semesters.includes("all") && semesters.length > 0) ||
@@ -1082,17 +1064,14 @@ function applyFilters(dept, semesters, examTypes, dateFilterValue = null, quickF
 
   let tempFiltered = [...examData];
 
-  // Department filter
   if (dept !== "all") {
     tempFiltered = tempFiltered.filter((exam) => exam.department === dept);
   }
 
-  // Semester filter
   if (semesters && !semesters.includes("all") && semesters.length > 0) {
     tempFiltered = tempFiltered.filter((exam) => semesters.includes(exam.semester));
   }
 
-  // Exam Type filter
   if (examTypes && !examTypes.includes("all") && examTypes.length > 0) {
     tempFiltered = tempFiltered.filter((exam) => {
       const type = exam.examType || "written";
@@ -1100,36 +1079,38 @@ function applyFilters(dept, semesters, examTypes, dateFilterValue = null, quickF
     });
   }
 
-  // Date filter: priority: quickFilter > dateFilterValue > default "upcoming"
   const filterVal = quickFilter !== null ? quickFilter : (dateFilterValue !== null ? dateFilterValue : dateFilter.value);
 
+  // Past: শুধুমাত্র তারিখের ভিত্তিতে (তারিখ < আজ)
   if (filterVal === "past") {
-    tempFiltered = tempFiltered.filter((exam) => exam.examDate < currentAppDate);
+    tempFiltered = tempFiltered.filter((exam) => convertToStandardDate(exam.examDate) < currentAppDate);
   } else if (filterVal === "upcoming") {
-    tempFiltered = tempFiltered.filter((exam) => exam.examDate >= currentAppDate);
+    tempFiltered = tempFiltered.filter((exam) => convertToStandardDate(exam.examDate) >= currentAppDate);
   } else if (filterVal === "today") {
-    tempFiltered = tempFiltered.filter((exam) => exam.examDate === currentAppDate);
+    tempFiltered = tempFiltered.filter((exam) => convertToStandardDate(exam.examDate) === currentAppDate);
   } else if (filterVal === "tomorrow") {
     const tomorrow = new Date(currentAppDate);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    tempFiltered = tempFiltered.filter((exam) => exam.examDate === tomorrowStr);
+    tempFiltered = tempFiltered.filter((exam) => convertToStandardDate(exam.examDate) === tomorrowStr);
   } else if (filterVal === "2day") {
     const twoDays = new Date(currentAppDate);
     twoDays.setDate(twoDays.getDate() + 2);
     const twoDaysStr = twoDays.toISOString().split('T')[0];
-    tempFiltered = tempFiltered.filter((exam) => exam.examDate === twoDaysStr);
+    tempFiltered = tempFiltered.filter((exam) => convertToStandardDate(exam.examDate) === twoDaysStr);
   }
-  // If filterVal is 'all' or null, we do not apply date filtering
 
   filteredExamRoutine = tempFiltered;
   window.filteredExamRoutine = filteredExamRoutine;
 
   console.log(`Filtered ${examData.length} exams down to ${filteredExamRoutine.length} exams (filter: ${filterVal})`);
 
-  filteredExamRoutine.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
+  filteredExamRoutine.sort((a, b) => {
+    const aStd = convertToStandardDate(a.examDate);
+    const bStd = convertToStandardDate(b.examDate);
+    return aStd.localeCompare(bStd);
+  });
 
-  // Update title
   const titleDept = dept !== "all" ? dept : "all";
   const titleSem = semesters && semesters.length === 1 && semesters[0] !== "all" ? semesters[0] : "all";
   updateRoutineTitle(titleDept, titleSem);
@@ -1138,26 +1119,10 @@ function applyFilters(dept, semesters, examTypes, dateFilterValue = null, quickF
   updateStatistics();
   updateNextExam();
   updateUpcomingList();
-
-  // 🔥 Calendar is not updated here because it shows ALL exams regardless of filter
-  // If you want calendar to reflect filtered exams, uncomment the line below:
-  // if (window.calendar && window.calendar.update) window.calendar.update(filteredExamRoutine);
 }
 
-// Handle refresh with visual feedback
-async function handleRefresh() {
-  if (isLoading) return;
-
-  try {
-    await refreshRoutine();
-    showNotification("Routine refreshed successfully!", "success");
-  } catch (error) {
-    console.error("Refresh error:", error);
-    showNotification("Failed to refresh routine", "error");
-  }
-}
-
-// Refresh routine from Firebase
+// রিফ্রেশ
+// ------------------------------------------------------------------
 async function refreshRoutine() {
   showLoadingStates();
 
@@ -1166,7 +1131,6 @@ async function refreshRoutine() {
     examData = newExamData;
     window.examData = examData;
 
-    // 🔥 Update calendar with fresh exam data
     if (window.calendar && window.calendar.update) {
       window.calendar.update(examData);
     }
@@ -1193,7 +1157,9 @@ async function refreshRoutine() {
   }
 }
 
-// Show no exams message
+// ------------------------------------------------------------------
+// খালি মেসেজ
+// ------------------------------------------------------------------
 function showNoExamsMessage() {
   if (!routineList) return;
 
@@ -1214,7 +1180,9 @@ function showNoExamsMessage() {
     `;
 }
 
-// Update routine display with animation
+// ------------------------------------------------------------------
+// রুটিন ডিসপ্লে
+// ------------------------------------------------------------------
 function updateRoutineDisplay() {
   if (!routineList) return;
 
@@ -1272,7 +1240,6 @@ function updateRoutineDisplay() {
   }, 200);
 }
 
-// Display exams (for search results)
 function displayExams(exams) {
   if (!routineList) return;
 
@@ -1305,48 +1272,31 @@ function displayExams(exams) {
   });
 }
 
-// ============================================================
-// CREATE ROUTINE ELEMENT - WITH GROUP COLUMN
-// ============================================================
+// ------------------------------------------------------------------
+// রুটিন এলিমেন্ট তৈরি (সময়ভিত্তিক স্ট্যাটাস)
+// ------------------------------------------------------------------
 function createRoutineElement(exam) {
-  const examDate = new Date(exam.examDate);
-
-  let status = "Upcoming";
-  let statusClass = "status-upcoming";
-  let daysLeft = 0;
-
-  if (exam.examDate < currentAppDate) {
-    status = "Completed";
-    statusClass = "status-completed";
-  } else if (exam.examDate === currentAppDate) {
-    status = "Today";
-    statusClass = "status-today";
-  } else {
-    daysLeft = window.dataFunctions.getDayDifference(currentAppDate, exam.examDate);
-    status = `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left`;
-  }
-
-  const isToday = exam.examDate === currentAppDate;
+  const statusInfo = getExamStatusWithTime(exam);
+  const isToday = convertToStandardDate(exam.examDate) === currentAppDate;
+  const isRunning = statusInfo.isRunning; // true হলে কার্ডে "running" ক্লাস যোগ হবে
 
   const examType = exam.examType || "written";
   const typeClass =
     examType === "practical" ? "type-practical" : examType === "referred" ? "type-referred" : "type-written";
   const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
 
-  // Group handling: For practical exams show group, else "-"
   let groupDisplay = "-";
   if (examType === "practical" && exam.group) {
     groupDisplay = exam.group;
   } else if (examType === "practical") {
-    // If it's practical but group is missing, default to "A1"
     groupDisplay = "A1";
   }
 
-  // Date format: dd/mm/yyyy
   const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
 
   const div = document.createElement("div");
-  div.className = `routine-item ${exam.examDate < currentAppDate ? "past" : ""} ${isToday ? "today" : ""}`;
+  // ✅ এখানে "running" ক্লাস যোগ করা হয়েছে
+  div.className = `routine-item ${convertToStandardDate(exam.examDate) < currentAppDate ? "past" : ""} ${isToday ? "today" : ""} ${isRunning ? "running" : ""}`;
   div.setAttribute("data-exam-id", exam.id);
 
   div.innerHTML = `
@@ -1374,7 +1324,7 @@ function createRoutineElement(exam) {
             <span class="exam-type-badge ${typeClass}">${typeText}</span>
         </div>
         <div class="exam-cell">
-            <span class="status-badge ${statusClass}">${status}</span>
+            <span class="status-badge ${statusInfo.class}">${statusInfo.text}</span>
         </div>
         <div class="exam-actions-hover">
             <button class="btn-view-details" title="View Details">
@@ -1389,6 +1339,7 @@ function createRoutineElement(exam) {
         </div>
     `;
 
+  // ... বাকি ইভেন্ট লিসেনারগুলো আগের মতো থাকবে ...
   div.addEventListener("click", (e) => {
     if (!e.target.closest(".exam-actions-hover")) {
       showExamDetails(exam);
@@ -1421,36 +1372,6 @@ function createRoutineElement(exam) {
   }
 
   return div;
-}
-
-// ============================================================
-// NOTIFICATION FUNCTIONS (Student)
-// ============================================================
-
-function showNotificationOptions(exam) {
-  if ("Notification" in window) {
-    if (Notification.permission === "default") {
-      Notification.requestPermission().then((permission) => {
-        if (permission === "granted") {
-          showNotificationModal(exam);
-        } else {
-          showNotification(
-            "Notifications are blocked. Please enable notifications in your browser settings.",
-            "error"
-          );
-        }
-      });
-    } else if (Notification.permission === "granted") {
-      showNotificationModal(exam);
-    } else {
-      showNotification(
-        "Notifications are blocked. Please enable notifications in your browser settings.",
-        "error"
-      );
-    }
-  } else {
-    showNotification("Notifications are not supported in this browser", "error");
-  }
 }
 
 function showNotificationModal(exam) {
@@ -1569,7 +1490,7 @@ function convertTimeTo24Hour(time12) {
 }
 
 function scheduleStudentNotification(exam, minutesBefore) {
-  const examDateTime = new Date(`${exam.examDate}T${convertTimeTo24Hour(exam.time)}`);
+  const examDateTime = new Date(`${convertToStandardDate(exam.examDate)}T${convertTimeTo24Hour(exam.time)}`);
   const notificationTime = new Date(examDateTime.getTime() - minutesBefore * 60 * 1000);
   const now = new Date();
   const delay = notificationTime - now;
@@ -1629,11 +1550,9 @@ function sendTestNotificationNow(exam) {
   }
 }
 
-// ============================================================
-// EXAM DETAILS FUNCTIONS
-// ============================================================
-
-// Department → Technology Code mapping
+// ------------------------------------------------------------------
+// পরীক্ষার বিস্তারিত (সময়ভিত্তিক স্ট্যাটাস)
+// ------------------------------------------------------------------
 const TECH_CODES = {
     'Computer': '85',
     'Mechanical': '70',
@@ -1643,47 +1562,28 @@ const TECH_CODES = {
     'Electronics': '68',
     'Electro-Medical': '86',
     'Tourism & Hospitality Management': '99',
-    'Tourism': '99' // fallback
+    'Tourism': '99'
 };
 
-// Helper to get email prefix
 function getEmailPrefix(email) {
     if (!email) return '';
     return email.split('@')[0];
 }
 
 function showExamDetails(exam) {
-    const daysLeft = window.dataFunctions.getDayDifference(currentAppDate, exam.examDate);
-    let statusText = "";
-    let statusClass = "";
-
-    if (exam.examDate < currentAppDate) {
-        statusText = "Completed";
-        statusClass = "past";
-    } else if (exam.examDate === currentAppDate) {
-        statusText = "Today";
-        statusClass = "today";
-    } else {
-        statusText = `${daysLeft} Day${daysLeft > 1 ? 's' : ''} Left`;
-        statusClass = "upcoming";
-    }
-
+    const statusInfo = getExamStatusWithTime(exam);
     const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
     const examType = exam.examType || "written";
     const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
 
-    // Group info
     let groupDisplay = "-";
     if (examType === "practical" && exam.group) {
         groupDisplay = exam.group;
     } else if (examType === "practical") {
-        groupDisplay = "A1"; // default if missing
+        groupDisplay = "A1";
     }
 
-    // Technology Code
     const techCode = TECH_CODES[exam.department] || "N/A";
-
-    // Added by – only email prefix
     const addedByPrefix = exam.addedBy ? getEmailPrefix(exam.addedBy) : '';
 
     const modal = document.createElement("div");
@@ -1731,7 +1631,7 @@ function showExamDetails(exam) {
                 </div>
                 <div class="detail-row">
                     <span class="detail-label"><i class="fas fa-info-circle"></i> Status:</span>
-                    <span class="detail-value status-${statusClass}">${statusText}</span>
+                    <span class="detail-value ${statusInfo.class}">${statusInfo.text}</span>
                 </div>
                 ${addedByPrefix ? `
                 <div class="detail-row">
@@ -1759,7 +1659,6 @@ function showExamDetails(exam) {
 
     document.body.appendChild(modal);
 
-    // Event listeners
     const closeModalBtn = modal.querySelector(".btn-close-modal");
     const shareBtn = modal.querySelector(".btn-share");
     const remindBtn = modal.querySelector(".btn-remind-me");
@@ -1803,7 +1702,6 @@ function shareExamInfo(exam) {
   const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
   let shareText = `${exam.subject} Exam\nDepartment: ${exam.department}\nSemester: ${exam.semester}\nType: ${typeText}\nDate: ${dateDisplay}\nTime: ${exam.time}\nRoom: ${exam.room}`;
 
-  // Include group if practical
   if (examType === "practical") {
     const group = exam.group || "A1";
     shareText += `\nGroup: ${group}`;
@@ -1827,9 +1725,9 @@ function shareExamInfo(exam) {
   }
 }
 
-// ============================================================
-// DOWNLOAD EXAM AS JPG (UPDATED: Group always shown, "N/A" for non-practical, practical defaults to "A1" if missing)
-// ============================================================
+// ------------------------------------------------------------------
+// ডাউনলোড JPG (আগের মতো)
+// ------------------------------------------------------------------
 async function downloadExamAsJPG(exam) {
   try {
     showNotification("Generating JPG image...", "info");
@@ -1843,7 +1741,6 @@ async function downloadExamAsJPG(exam) {
         const techCode = TECH_CODES[exam.department] || "N/A";
         const examType = exam.examType || "written";
         const typeText = examType === "practical" ? "Practical" : examType === "referred" ? "Referred" : "Written";
-        // Group logic: for practical, use group or default "A1"; for others, show "N/A"
         let groupDisplay;
         if (examType === "practical") {
           groupDisplay = exam.group ? exam.group : "A1";
@@ -1891,7 +1788,6 @@ async function downloadExamAsJPG(exam) {
               <div style="font-size: 24px; font-weight: bold;">${exam.semester}</div>
             </div>
             
-            <!-- Group always shown, for practical shows group or "A1", for others "N/A" -->
             <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
               <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Group</div>
               <div style="font-size: 24px; font-weight: bold;">${groupDisplay}</div>
@@ -1908,7 +1804,6 @@ async function downloadExamAsJPG(exam) {
             </div>
           </div>
           
-          <!-- Exam Type and Room (Status removed) -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 40px;">
             <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
               <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Exam Type</div>
@@ -1980,9 +1875,9 @@ function highlightTodaysExams() {
   }
 }
 
-// ============================================================
-// UPDATE STATISTICS
-// ============================================================
+// ------------------------------------------------------------------
+// পরিসংখ্যান (শুধু তারিখ অনুযায়ী)
+// ------------------------------------------------------------------
 function updateStatistics() {
   if (!totalExamsEl || !upcomingExamsEl || !todayExamsEl || !completedExamsEl) return;
 
@@ -2000,9 +1895,9 @@ function updateStatistics() {
   }
 
   const total = examsForStats.length;
-  const upcoming = examsForStats.filter((exam) => exam.examDate >= currentAppDate).length;
-  const today = examsForStats.filter((exam) => exam.examDate === currentAppDate).length;
-  const completed = examsForStats.filter((exam) => exam.examDate < currentAppDate).length;
+  const upcoming = examsForStats.filter((exam) => convertToStandardDate(exam.examDate) >= currentAppDate).length;
+  const today = examsForStats.filter((exam) => convertToStandardDate(exam.examDate) === currentAppDate).length;
+  const completed = examsForStats.filter((exam) => convertToStandardDate(exam.examDate) < currentAppDate).length;
 
   if (totalExamsEl) totalExamsEl.textContent = total;
   if (upcomingExamsEl) upcomingExamsEl.textContent = upcoming;
@@ -2010,9 +1905,9 @@ function updateStatistics() {
   if (completedExamsEl) completedExamsEl.textContent = completed;
 }
 
-// ============================================================
-// UPDATE NEXT EXAM
-// ============================================================
+// ------------------------------------------------------------------
+// NEXT EXAM (শুধু এখনও শেষ হয়নি এমন)
+// ------------------------------------------------------------------
 function updateNextExam() {
   if (!nextExamCard) return;
 
@@ -2020,14 +1915,16 @@ function updateNextExam() {
 
   let filteredExams = filteredExamRoutine;
 
+  filteredExams = filteredExams.filter(exam => !isExamCompleted(exam));
+
   if (dateFilterValue !== "past") {
-    filteredExams = filteredExams.filter((exam) => exam.examDate >= currentAppDate);
+    filteredExams = filteredExams.filter((exam) => convertToStandardDate(exam.examDate) >= currentAppDate);
   }
 
   if (nextExamCard) {
     if (filteredExams.length > 0 && dateFilterValue !== "past") {
       const nextExam = filteredExams[0];
-      const daysLeft = window.dataFunctions.getDayDifference(currentAppDate, nextExam.examDate);
+      const daysLeft = window.dataFunctions.getDayDifference(currentAppDate, convertToStandardDate(nextExam.examDate));
 
       const dateDisplay = window.dataFunctions.formatDateShort(nextExam.examDate);
 
@@ -2091,15 +1988,19 @@ function updateNextExam() {
   }
 }
 
-// ============================================================
-// UPDATE UPCOMING LIST
-// ============================================================
+// ------------------------------------------------------------------
+// UPCOMING LIST (শুধু এখনও শেষ হয়নি এমন)
+// ------------------------------------------------------------------
 function updateUpcomingList() {
   if (!upcomingList) return;
 
-  let filteredExams = filteredExamRoutine.filter((exam) => exam.examDate >= currentAppDate);
+  let filteredExams = filteredExamRoutine.filter((exam) => convertToStandardDate(exam.examDate) >= currentAppDate && !isExamCompleted(exam));
 
-  filteredExams.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
+  filteredExams.sort((a, b) => {
+    const aStd = convertToStandardDate(a.examDate);
+    const bStd = convertToStandardDate(b.examDate);
+    return aStd.localeCompare(bStd);
+  });
   const displayExams = filteredExams.slice(0, 5);
 
   if (upcomingList) {
@@ -2122,7 +2023,7 @@ function updateUpcomingList() {
           div.style.opacity = "0";
           div.style.transform = "translateX(-20px)";
 
-          const daysLeft = window.dataFunctions.getDayDifference(currentAppDate, exam.examDate);
+          const daysLeft = window.dataFunctions.getDayDifference(currentAppDate, convertToStandardDate(exam.examDate));
           const dateDisplay = window.dataFunctions.formatDateShort(exam.examDate);
 
           div.innerHTML = `
@@ -2158,9 +2059,9 @@ function updateUpcomingList() {
   }
 }
 
-// ============================================================
-// DEBOUNCE FUNCTION
-// ============================================================
+// ------------------------------------------------------------------
+// ডিবাউন্স
+// ------------------------------------------------------------------
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -2173,14 +2074,14 @@ function debounce(func, wait) {
   };
 }
 
-// ============================================================
+// ------------------------------------------------------------------
 // DOM লোড হলে ইনিশিয়ালাইজ
-// ============================================================
+// ------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", init);
 
-// ============================================================
-// গ্লোবাল ফাংশন এক্সপোর্ট
-// ============================================================
+// ------------------------------------------------------------------
+// গ্লোবাল এক্সপোর্ট
+// ------------------------------------------------------------------
 window.updateRoutineDisplay = updateRoutineDisplay;
 window.updateStatistics = updateStatistics;
 window.updateNextExam = updateNextExam;

@@ -1,4 +1,4 @@
-/* style.css - Complete Updated File with Group Column Support */
+/* style.css - Complete Updated File with Group Column Support + Running Status Styling */
 
 * {
   margin: 0;
@@ -18,6 +18,12 @@
   --dark-color: #333;
   --gray-color: #666;
   --border-color: #ddd;
+  --running-color: #2ecc71;
+  --running-light: #e8f8ef;
+  --today-color: #f39c12;
+  --today-light: #fff8e1;
+  --completed-color: #95a5a6;
+  --completed-light: #f5f5f5;
 }
 
 body {
@@ -439,15 +445,31 @@ header {
   font-size: 12px;
 }
 
+/* ===== স্ট্যাটাস অনুযায়ী রুটিন আইটেমের স্টাইল ===== */
 .routine-item.past {
   opacity: 0.6;
-  background-color: #f9f9f9;
+  background-color: var(--completed-light);
+}
+.routine-item.past:hover {
+  background-color: #e8e8e8;
 }
 
 .routine-item.today {
-  background-color: #fff8e1;
-  border-left: 4px solid var(--warning-color);
-  animation: pulse 2s infinite;
+  background-color: var(--today-light);
+  border-left: 4px solid var(--today-color);
+  animation: pulse-today 2s infinite;
+}
+
+/* 🆕 Running স্ট্যাটাসের জন্য স্পেশাল স্টাইল */
+.routine-item.running {
+  background-color: var(--running-light); /* হালকা সবুজ #e8f8ef */
+  border-left: 4px solid var(--running-color); /* সবুজ বর্ডার #2ecc71 */
+  animation: pulse-running 1.5s infinite;
+  box-shadow: 0 0 15px rgba(46, 204, 113, 0.15);
+}
+.routine-item.running:hover {
+  background-color: #d4f5e3;
+  box-shadow: 0 0 25px rgba(46, 204, 113, 0.25);
 }
 
 /* ===== BADGES & STATUS ===== */
@@ -485,12 +507,15 @@ header {
   background-color: rgb(29, 189, 198);
 }
 
+/* ---- স্ট্যাটাস ব্যাজ ---- */
 .status-badge {
   padding: 6px 12px;
   border-radius: 20px;
   font-weight: 600;
   font-size: 0.8rem;
   text-align: center;
+  display: inline-block;
+  min-width: 70px;
 }
 
 .status-upcoming {
@@ -501,9 +526,14 @@ header {
   background-color: #fff3e0;
   color: #f57c00;
 }
+/* 🆕 Running ব্যাজ – সবুজ ও সাদা */
+.status-running {
+  background-color: #35c872;
+  color: white;
+}
 .status-completed {
-  background-color: #ffebee;
-  color: #c62828;
+  background-color: #e0e0e0;
+  color: #616161;
 }
 
 .type-referred {
@@ -531,6 +561,26 @@ header {
   text-align: center;
   display: inline-block;
   min-width: 30px;
+}
+
+/* ===== এনিমেশন ===== */
+@keyframes pulse-today {
+  0% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(243, 156, 18, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); }
+}
+
+@keyframes pulse-running {
+  0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.5); transform: scale(1); }
+  50% { transform: scale(1.005); }
+  70% { box-shadow: 0 0 0 12px rgba(46, 204, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); transform: scale(1); }
+}
+
+@keyframes pulse-badge {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 /* ===== SIDEBAR CARDS ===== */
