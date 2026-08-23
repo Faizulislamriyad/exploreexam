@@ -3,8 +3,8 @@
 (function() {
     'use strict';
 
-    const CURRENT_VERSION = '4.5.0';
-    const CURRENT_DATE = '2026-08-19';
+    const CURRENT_VERSION = '4.6.0';
+    const CURRENT_DATE = '2026-08-24';
     const STORAGE_KEY = 'examRoutineLastSeenVersion';
 
     // List of new features – using Font Awesome icons (no emojis)
@@ -18,11 +18,6 @@
             icon: 'fa-mobile-alt',
             title: 'Mobile UI Improvements',
             description: 'Mobile view is now much better! Cards are smaller, Font Awesome icons replace emojis.'
-        },
-        {
-            icon: 'fa-robot',
-            title: 'Chatbot Brain',
-            description: 'Counter Number is Removed & Now the chatbot is smarter and more updated.'
         },
         {
             icon: 'fa-user-shield',
@@ -49,6 +44,11 @@
             title: 'New Exam Status',
             description: 'Routine now updates in real time with live exam status, including the new "Running" status.'
         },
+        {
+            icon: 'fa-robot',
+            title: 'Chatbot Brain',
+            description: 'Now The Chatbot Is More intelligent'
+        }
     ];
 
     function shouldShowUpdate() {

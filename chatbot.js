@@ -1,4 +1,5 @@
-// smart-conversation-chatbot.js - Premium Compact Card with Icons & Like/Dislike + Groq API via Proxy
+// smart-conversation-chatbot.js - Premium Compact Card with Icons & Like/Dislike + Groq API Integration
+// Enhanced: Dislike now always triggers Groq for improved answer
 
 document.addEventListener('DOMContentLoaded', function() {
     const chatbotToggle = document.getElementById('chatbotToggle');
@@ -8,16 +9,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const sendMessage = document.getElementById('sendMessage');
     const chatbotMessages = document.getElementById('chatbotMessages');
 
+    // Groq API Key
+    const GROQ_API_KEY = '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';
+    const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
     // Chat context
     let chatContext = {
         userName: null,
         conversationHistory: [],
         languagePreference: 'english',
         examData: null,
-        currentDate: null
+        currentDate: null,
+        messageCounter: 0
     };
 
-    // Predefined responses (kept for quick matches and fallback)
+    // Predefined responses – strict matching
     const PRE_DEFINED_RESPONSES = {
         "who are you": {
             english: "I'm Routine Explorer, your exam assistant bot! 🤖 I help students with exam schedules, dates, and academic information.",
@@ -73,6 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // Bengali phrase mapping
     const BENGALI_PHRASES = {
         "তুমি কে": "who are you",
         "তোমার নাম কি": "what is your name",
@@ -91,19 +98,29 @@ document.addEventListener('DOMContentLoaded', function() {
         "আসি": "goodbye"
     };
 
+    // Acknowledgment phrases
+    const ACKNOWLEDGMENT_PHRASES = [
+        'okay', 'ok', 'got it', 'alright', 'fine', 'understand', 'accah bujhlam',
+        'ঠিক আছে', 'বুঝলাম', 'আচ্ছা', 'আচ্ছা বুঝলাম', 'bu jhlam', 'bujhlam', 'accha',
+        'হ্যাঁ', 'yes', 'yeah', 'yep', 'right'
+    ];
+
     const SHORTCUT_COMMANDS = {
-        'dn': { action: 'download', keyword: 'download' },
-        'download': { action: 'download', keyword: 'download' },
-        'dwnload': { action: 'download', keyword: 'download' },
-        'daunload': { action: 'download', keyword: 'download' },
-        'pdf': { action: 'download', keyword: 'download' },
-        'next': { action: 'next_exam', keyword: 'next exam' },
-        'nxt': { action: 'next_exam', keyword: 'next exam' },
-        'porer exam': { action: 'next_exam', keyword: 'next exam' },
-        'set notification': { action: 'set_reminder', keyword: 'set reminder' },
-        'reminder': { action: 'set_reminder', keyword: 'set reminder' },
-        'remind me': { action: 'set_reminder', keyword: 'set reminder' }
+        'dn': { action: 'download' },
+        'download': { action: 'download' },
+        'dwnload': { action: 'download' },
+        'daunload': { action: 'download' },
+        'pdf': { action: 'download' },
+        'next': { action: 'next_exam' },
+        'nxt': { action: 'next_exam' },
+        'porer exam': { action: 'next_exam' },
+        'set notification': { action: 'set_reminder' },
+        'reminder': { action: 'set_reminder' },
+        'remind me': { action: 'set_reminder' }
     };
+
+    // ============== CONSTANTS ==============
+    const MAX_EXAM_CARDS = 5;
 
     // ============== CARD GENERATOR ==============
     function buildExamCard(exam, showStatus = true) {
@@ -157,7 +174,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function buildExamListCard(exams, title = '') {
         if (!exams || exams.length === 0) return '';
-        // Remove duplicates
         const uniqueExams = [];
         const seenIds = new Set();
         for (const exam of exams) {
@@ -184,7 +200,67 @@ document.addEventListener('DOMContentLoaded', function() {
         return html;
     }
 
-    // Initialize chatbot
+    function buildExamListCardWithLimit(exams, title = '', limit = MAX_EXAM_CARDS) {
+        if (!exams || exams.length === 0) return '';
+        const total = exams.length;
+        const displayExams = exams.slice(0, limit);
+        let html = buildExamListCard(displayExams, title);
+        if (total > limit) {
+            html += `<div class="chatbot-more-indicator" style="font-size:0.8rem; color:#666; margin-top:8px; text-align:center; border-top:1px dashed #ddd; padding-top:8px;">
+                        <i class="fas fa-info-circle"></i> Showing ${limit} of ${total} exams. Please refine your query (e.g., by department or semester) to see more.
+                     </div>`;
+        }
+        return html;
+    }
+
+    // ============== INJECT STYLES FOR FEEDBACK BUTTONS ==============
+    function injectFeedbackStyles() {
+        if (document.querySelector('#chatbotFeedbackStyles')) return;
+        const style = document.createElement('style');
+        style.id = 'chatbotFeedbackStyles';
+        style.textContent = `
+            .btn-msg-like, .btn-msg-dislike {
+                background: none;
+                border: none;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-size: 0.9rem;
+                color: #888;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }
+            .btn-msg-like:hover {
+                color: #28a745;
+                transform: scale(1.15);
+                background: #e8f5e9;
+            }
+            .btn-msg-dislike:hover {
+                color: #dc3545;
+                transform: scale(1.15);
+                background: #fce4ec;
+            }
+            .btn-msg-like.liked {
+                color: #28a745;
+                background: #e8f5e9;
+                cursor: default;
+                opacity: 0.8;
+            }
+            .btn-msg-dislike.disliked {
+                color: #dc3545;
+                background: #fce4ec;
+                cursor: default;
+                opacity: 0.8;
+            }
+            .btn-msg-like.liked:hover, .btn-msg-dislike.disliked:hover {
+                transform: none;
+                background: inherit;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    injectFeedbackStyles();
+
+    // ============== INIT ==============
     initChatbot();
 
     // Event listeners
@@ -195,7 +271,41 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Enter') handleChatMessage();
     });
 
-    // Delegate click events for Like/Dislike buttons
+    // Feedback buttons (message-level)
+    chatbotMessages.addEventListener('click', function(e) {
+        const target = e.target.closest('.btn-msg-like, .btn-msg-dislike');
+        if (!target) return;
+        e.stopPropagation();
+        const isLike = target.classList.contains('btn-msg-like');
+        const msgId = target.dataset.msgId;
+        if (!msgId) return;
+
+        if (target.classList.contains('liked') || target.classList.contains('disliked')) {
+            return;
+        }
+
+        if (isLike) {
+            target.classList.add('liked');
+            if (window.showNotification) {
+                window.showNotification('👍 Thanks for your feedback!', 'success');
+            }
+        } else {
+            target.classList.add('disliked');
+            if (window.showNotification) {
+                window.showNotification('👎 Sorry about that! Let me improve...', 'info');
+            }
+            // Find the user message that preceded this bot message
+            const msgIndex = chatContext.conversationHistory.findIndex(m => m.messageId === msgId);
+            if (msgIndex > 0) {
+                const userMsg = chatContext.conversationHistory[msgIndex - 1];
+                if (userMsg && userMsg.role === 'user') {
+                    handleDislike(userMsg.content, msgId);
+                }
+            }
+        }
+    });
+
+    // Exam card like/dislike (existing)
     chatbotMessages.addEventListener('click', function(e) {
         const target = e.target.closest('.btn-like, .btn-dislike');
         if (!target) return;
@@ -223,6 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
         chatContext.examData = null;
         chatContext.userName = null;
         chatContext.currentDate = new Date().toISOString().split('T')[0];
+        chatContext.messageCounter = 0;
         detectLanguagePreference();
         loadExamData();
     }
@@ -250,25 +361,41 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // ---------- Add bot message with feedback buttons ----------
     function addBotMessage(text, useDelay = true) {
+        const msgId = 'msg-' + (++chatContext.messageCounter);
         if (useDelay) {
-            setTimeout(() => _addBotMessage(text), 2000);
+            setTimeout(() => _addBotMessage(text, msgId), 2000);
         } else {
-            _addBotMessage(text);
+            _addBotMessage(text, msgId);
         }
+        return msgId;
     }
 
-    function _addBotMessage(text) {
+    function _addBotMessage(text, msgId) {
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message bot';
         messageDiv.style.opacity = '0';
-        messageDiv.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>`;
+        messageDiv.id = msgId;
+        const feedbackHtml = `
+            <div class="message-feedback" style="margin-top:6px; display:flex; gap:6px; align-items:center; font-size:0.75rem; color:#888;">
+                <span style="font-size:0.7rem;">Was this helpful?</span>
+                <button class="btn-msg-like" data-msg-id="${msgId}" title="Like this response">
+                    <i class="fas fa-thumbs-up"></i>
+                </button>
+                <button class="btn-msg-dislike" data-msg-id="${msgId}" title="Dislike this response">
+                    <i class="fas fa-thumbs-down"></i>
+                </button>
+            </div>
+        `;
+        messageDiv.innerHTML = `<p>${text.replace(/\n/g, '<br>')}</p>` + feedbackHtml;
         chatbotMessages.appendChild(messageDiv);
         
         chatContext.conversationHistory.push({
             role: 'assistant',
             content: text,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            messageId: msgId
         });
         
         setTimeout(() => {
@@ -279,18 +406,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function addUserMessage(text) {
+        const msgId = 'msg-' + (++chatContext.messageCounter);
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message user';
+        messageDiv.id = msgId;
         messageDiv.innerHTML = `<p>${text}</p>`;
         chatbotMessages.appendChild(messageDiv);
         
         chatContext.conversationHistory.push({
             role: 'user',
             content: text,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            messageId: msgId
         });
         
         chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        return msgId;
     }
 
     function showTypingIndicator() {
@@ -314,62 +445,231 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ============== GROQ API CALL VIA PROXY (/api/groq) ==============
+    // ---------- Handle Dislike – always use Groq ----------
+    async function handleDislike(userMessage, dislikedMsgId) {
+        // Show typing indicator
+        const typingId = showTypingIndicator();
 
-    async function callGroqAPI(userMessage, systemPrompt) {
+        // Build a specialized prompt for Groq to improve the answer
+        const contextSummary = buildExamContextSummary();
+        const language = chatContext.languagePreference === 'banglish' ? 'Bengali (Banglish script)' : 'English';
+        const improvePrompt = `
+You are "Routine Explorer", a friendly and knowledgeable exam assistant chatbot for Barisal Polytechnic Institute.
+
+The user asked: "${userMessage}"
+
+You previously gave an answer that the user did not find helpful. Please provide a more detailed, accurate, and useful response.
+
+Context:
+- Current date: ${chatContext.currentDate}
+- Exam data summary: ${contextSummary}
+- The user's language preference: ${language}
+
+Consider the following:
+- If the user is asking about exam schedules, be specific about dates, departments, semesters, and exam types.
+- If the question is ambiguous, ask clarifying questions to better understand what they need.
+- Provide actionable information (e.g., "The next Computer exam is on ...", "Tomorrow's exams are ...").
+- Be concise but thorough.
+
+Respond in ${language}.
+`;
+
         try {
-            const PROXY_URL = '/api/groq';
-
-            // Prepare conversation history (without timestamps)
-            const history = chatContext.conversationHistory.slice(-5);
-            const sanitizedHistory = history.map(msg => ({
-                role: msg.role,
-                content: msg.content
-            }));
-
-            const messages = [
-                { role: 'system', content: systemPrompt },
-                ...sanitizedHistory,
-                { role: 'user', content: userMessage }
-            ];
-
-            const response = await fetch(PROXY_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    messages: messages,
-                    model: 'openai/gpt-oss-120b',
-                    temperature: 0.7,
-                    max_tokens: 350
-                })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                console.error('Proxy API error:', data);
-                return null;
+            // Directly call Groq API with the improvement prompt
+            const improvedReply = await callGroqAPI(userMessage, improvePrompt);
+            removeTypingIndicator(typingId);
+            if (improvedReply) {
+                // Add the new response as a bot message
+                addBotMessage(improvedReply, false);
+            } else {
+                // Fallback if Groq returns nothing
+                addBotMessage("I'm sorry, I couldn't generate a better answer. Could you please rephrase your question?", false);
             }
-
-            return data.reply || null;
         } catch (error) {
-            console.error('Proxy API fetch error:', error);
-            return null;
+            console.error('Error during dislike regeneration:', error);
+            removeTypingIndicator(typingId);
+            addBotMessage("Sorry, I encountered an error while trying to improve my answer. Please try again.", false);
         }
     }
 
-    // ============== SMART REQUEST ANALYZER ==============
+    // ============== GROQ API CALL WITH CONTEXT ==============
 
-    async function analyzeUserRequest(userMessage) {
+    const SUPPORTED_MODELS = [
+        'openai/gpt-oss-120b',
+        'qwen/qwen3.6-27b',
+        'canopylabs/orpheus-v1-english',
+        'allam-2-7b',
+        'groq/compound',
+        'groq/compound-mini',
+        'openai/gpt-oss-20b',
+        'canopylabs/orpheus-arabic-saudi'
+    ];
+
+    let currentModelIndex = 0;
+
+    function buildExamContextSummary() {
+        if (!chatContext.examData || chatContext.examData.length === 0) {
+            return "No exam data available.";
+        }
+        const total = chatContext.examData.length;
+        const upcoming = chatContext.examData.filter(e => e.examDate >= chatContext.currentDate);
+        const upcomingCount = upcoming.length;
+        const departments = [...new Set(chatContext.examData.map(e => e.department))].join(', ');
+        const semesters = [...new Set(chatContext.examData.map(e => e.semester))].sort().join(', ');
+        const upcomingSorted = upcoming.slice().sort((a, b) => a.examDate.localeCompare(b.examDate));
+        const sample = upcomingSorted.slice(0, 3).map(e => `${e.subject} (${e.department}, ${e.semester})`).join('; ');
+
+        return `Total exams: ${total}. Upcoming (today or future): ${upcomingCount}. Departments: ${departments}. Semesters: ${semesters}. Examples of upcoming exams: ${sample || 'none'}.`;
+    }
+
+    async function callGroqAPI(userMessage, systemPrompt, retryCount = 0) {
+        if (retryCount >= SUPPORTED_MODELS.length) {
+            console.error('All models failed');
+            return null;
+        }
+
+        const model = SUPPORTED_MODELS[currentModelIndex];
+        const history = chatContext.conversationHistory.slice(-5);
+        const sanitizedHistory = history.map(msg => ({
+            role: msg.role,
+            content: msg.content
+        }));
+
+        // For dislike regeneration, we might already have a full system prompt; but we still add context
+        // If the prompt already contains context, avoid duplication
+        let enhancedSystemPrompt = systemPrompt;
+        if (!systemPrompt.includes('Current exam data context:')) {
+            const contextSummary = buildExamContextSummary();
+            enhancedSystemPrompt = `${systemPrompt}\n\nCurrent exam data context: ${contextSummary}\nCurrent date: ${chatContext.currentDate}`;
+        }
+
+        const messages = [
+            { role: 'system', content: enhancedSystemPrompt },
+            ...sanitizedHistory,
+            { role: 'user', content: userMessage }
+        ];
+
+        try {
+            const response = await fetch(GROQ_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${GROQ_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 350,
+                    top_p: 0.9
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Groq API error with model ${model}:`, response.status, errorText);
+                currentModelIndex = (currentModelIndex + 1) % SUPPORTED_MODELS.length;
+                return callGroqAPI(userMessage, systemPrompt, retryCount + 1);
+            }
+
+            const data = await response.json();
+            const reply = data.choices?.[0]?.message?.content?.trim();
+            if (reply) {
+                return reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            }
+            return null;
+        } catch (error) {
+            console.error(`Groq API fetch error with model ${model}:`, error);
+            currentModelIndex = (currentModelIndex + 1) % SUPPORTED_MODELS.length;
+            return callGroqAPI(userMessage, systemPrompt, retryCount + 1);
+        }
+    }
+
+    // ============== KEYWORD PRE-CHECK (Enhanced) ==============
+
+    function keywordPreCheck(message) {
+        const lower = message.toLowerCase().trim();
+        const filters = { department: null, semester: null, examType: null, subject: null, date: null };
+        let intent = null;
+        let summary = '';
+
+        // 1. Acknowledgment
+        if (ACKNOWLEDGMENT_PHRASES.some(phrase => lower.includes(phrase))) {
+            return { intent: 'acknowledgment', filters: {}, summary: 'User acknowledged' };
+        }
+
+        // 2. Detect "next" and combine with department/semester/type
+        let hasNext = /\bnext\b/.test(lower);
+        let hasTomorrow = /\btomorrow\b/.test(lower) || lower.includes('agami kal') || lower.includes('kal');
+        let hasToday = /\btoday\b/.test(lower) || lower.includes('ajke');
+
+        // Detect department
+        const depts = ['computer', 'civil', 'electrical', 'mechanical', 'electronics', 'power', 'electro-medical', 'tourism'];
+        for (const d of depts) {
+            if (lower.includes(d)) {
+                filters.department = d;
+                break;
+            }
+        }
+
+        // Detect semester
+        const sems = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th'];
+        for (const s of sems) {
+            if (lower.includes(s)) {
+                filters.semester = s;
+                break;
+            }
+        }
+
+        // Detect exam type
+        if (lower.includes('practical')) filters.examType = 'practical';
+        else if (lower.includes('written')) filters.examType = 'written';
+        else if (lower.includes('referred')) filters.examType = 'referred';
+
+        // Detect subject
+        const subjects = ['physics', 'math', 'mathematics', 'chemistry', 'programming', 'database', 'network', 'english'];
+        for (const sub of subjects) {
+            if (lower.includes(sub)) {
+                filters.subject = sub;
+                break;
+            }
+        }
+
+        // Determine intent based on time words
+        if (hasNext) {
+            intent = 'next_exam';
+            summary = 'Next exam';
+        } else if (hasTomorrow) {
+            intent = 'tomorrow_exams';
+            summary = 'Tomorrow\'s exams';
+        } else if (hasToday) {
+            intent = 'today_exams';
+            summary = 'Today\'s exams';
+        }
+
+        // If we have filters but no intent, assume all_upcoming
+        if (!intent && (filters.department || filters.semester || filters.examType || filters.subject)) {
+            intent = 'all_upcoming';
+            summary = 'Exams with filters';
+        }
+
+        if (intent) {
+            return { intent, filters, summary };
+        }
+
+        return null;
+    }
+
+    // ============== SMART REQUEST ANALYZER (Groq) ==============
+
+    async function analyzeUserRequest(userMessage, isRetry = false) {
         const systemPrompt = `
 You are an intelligent request analyzer for an exam routine chatbot.
 
 Your task: Analyze the user's message and extract the following information in JSON format:
 
 {
-  "intent": "one of: 'next_exam', 'tomorrow_exams', 'specific_date_exams', 'department_exams', 'semester_exams', 'subject_exams', 'exam_type_exams', 'all_upcoming', 'set_reminder', 'download', 'general_question', 'greeting', 'thanks', 'goodbye',
+  "intent": "one of: 'next_exam', 'tomorrow_exams', 'specific_date_exams', 'department_exams', 'semester_exams', 'subject_exams', 'exam_type_exams', 'all_upcoming', 'set_reminder', 'download', 'general_question', 'greeting', 'thanks', 'goodbye', 'acknowledgment',
   "filters": {
     "department": "department name or null",
     "semester": "semester name or null",
@@ -383,19 +683,19 @@ Your task: Analyze the user's message and extract the following information in J
 
 Important rules:
 - Only consider UPCOMING exams (today or future). Ignore past exams.
-- If the user asks for "next exam", "porer exam", "upcoming exam" → intent: "next_exam"
-- If the user asks for "tomorrow", "agami kal", "kal" → intent: "tomorrow_exams"
-- If the user mentions a specific date → intent: "specific_date_exams"
-- If the user mentions a department name → set filters.department
-- If the user mentions a semester like "1st", "2nd", etc. → set filters.semester
-- If the user mentions "practical", "written", "referred" → set filters.examType
-- If the user mentions a subject name → set filters.subject
-- If the user asks for "all exams", "all upcoming", "sab exam" → intent: "all_upcoming"
-- If the user asks "set reminder", "remind me", "notification" → intent: "set_reminder"
-- If the user asks "download", "pdf", "dn" → intent: "download"
-- For general questions about the website, etc. → intent: "general_question"
+- If the user says "next exam", "porer exam", etc. → intent: "next_exam"
+- If they mention a department/semester/type with "next", set the corresponding filter and keep intent as "next_exam".
+- If they ask for "tomorrow", "agami kal", "kal" → intent: "tomorrow_exams"
+- If they mention a specific date → intent: "specific_date_exams"
+- If they mention department, semester, type, or subject → set filters accordingly.
+- "all exams", "all upcoming", "sab exam" → intent: "all_upcoming"
+- "set reminder", "remind me", "notification" → intent: "set_reminder"
+- "download", "pdf", "dn" → intent: "download"
+- General questions about the website → intent: "general_question"
+- Greetings, thanks, goodbye → respective intents.
+- If the user says "okay", "got it", "bujhlam", "accah" etc. → intent: "acknowledgment"
 
-If the user's message contains multiple requests, set "multiple_requests": true.
+If multiple requests, set "multiple_requests": true.
 
 Always respond in valid JSON only.
 `;
@@ -415,28 +715,39 @@ Always respond in valid JSON only.
 
     // ============== MESSAGE PROCESSING ENGINE ==============
 
-    async function processUserMessage(message) {
+    async function processUserMessage(message, isRetry = false) {
         const lowerMessage = message.toLowerCase().trim();
         const originalMessage = message;
         
-        // Step 1: Check shortcuts
+        // Step 1: Shortcuts
         const shortcutResult = handleShortcuts(lowerMessage, originalMessage);
         if (shortcutResult) {
             return shortcutResult;
         }
 
-        // Step 2: Check predefined FAQ
+        // Step 2: Predefined responses (strict whole-word)
         const predefinedResponse = getPredefinedResponse(lowerMessage, originalMessage);
         if (predefinedResponse) {
             return predefinedResponse;
         }
 
-        // Step 3: Smart analysis via Groq
-        const analysis = await analyzeUserRequest(originalMessage);
-        console.log('User request analysis:', analysis);
+        // Step 3: Keyword pre-check
+        const preCheck = keywordPreCheck(lowerMessage);
+        let analysis = null;
+        if (preCheck) {
+            analysis = {
+                intent: preCheck.intent,
+                filters: preCheck.filters,
+                summary: preCheck.summary,
+                multiple_requests: false
+            };
+            console.log('Keyword pre-check matched:', analysis);
+        } else {
+            analysis = await analyzeUserRequest(originalMessage, isRetry);
+            console.log('User request analysis (Groq):', analysis);
+        }
 
         if (!analysis) {
-            // Fallback to built-in handlers
             const examResponse = await handleExamQuery(lowerMessage, originalMessage);
             if (examResponse) {
                 return examResponse;
@@ -446,6 +757,7 @@ Always respond in valid JSON only.
 
         const { intent, filters, summary, multiple_requests } = analysis;
 
+        // Ensure data loaded
         if (!chatContext.examData || chatContext.examData.length === 0) {
             await loadExamData();
             if (!chatContext.examData || chatContext.examData.length === 0) {
@@ -453,7 +765,6 @@ Always respond in valid JSON only.
             }
         }
 
-        // Filter to only upcoming exams
         const upcomingExams = chatContext.examData.filter(e => e.examDate >= chatContext.currentDate);
 
         let response = '';
@@ -465,9 +776,7 @@ Always respond in valid JSON only.
 
             if (intent === 'next_exam' || intent === 'all_upcoming') {
                 const nextExam = getNextExam(upcomingExams);
-                if (nextExam) {
-                    combinedExams.push(nextExam);
-                }
+                if (nextExam) combinedExams.push(nextExam);
             }
 
             const tomorrowDate = new Date();
@@ -478,7 +787,6 @@ Always respond in valid JSON only.
                 combinedExams = combinedExams.concat(tomorrowExams);
             }
 
-            // Apply filters
             if (filters.department) {
                 combinedExams = combinedExams.filter(e => e.department.toLowerCase().includes(filters.department.toLowerCase()));
             }
@@ -492,7 +800,6 @@ Always respond in valid JSON only.
                 combinedExams = combinedExams.filter(e => e.subject.toLowerCase().includes(filters.subject.toLowerCase()));
             }
 
-            // Remove duplicates
             const uniqueCombined = [];
             const seen = new Set();
             for (const exam of combinedExams) {
@@ -504,22 +811,30 @@ Always respond in valid JSON only.
             }
 
             if (uniqueCombined.length > 0) {
-                response += buildExamListCard(uniqueCombined, lang('Your Exam Information', 'Apnar Exam Information'));
+                response += buildExamListCardWithLimit(uniqueCombined, lang('Your Exam Information', 'Apnar Exam Information'));
             } else {
                 response += lang("No upcoming exams found matching your request.", "Apnar request er moto kono upcoming exam nei.");
             }
-
             return response;
         }
 
-        // Single intent handling
+        // Single intent
         switch (intent) {
             case 'next_exam': {
-                const nextExam = getNextExam(upcomingExams);
+                let candidates = upcomingExams;
+                if (filters.department) candidates = candidates.filter(e => e.department.toLowerCase().includes(filters.department.toLowerCase()));
+                if (filters.semester) candidates = candidates.filter(e => e.semester === filters.semester);
+                if (filters.examType) candidates = candidates.filter(e => (e.examType || 'written') === filters.examType);
+                if (filters.subject) candidates = candidates.filter(e => e.subject.toLowerCase().includes(filters.subject.toLowerCase()));
+                const nextExam = getNextExam(candidates);
                 if (nextExam) {
                     response = buildExamCard(nextExam, true);
                 } else {
-                    response = lang("🎉 No upcoming exams found!", "🎉 Kono upcoming exam nei!");
+                    let msg = lang("🎉 No upcoming exams found!", "🎉 Kono upcoming exam nei!");
+                    if (filters.department || filters.semester || filters.examType || filters.subject) {
+                        msg = lang("No upcoming exam matches your filters.", "Apnar filters er moto kono upcoming exam nei.");
+                    }
+                    response = msg;
                 }
                 break;
             }
@@ -528,22 +843,30 @@ Always respond in valid JSON only.
                 const tomorrowDate = new Date();
                 tomorrowDate.setDate(tomorrowDate.getDate() + 1);
                 const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
-                const exams = upcomingExams.filter(e => e.examDate === tomorrowStr);
+                let exams = upcomingExams.filter(e => e.examDate === tomorrowStr);
+                if (filters.department) exams = exams.filter(e => e.department.toLowerCase().includes(filters.department.toLowerCase()));
+                if (filters.semester) exams = exams.filter(e => e.semester === filters.semester);
+                if (filters.examType) exams = exams.filter(e => (e.examType || 'written') === filters.examType);
+                if (filters.subject) exams = exams.filter(e => e.subject.toLowerCase().includes(filters.subject.toLowerCase()));
                 if (exams.length > 0) {
-                    response = buildExamListCard(exams, lang(`Tomorrow's Exams (${exams.length})`, `Agamikal er Exams (${exams.length})`));
+                    response = buildExamListCardWithLimit(exams, lang(`Tomorrow's Exams (${exams.length})`, `Agamikal er Exams (${exams.length})`));
                 } else {
-                    response = lang("🎉 No exams scheduled for tomorrow.", "🎉 Agamikal kono exam nei.");
+                    response = lang("🎉 No exams scheduled for tomorrow matching your filters.", "🎉 Agamikal apnar filters er moto kono exam nei.");
                 }
                 break;
             }
 
             case 'specific_date_exams': {
                 if (filters.date) {
-                    const exams = upcomingExams.filter(e => e.examDate === filters.date);
+                    let exams = upcomingExams.filter(e => e.examDate === filters.date);
+                    if (filters.department) exams = exams.filter(e => e.department.toLowerCase().includes(filters.department.toLowerCase()));
+                    if (filters.semester) exams = exams.filter(e => e.semester === filters.semester);
+                    if (filters.examType) exams = exams.filter(e => (e.examType || 'written') === filters.examType);
+                    if (filters.subject) exams = exams.filter(e => e.subject.toLowerCase().includes(filters.subject.toLowerCase()));
                     if (exams.length > 0) {
-                        response = buildExamListCard(exams, lang(`Exams on ${formatDate(filters.date)} (${exams.length})`, `${formatDate(filters.date)} tarikher exams (${exams.length})`));
+                        response = buildExamListCardWithLimit(exams, lang(`Exams on ${formatDate(filters.date)} (${exams.length})`, `${formatDate(filters.date)} tarikher exams (${exams.length})`));
                     } else {
-                        response = lang(`No exams on ${formatDate(filters.date)}.`, `${formatDate(filters.date)} tarikhe kono exam nei.`);
+                        response = lang(`No exams on ${formatDate(filters.date)} matching your filters.`, `${formatDate(filters.date)} tarikhe apnar filters er moto kono exam nei.`);
                     }
                 } else {
                     response = lang("Please specify a date.", "Doya kore ekta date bolun.");
@@ -557,18 +880,10 @@ Always respond in valid JSON only.
             case 'subject_exams':
             case 'all_upcoming': {
                 let filtered = upcomingExams;
-                if (filters.department) {
-                    filtered = filtered.filter(e => e.department.toLowerCase().includes(filters.department.toLowerCase()));
-                }
-                if (filters.semester) {
-                    filtered = filtered.filter(e => e.semester === filters.semester);
-                }
-                if (filters.examType) {
-                    filtered = filtered.filter(e => (e.examType || 'written') === filters.examType);
-                }
-                if (filters.subject) {
-                    filtered = filtered.filter(e => e.subject.toLowerCase().includes(filters.subject.toLowerCase()));
-                }
+                if (filters.department) filtered = filtered.filter(e => e.department.toLowerCase().includes(filters.department.toLowerCase()));
+                if (filters.semester) filtered = filtered.filter(e => e.semester === filters.semester);
+                if (filters.examType) filtered = filtered.filter(e => (e.examType || 'written') === filters.examType);
+                if (filters.subject) filtered = filtered.filter(e => e.subject.toLowerCase().includes(filters.subject.toLowerCase()));
 
                 if (filtered.length > 0) {
                     let title = '';
@@ -586,7 +901,7 @@ Always respond in valid JSON only.
                     } else {
                         title = lang(`Upcoming Exams (${filtered.length})`, `Upcoming Exams (${filtered.length})`);
                     }
-                    response = buildExamListCard(filtered, title);
+                    response = buildExamListCardWithLimit(filtered, title);
                 } else {
                     response = lang("No upcoming exams found matching your filters.", "Apnar filters er moto kono upcoming exam nei.");
                 }
@@ -594,7 +909,12 @@ Always respond in valid JSON only.
             }
 
             case 'set_reminder': {
-                const nextExam = getNextExam(upcomingExams);
+                let candidates = upcomingExams;
+                if (filters.department) candidates = candidates.filter(e => e.department.toLowerCase().includes(filters.department.toLowerCase()));
+                if (filters.semester) candidates = candidates.filter(e => e.semester === filters.semester);
+                if (filters.examType) candidates = candidates.filter(e => (e.examType || 'written') === filters.examType);
+                if (filters.subject) candidates = candidates.filter(e => e.subject.toLowerCase().includes(filters.subject.toLowerCase()));
+                const nextExam = getNextExam(candidates);
                 if (nextExam) {
                     if (window.showNotificationOptions) {
                         window.showNotificationOptions(nextExam);
@@ -618,8 +938,17 @@ Always respond in valid JSON only.
                 break;
             }
 
+            case 'acknowledgment': {
+                response = lang("Great! 😊 Do you have any other questions about your exams?", "বুঝলাম! 😊 আপনার আর কোনো প্রশ্ন আছে?");
+                break;
+            }
+
+            case 'thanks': {
+                response = lang("You're welcome! 😊 Let me know if you need anything else.", "আপনাকে স্বাগতম! 😊 আর কিছু দরকার হলে জানাবেন।");
+                break;
+            }
+
             case 'greeting':
-            case 'thanks':
             case 'goodbye': {
                 response = getPredefinedResponse(lowerMessage, originalMessage) || getExternalQueryResponse();
                 break;
@@ -627,7 +956,20 @@ Always respond in valid JSON only.
 
             case 'general_question':
             default: {
-                const generalPrompt = `
+                if (lowerMessage.includes('exam') || lowerMessage.includes('routine') || lowerMessage.includes('schedule')) {
+                    const totalUpcoming = upcomingExams.length;
+                    if (totalUpcoming > 0) {
+                        const nextThree = upcomingExams.slice(0, 3);
+                        let examList = nextThree.map(e => `• ${e.subject} (${e.department}, ${e.semester})`).join('\n');
+                        response = lang(
+                            `I found ${totalUpcoming} upcoming exams. Here are a few examples:\n${examList}\n\nTry asking for a specific department, semester, or "next exam" for more details.`,
+                            `Ami ${totalUpcoming} ta upcoming exam paisi. Kichu example:\n${examList}\n\nDoya kore specific department, semester, ba "next exam" jiggesh korun.`
+                        );
+                    } else {
+                        response = lang("I don't see any upcoming exams. Please check back later.", "Ami kono upcoming exam dekhte pacchi na. Pore abar check korun.");
+                    }
+                } else {
+                    let generalPrompt = `
 You are "Routine Explorer", a friendly exam assistant chatbot for Barisal Polytechnic Institute.
 Current date: ${chatContext.currentDate}
 Total upcoming exams: ${upcomingExams.length}
@@ -637,20 +979,34 @@ The user asked: "${originalMessage}"
 Provide a helpful, concise response. If the question is about exams, guide them to specific queries like "next exam", "tomorrow exams", or ask for department/semester. If it's a general question about the website, explain briefly.
 Respond in ${chatContext.languagePreference === 'banglish' ? 'Bengali (Banglish script)' : 'English'}.
 `;
-                const groqReply = await callGroqAPI(originalMessage, generalPrompt);
-                if (groqReply) {
-                    response = groqReply;
-                } else {
-                    response = getExternalQueryResponse();
+                    if (isRetry) {
+                        generalPrompt = `
+You are "Routine Explorer", a friendly exam assistant chatbot for Barisal Polytechnic Institute.
+The user did not like your previous response to the question: "${originalMessage}".
+Please provide a more detailed, helpful, and accurate answer. Consider the exam data context below.
+Current date: ${chatContext.currentDate}
+Total upcoming exams: ${upcomingExams.length}
+${buildExamContextSummary()}
+
+Provide a clear, informative response. If the question is ambiguous, ask clarifying questions.
+Respond in ${chatContext.languagePreference === 'banglish' ? 'Bengali (Banglish script)' : 'English'}.
+`;
+                    }
+                    const groqReply = await callGroqAPI(originalMessage, generalPrompt);
+                    if (groqReply) {
+                        response = groqReply;
+                    } else {
+                        response = "I'm not sure how to answer that. Could you please rephrase or ask about your exam schedule?";
+                    }
                 }
                 break;
             }
         }
 
-        return response || getExternalQueryResponse();
+        return response || "Sorry, I didn't catch that. Could you try again?";
     }
 
-    // ============== HELPER: Get Next Exam ==============
+    // ============== HELPER FUNCTIONS ==============
 
     function getNextExam(exams) {
         if (!exams || exams.length === 0) return null;
@@ -659,8 +1015,6 @@ Respond in ${chatContext.languagePreference === 'banglish' ? 'Bengali (Banglish 
         upcoming.sort((a, b) => new Date(a.examDate) - new Date(b.examDate));
         return upcoming[0];
     }
-
-    // ============== HANDLE SHORTCUTS ==============
 
     function handleShortcuts(lowerMessage, originalMessage) {
         for (const [cmd, config] of Object.entries(SHORTCUT_COMMANDS)) {
@@ -673,51 +1027,26 @@ Respond in ${chatContext.languagePreference === 'banglish' ? 'Bengali (Banglish 
                         return "📄 Download function is not available right now. Please use the download button on the page.";
                     }
                 }
-                if (config.action === 'next_exam') {
-                    return null;
-                }
-                if (config.action === 'set_reminder') {
-                    return null;
-                }
+                return null;
             }
         }
         return null;
     }
 
-    // ============== GET EXTERNAL QUERY RESPONSE (fallback) ==============
-
     function getExternalQueryResponse() {
-        const responses = chatContext.languagePreference === 'banglish' 
-            ? EXTERNAL_RESPONSES.banglish 
-            : EXTERNAL_RESPONSES.english;
-        return responses[Math.floor(Math.random() * responses.length)];
+        return "I'm not sure how to answer that. Could you please rephrase or ask about your exam schedule?";
     }
 
-    const EXTERNAL_RESPONSES = {
-        english: [
-            "Sorry, I couldn’t understand your request. It seems like you might be asking about something outside this website’s knowledge.",
-            "Sorry, my brain isn’t updated enough to understand that request. Maybe you’re asking about something completely unrelated to this website.",
-            "Dear, couldn't understand your request. I’m specialized in exam-related queries only. 😊",
-            "Hmm, that doesn’t seem to be about exam schedules or this website. I can only help with exam-related questions.",
-            "I'm not programmed to answer that. Try asking me about exam dates, departments, or routines!"
-        ],
-        banglish: [
-            "Sorry, I couldn’t understand your request. Mone hoy apni website er baire kichu jante chachen.",
-            "Sorry, my brain isn’t updated enough to understand that request. Hoto apni erokom kichu jiggesh korchen ja website er sathe related na.",
-            "Dear, couldn't understand your request. Ami shudhu exam-related questions e help korte pari. 😊",
-            "Hmm, eta exam schedule ba ei website er kotha mone hocche na. Ami shudhu exam-related questions e help korte pari.",
-            "Ami oi answer ta dite parbo na. Exam dates, departments, ba routines niye jiggesh korun."
-        ]
-    };
-
-    // ============== PREDEFINED RESPONSES ==============
+    // ============== PREDEFINED RESPONSES WITH STRICT MATCHING ==============
 
     function getPredefinedResponse(lowerMessage, originalMessage) {
-        for (const [key, responses] of Object.entries(PRE_DEFINED_RESPONSES)) {
-            if (lowerMessage.includes(key)) {
-                return responses[chatContext.languagePreference] || responses.english;
+        for (const key of Object.keys(PRE_DEFINED_RESPONSES)) {
+            const regex = new RegExp('\\b' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+            if (regex.test(lowerMessage)) {
+                return PRE_DEFINED_RESPONSES[key][chatContext.languagePreference] || PRE_DEFINED_RESPONSES[key].english;
             }
         }
+
         for (const [bengaliPhrase, englishKey] of Object.entries(BENGALI_PHRASES)) {
             if (originalMessage.includes(bengaliPhrase)) {
                 const responses = PRE_DEFINED_RESPONSES[englishKey];
@@ -726,12 +1055,14 @@ Respond in ${chatContext.languagePreference === 'banglish' ? 'Bengali (Banglish 
                 }
             }
         }
+
         if (isGreeting(lowerMessage, originalMessage)) {
             return getGreetingResponse();
         }
         if (isThanks(lowerMessage, originalMessage)) {
-            return PRE_DEFINED_RESPONSES["thank you"][chatContext.languagePreference];
+            return PRE_DEFINED_RESPONSES["thank you"][chatContext.languagePreference] || "You're welcome! 😊";
         }
+
         return null;
     }
 
@@ -811,7 +1142,7 @@ Respond in ${chatContext.languagePreference === 'banglish' ? 'Bengali (Banglish 
             } else if (subjectMatch) {
                 title = lang(`Exams for "${subjectMatch}" (${filtered.length})`, `"${subjectMatch}" er exams (${filtered.length})`);
             }
-            return buildExamListCard(filtered, title);
+            return buildExamListCardWithLimit(filtered, title);
         }
 
         return null;
@@ -852,7 +1183,7 @@ Respond in ${chatContext.languagePreference === 'banglish' ? 'Bengali (Banglish 
         return null;
     }
 
-    // ============== UTILITY FUNCTIONS ==============
+    // ============== UTILITY ==============
 
     function formatDate(dateString) {
         const date = new Date(dateString);
@@ -862,24 +1193,6 @@ Respond in ${chatContext.languagePreference === 'banglish' ? 'Bengali (Banglish 
 
     function lang(english, banglish) {
         return chatContext.languagePreference === 'banglish' ? banglish : english;
-    }
-
-    function convertTimeTo24Hour(time12) {
-        if (!time12) return '10:00';
-        if (time12.includes(':')) {
-            const parts = time12.split(':');
-            if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-                if (parseInt(parts[0]) >= 0 && parseInt(parts[0]) <= 23) {
-                    return time12;
-                }
-            }
-        }
-        const [time, modifier] = time12.split(' ');
-        if (!time || !modifier) return '10:00';
-        let [hours, minutes] = time.split(':');
-        if (hours === '12') hours = '00';
-        if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
-        return `${hours.toString().padStart(2, '0')}:${minutes || '00'}`;
     }
 
     async function getFreshExamData() {
@@ -910,7 +1223,7 @@ Respond in ${chatContext.languagePreference === 'banglish' ? 'Bengali (Banglish 
         
         setTimeout(async () => {
             try {
-                const response = await processUserMessage(message);
+                const response = await processUserMessage(message, false);
                 removeTypingIndicator(typingId);
                 addBotMessage(response);
             } catch (error) {
@@ -921,7 +1234,7 @@ Respond in ${chatContext.languagePreference === 'banglish' ? 'Bengali (Banglish 
         }, 2000);
     }
 
-    // ============== EXPOSE GLOBAL FUNCTIONS ==============
+    // ============== GLOBAL EXPORTS ==============
 
     window.smartChatbot = {
         processMessage: processUserMessage,
